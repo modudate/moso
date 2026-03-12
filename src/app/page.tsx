@@ -18,8 +18,16 @@ export default function Home() {
             프로필 등록하기
           </Link>
           <Link
+            href="/browse"
+            className="px-8 py-4 bg-accent text-white rounded-2xl font-semibold text-lg hover:bg-accent/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+          >
+            남성 프로필 둘러보기
+          </Link>
+        </div>
+        <div className="pt-2">
+          <Link
             href="/admin"
-            className="px-8 py-4 bg-card text-foreground rounded-2xl font-semibold text-lg border border-border hover:border-primary/30 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+            className="text-sm text-muted-fg hover:text-primary transition-colors underline underline-offset-4"
           >
             관리자 페이지
           </Link>
