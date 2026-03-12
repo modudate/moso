@@ -36,8 +36,8 @@ yarn-error.log*
 # data
 /data
 
-# uploads
-/public/uploads
+# uploads (user-generated, not seed images)
+# /public/uploads
 
 # vercel
 .vercel
