@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { toggleBlock } from "@/lib/store";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const { id } = await req.json();
   const profile = toggleBlock(id);

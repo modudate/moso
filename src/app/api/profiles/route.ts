@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
-import { addProfile, getProfiles, saveUploadedImage } from "@/lib/store";
+import { addProfile, getProfiles } from "@/lib/store";
 import { Profile } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const profiles = getProfiles();
@@ -11,12 +13,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  let imageUrl = "";
-  if (body.image) {
-    const ext = body.image.startsWith("data:image/png") ? "png" : "jpg";
-    const filename = `${uuidv4()}.${ext}`;
-    imageUrl = saveUploadedImage(body.image, filename);
-  }
+  const imageUrl = body.image || "";
 
   const profile: Profile = {
     id: uuidv4(),

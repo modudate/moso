@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { addLink, getLinkByToken, getProfile } from "@/lib/store";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const { profileId } = await req.json();
   const token = nanoid(12);
