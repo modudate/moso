@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
-import { EDUCATIONS, JOB_TYPES, SALARIES, SMOKING, MBTI_TYPES, PRIORITIES } from "@/lib/options";
+import { EDUCATIONS, JOB_TYPES, SALARIES, SMOKING } from "@/lib/options";
 
 const HEIGHTS_FILTER = ["151 ~ 155","156 ~ 160","161 ~ 165","166 ~ 170","171 ~ 175","176 ~ 180","181 ~ 185","185 이상"];
 const AGE_RANGES = ["2006년 ~ 1997년","1996년 ~ 1994년","1993년 ~ 1990년","1989년 ~ 1987년","1986년 ~ 1984년","1983년 ~ 1981년"];
@@ -30,6 +30,7 @@ export default function FemalePage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("ourmo_user");
@@ -119,7 +120,7 @@ export default function FemalePage() {
         {/* Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 pb-6">
           {paged.map((m) => (
-            <div key={m.id} className="group rounded-2xl overflow-hidden bg-card border border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
+            <div key={m.id} onClick={() => setSelectedUser(m)} className="group rounded-2xl overflow-hidden bg-card border border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative cursor-pointer">
               <div className="relative aspect-[3/4] bg-muted overflow-hidden">
                 {m.imageUrl ? <img src={m.imageUrl} alt={m.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                   <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{m.name?.[0]}</div>}
@@ -128,9 +129,8 @@ export default function FemalePage() {
                   <h3 className="text-white font-bold text-base sm:text-lg drop-shadow-md">{m.name}</h3>
                   <p className="text-white/80 text-xs sm:text-sm drop-shadow-md mt-0.5">{m.birthYear} · {m.height}cm</p>
                 </div>
-                {/* Heart button */}
                 <button onClick={(e) => { e.stopPropagation(); toggleCart(m.id); }}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-md">
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-md z-10">
                   {cart.has(m.id) ? (
                     <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
                   ) : (
@@ -161,6 +161,79 @@ export default function FemalePage() {
           </div>
         )}
       </div>
+
+      {/* Profile Detail Modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={() => setSelectedUser(null)}>
+          <div className="bg-card w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Image */}
+            <div className="relative aspect-[4/5] bg-muted overflow-hidden sm:rounded-t-3xl rounded-t-3xl">
+              {selectedUser.imageUrl ? <img src={selectedUser.imageUrl} alt={selectedUser.name} className="w-full h-full object-cover" /> :
+                <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-primary/20">{selectedUser.name?.[0]}</div>}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+              <button onClick={() => setSelectedUser(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <h2 className="text-white text-2xl font-bold drop-shadow-lg">{selectedUser.name}</h2>
+                <p className="text-white/80 text-sm drop-shadow-lg mt-1">{selectedUser.birthYear} · {selectedUser.gender}</p>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-3">
+                <InfoPill label="키" value={`${selectedUser.height}cm`} />
+                <InfoPill label="거주지" value={regionLabel(selectedUser.city, selectedUser.district)} />
+                <InfoPill label="학력" value={selectedUser.education} />
+                <InfoPill label="직업형태" value={selectedUser.jobType} />
+                <InfoPill label="연봉" value={selectedUser.salary} />
+                <InfoPill label="흡연" value={selectedUser.smoking} />
+                <InfoPill label="MBTI" value={selectedUser.mbti} />
+              </div>
+
+              {selectedUser.job && (
+                <div className="bg-muted rounded-xl p-4">
+                  <p className="text-xs text-muted-fg mb-1">직무</p>
+                  <p className="text-sm font-medium">{selectedUser.job}</p>
+                </div>
+              )}
+              {selectedUser.charm && (
+                <div className="bg-primary-light/60 rounded-xl p-4">
+                  <p className="text-xs text-primary-dark mb-1">매력포인트</p>
+                  <p className="text-sm font-medium">{selectedUser.charm}</p>
+                </div>
+              )}
+              {selectedUser.datingStyle && (
+                <div className="bg-accent/5 rounded-xl p-4">
+                  <p className="text-xs text-accent mb-1">연애스타일</p>
+                  <p className="text-sm font-medium">{selectedUser.datingStyle}</p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => { toggleCart(selectedUser.id); }}
+                  className={`flex-1 py-3 rounded-2xl font-semibold text-sm transition-all ${cart.has(selectedUser.id) ? "bg-primary text-white hover:bg-primary-dark" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
+                  {cart.has(selectedUser.id) ? "장바구니에서 빼기" : "장바구니에 담기"}
+                </button>
+                <button onClick={() => setSelectedUser(null)} className="px-6 py-3 rounded-2xl bg-muted text-muted-fg font-semibold text-sm hover:bg-muted/70 transition-colors">
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+  );
+}
+
+function InfoPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-muted/60 rounded-xl p-3 text-center">
+      <p className="text-[10px] text-muted-fg">{label}</p>
+      <p className="text-sm font-semibold mt-0.5">{value || "-"}</p>
+    </div>
   );
 }

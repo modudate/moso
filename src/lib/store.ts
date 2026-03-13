@@ -113,6 +113,7 @@ const SEED_USERS: User[] = [
     idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
     idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "키",
   },
+  // 승인대기 남성 (NEW 딱지 테스트)
   {
     id: "m-010", email: "newguy@test.com", password: "1234", gender: "남자", status: "pending", createdAt: new Date().toISOString(), expiresAt: null, blocked: false,
     imageUrl: "/uploads/packhyunwoo.png", name: "신규남성", birthYear: "1996년", city: "서울", district: "서부",
@@ -123,11 +124,102 @@ const SEED_USERS: User[] = [
     idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
     idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "나이",
   },
+  // 반려된 남성
+  {
+    id: "m-011", email: "rejected@test.com", password: "1234", gender: "남자", status: "rejected", createdAt: "2026-03-07T09:00:00.000Z", expiresAt: null, blocked: false,
+    imageUrl: "", name: "반려된남성", birthYear: "1988년", city: "경기", district: "북부",
+    education: "고등학교 졸업", height: "170", job: "무직", jobType: "프리랜서",
+    salary: "~ 3,000만원 미만", smoking: "흡연(연초)", mbti: "ISTP",
+    charm: "-", datingStyle: "-", phone: "01000001111",
+    idealHeight: "156 ~ 160", idealAge: "2006년 ~ 1997년", idealCity: "경기", idealDistrict: "북부",
+    idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
+    idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "키",
+  },
+  // 차단된 남성 (기존 승인 → 차단)
+  {
+    id: "m-012", email: "blocked@test.com", password: "1234", gender: "남자", status: "approved", createdAt: "2026-02-15T09:00:00.000Z", expiresAt: "2026-03-15T09:00:00.000Z", blocked: true,
+    imageUrl: "/uploads/packhyunwoo.png", name: "차단된남성", birthYear: "1990년", city: "서울", district: "북부",
+    education: "서울 4년제 졸업", height: "176", job: "영업직_팀장", jobType: "중견기업",
+    salary: "6,000만원 이상 ~ 8,000만원 미만", smoking: "흡연(전자담배)", mbti: "ESTP",
+    charm: "넓은 인맥과 추진력", datingStyle: "적극적으로 다가가는 스타일", phone: "01000002222",
+    idealHeight: "161 ~ 165", idealAge: "1996년 ~ 1994년", idealCity: "서울", idealDistrict: "북부",
+    idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
+    idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "나이",
+  },
+  // 만료된 남성 (expiresAt 과거)
+  {
+    id: "m-013", email: "expired@test.com", password: "1234", gender: "남자", status: "approved", createdAt: "2026-01-10T09:00:00.000Z", expiresAt: "2026-02-10T09:00:00.000Z", blocked: false,
+    imageUrl: "/uploads/packhyunwoo.png", name: "만료된남성", birthYear: "1989년", city: "인천", district: "",
+    education: "기타 4년제 졸업", height: "180", job: "물류회사_관리자", jobType: "중소기업",
+    salary: "4,000만원 이상 ~ 6,000만원 미만", smoking: "비흡연", mbti: "ISTJ",
+    charm: "꼼꼼하고 시간 약속을 잘 지켜요", datingStyle: "안정적인 관계를 선호해요", phone: "01000003333",
+    idealHeight: "156 ~ 160", idealAge: "1993년 ~ 1990년", idealCity: "인천", idealDistrict: "",
+    idealSmoking: "비흡연", idealEducation: "기타 4년제 졸업", idealJobType: "중소기업",
+    idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "거주지",
+  },
+  // 승인대기 여성 (NEW)
+  {
+    id: "f-003", email: "newgirl@test.com", password: "1234", gender: "여자", status: "pending", createdAt: new Date().toISOString(), expiresAt: null, blocked: false,
+    imageUrl: "/uploads/kimjiwoo.png", name: "신규여성", birthYear: "1999년", city: "서울", district: "남부",
+    education: "서울 4년제 졸업", height: "165", job: "회계법인_회계사", jobType: "전문직",
+    salary: "6,000만원 이상 ~ 8,000만원 미만", smoking: "비흡연", mbti: "INTJ",
+    charm: "논리적이고 독립적이에요", datingStyle: "서로의 공간을 존중하는 스타일", phone: "01077770000",
+    idealHeight: "176 ~ 180", idealAge: "1996년 ~ 1994년", idealCity: "서울", idealDistrict: "남부",
+    idealSmoking: "비흡연", idealEducation: "SKY카포 졸업", idealJobType: "전문직",
+    idealSalary: "8,000만원 이상 ~ 1억원 미만", priority: "연봉",
+  },
+  // 반려된 여성
+  {
+    id: "f-004", email: "rejectedgirl@test.com", password: "1234", gender: "여자", status: "rejected", createdAt: "2026-03-05T09:00:00.000Z", expiresAt: null, blocked: false,
+    imageUrl: "", name: "반려여성", birthYear: "2000년", city: "경기", district: "남부",
+    education: "전문대학교 졸업", height: "160", job: "프리랜서_일러스트레이터", jobType: "프리랜서",
+    salary: "~ 3,000만원 미만", smoking: "비흡연", mbti: "INFP",
+    charm: "그림을 잘 그려요", datingStyle: "감성적인 데이트를 좋아해요", phone: "01088881111",
+    idealHeight: "171 ~ 175", idealAge: "2006년 ~ 1997년", idealCity: "경기", idealDistrict: "남부",
+    idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "중견기업",
+    idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "키",
+  },
+  // 차단된 여성
+  {
+    id: "f-005", email: "blockedgirl@test.com", password: "1234", gender: "여자", status: "approved", createdAt: "2026-02-20T09:00:00.000Z", expiresAt: "2026-03-20T09:00:00.000Z", blocked: true,
+    imageUrl: "/uploads/leesaeyun.png", name: "차단여성", birthYear: "1996년", city: "서울", district: "동부",
+    education: "석사 졸업", height: "162", job: "대학원_연구조교", jobType: "공기업",
+    salary: "3,000만원 이상 ~ 4,000만원 미만", smoking: "비흡연", mbti: "ISFJ",
+    charm: "차분하고 세심해요", datingStyle: "꾸준한 연락을 선호해요", phone: "01088882222",
+    idealHeight: "176 ~ 180", idealAge: "1993년 ~ 1990년", idealCity: "서울", idealDistrict: "동부",
+    idealSmoking: "비흡연", idealEducation: "석사 졸업", idealJobType: "공기업",
+    idealSalary: "4,000만원 이상 ~ 6,000만원 미만", priority: "학력",
+  },
+];
+
+const SEED_MATCH_REQUESTS: MatchRequest[] = [
+  // 김지우(f-001) → 박현우(m-001): 수락됨
+  { id: "mr-001", fromUserId: "f-001", toUserId: "m-001", action: "accepted", createdAt: "2026-03-11T15:00:00.000Z", rejectedAt: null },
+  // 김지우(f-001) → 최준혁(m-002): 대기 중
+  { id: "mr-002", fromUserId: "f-001", toUserId: "m-002", action: "pending", createdAt: "2026-03-12T10:00:00.000Z", rejectedAt: null },
+  // 김지우(f-001) → 김도윤(m-003): 거절됨
+  { id: "mr-003", fromUserId: "f-001", toUserId: "m-003", action: "rejected", createdAt: "2026-03-10T12:00:00.000Z", rejectedAt: "2026-03-11T09:00:00.000Z" },
+  // 이서연(f-002) → 정민수(m-004): 수락됨
+  { id: "mr-004", fromUserId: "f-002", toUserId: "m-004", action: "accepted", createdAt: "2026-03-10T16:00:00.000Z", rejectedAt: null },
+  // 이서연(f-002) → 이승우(m-005): 대기 중
+  { id: "mr-005", fromUserId: "f-002", toUserId: "m-005", action: "pending", createdAt: "2026-03-12T11:00:00.000Z", rejectedAt: null },
+  // 이서연(f-002) → 한지훈(m-006): 거절됨
+  { id: "mr-006", fromUserId: "f-002", toUserId: "m-006", action: "rejected", createdAt: "2026-03-09T18:00:00.000Z", rejectedAt: "2026-03-10T08:00:00.000Z" },
+  // 신규여성(f-003) → 박현우(m-001): 대기 중
+  { id: "mr-007", fromUserId: "f-003", toUserId: "m-001", action: "pending", createdAt: "2026-03-12T14:00:00.000Z", rejectedAt: null },
+  // 신규여성(f-003) → 오태현(m-007): 대기 중
+  { id: "mr-008", fromUserId: "f-003", toUserId: "m-007", action: "pending", createdAt: "2026-03-12T14:30:00.000Z", rejectedAt: null },
+];
+
+const SEED_CART: CartItem[] = [
+  // 김지우(f-001)가 이승우(m-005), 한지훈(m-006)을 장바구니에 담아둠
+  { userId: "f-001", targetId: "m-005", addedAt: "2026-03-12T12:00:00.000Z" },
+  { userId: "f-001", targetId: "m-006", addedAt: "2026-03-12T12:05:00.000Z" },
 ];
 
 let users: User[] = [...SEED_USERS];
-let matchRequests: MatchRequest[] = [];
-let cartItems: CartItem[] = [];
+let matchRequests: MatchRequest[] = [...SEED_MATCH_REQUESTS];
+let cartItems: CartItem[] = [...SEED_CART];
 let profileLinks: ProfileLink[] = [];
 
 // === Users ===
