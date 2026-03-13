@@ -12,23 +12,20 @@ export default function Home() {
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/register"
+            href="/login"
             className="px-8 py-4 bg-primary text-white rounded-2xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
           >
-            프로필 등록하기
+            로그인
           </Link>
           <Link
-            href="/browse"
+            href="/register"
             className="px-8 py-4 bg-accent text-white rounded-2xl font-semibold text-lg hover:bg-accent/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
           >
-            남성 프로필 둘러보기
+            회원가입
           </Link>
         </div>
         <div className="pt-2">
-          <Link
-            href="/admin"
-            className="text-sm text-muted-fg hover:text-primary transition-colors underline underline-offset-4"
-          >
+          <Link href="/admin" className="text-sm text-muted-fg hover:text-primary transition-colors underline underline-offset-4">
             관리자 페이지
           </Link>
         </div>

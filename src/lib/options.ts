@@ -1,28 +1,15 @@
 export const BIRTH_YEARS = Array.from({ length: 26 }, (_, i) => `${2006 - i}년`);
 
-export const BIRTH_YEAR_RANGES = [
-  "2006년 ~ 1997년",
-  "1996년 ~ 1994년",
-  "1993년 ~ 1990년",
-  "1989년 ~ 1987년",
-  "1986년 ~ 1984년",
-  "1983년 ~ 1981년",
-];
+export const GENDERS = ["남자", "여자"] as const;
 
-export const GENDERS = ["남자", "여자"];
+export const CITIES = ["서울", "경기", "인천", "그 외 지역"];
 
-export const REGIONS = [
-  "서울 동부",
-  "서울 서부",
-  "서울 남부",
-  "서울 북부",
-  "경기 동부",
-  "경기 서부",
-  "경기 남부",
-  "경기 북부",
-  "인천",
-  "그 외 지역",
-];
+export const DISTRICTS: Record<string, string[]> = {
+  서울: ["동부", "서부", "남부", "북부"],
+  경기: ["동부", "서부", "남부", "북부"],
+  인천: [],
+  "그 외 지역": [],
+};
 
 export const EDUCATIONS = [
   "박사 졸업",
@@ -35,17 +22,6 @@ export const EDUCATIONS = [
   "기타 4년제 졸업",
   "전문대학교 졸업",
   "고등학교 졸업",
-];
-
-export const HEIGHTS = [
-  "151 ~ 155",
-  "156 ~ 160",
-  "161 ~ 165",
-  "166 ~ 170",
-  "171 ~ 175",
-  "176 ~ 180",
-  "181 ~ 185",
-  "185 이상",
 ];
 
 export const JOB_TYPES = [
@@ -89,3 +65,8 @@ export const PRIORITIES = [
   "직업 형태",
   "연봉",
 ];
+
+export function regionLabel(city: string, district: string) {
+  if (!district) return city;
+  return `${city} ${district}`;
+}

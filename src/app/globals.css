@@ -13,6 +13,7 @@
   --border: #e8e4e0;
   --danger: #ef4444;
   --success: #22c55e;
+  --warning: #f59e0b;
 }
 
 @theme inline {
@@ -28,6 +29,7 @@
   --color-border: var(--border);
   --color-danger: var(--danger);
   --color-success: var(--success);
+  --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

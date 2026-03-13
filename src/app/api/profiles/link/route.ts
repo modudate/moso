@@ -1,44 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { addLink, getLinkByToken, getProfile } from "@/lib/store";
+import { addProfileLink, getProfileLinkByToken, getUser } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { profileId } = await req.json();
+  const { userId } = await req.json();
+  const user = getUser(userId);
+  if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
+
   const token = nanoid(12);
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-
-  addLink({
-    token,
-    profileId,
-    createdAt: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  });
-
-  return NextResponse.json({ token, expiresAt: expiresAt.toISOString() });
+  const expires = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+  addProfileLink({ token, userId, createdAt: now.toISOString(), expiresAt: expires.toISOString() });
+  return NextResponse.json({ token, url: `/profile/${token}` });
 }
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
-  if (!token) {
-    return NextResponse.json({ error: "토큰이 필요합니다." }, { status: 400 });
-  }
+  if (!token) return NextResponse.json({ error: "토큰 필요" }, { status: 400 });
 
-  const link = getLinkByToken(token);
-  if (!link) {
-    return NextResponse.json({ error: "유효하지 않은 링크입니다." }, { status: 404 });
-  }
+  const link = getProfileLinkByToken(token);
+  if (!link) return NextResponse.json({ error: "유효하지 않은 링크" }, { status: 404 });
+  if (new Date(link.expiresAt) < new Date()) return NextResponse.json({ error: "만료된 링크" }, { status: 410 });
 
-  if (new Date() > new Date(link.expiresAt)) {
-    return NextResponse.json({ error: "만료된 링크입니다." }, { status: 410 });
-  }
+  const user = getUser(link.userId);
+  if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
 
-  const profile = getProfile(link.profileId);
-  if (!profile) {
-    return NextResponse.json({ error: "프로필을 찾을 수 없습니다." }, { status: 404 });
-  }
-
-  return NextResponse.json(profile);
+  const { password, phone, email, ...safeUser } = user;
+  return NextResponse.json(safeUser);
 }

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { toggleBlock } from "@/lib/store";
+import { updateUser, getUser } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const { id } = await req.json();
-  const profile = toggleBlock(id);
-  if (!profile) {
-    return NextResponse.json({ error: "프로필을 찾을 수 없습니다." }, { status: 404 });
-  }
-  return NextResponse.json({ success: true, blocked: profile.blocked });
+  const user = getUser(id);
+  if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
+  updateUser(id, { blocked: !user.blocked });
+  return NextResponse.json({ success: true, blocked: !user.blocked });
 }
