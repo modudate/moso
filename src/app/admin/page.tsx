@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@/lib/types";
+import { User, MatchRequest } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 
 const ADMIN_PW = "ourmo2026";
@@ -22,26 +22,60 @@ function statusLabel(s: string) {
   return m[s] || { text: s, cls: "bg-muted text-muted-fg" };
 }
 
+type MatchSummary = {
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+};
+
+function buildMatchMap(matches: MatchRequest[], users: User[]) {
+  const map = new Map<string, MatchSummary>();
+  for (const u of users) map.set(u.id, { total: 0, pending: 0, accepted: 0, rejected: 0 });
+
+  for (const m of matches) {
+    for (const uid of [m.fromUserId, m.toUserId]) {
+      const s = map.get(uid);
+      if (s) {
+        s.total++;
+        if (m.action === "pending") s.pending++;
+        else if (m.action === "accepted") s.accepted++;
+        else if (m.action === "rejected") s.rejected++;
+      }
+    }
+  }
+  return map;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
   const [pw, setPw] = useState("");
   const [users, setUsers] = useState<User[]>([]);
+  const [matches, setMatches] = useState<MatchRequest[]>([]);
+  const [matchMap, setMatchMap] = useState<Map<string, MatchSummary>>(new Map());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
+  const [matchFilter, setMatchFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const res = await fetch("/api/profiles");
-    const data = await res.json();
-    setUsers(data);
+    const [uRes, mRes] = await Promise.all([
+      fetch("/api/profiles"),
+      fetch("/api/match?all=true"),
+    ]);
+    const uData: User[] = await uRes.json();
+    const mData: MatchRequest[] = await mRes.json();
+    setUsers(uData);
+    setMatches(mData);
+    setMatchMap(buildMatchMap(mData, uData));
     setLoading(false);
   };
 
-  useEffect(() => { if (authed) fetchUsers(); }, [authed]);
+  useEffect(() => { if (authed) fetchData(); }, [authed]);
 
   const handleLogin = () => { if (pw === ADMIN_PW) setAuthed(true); };
 
@@ -49,28 +83,31 @@ export default function AdminPage() {
     const expires = new Date();
     expires.setDate(expires.getDate() + 30);
     await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "approved", expiresAt: expires.toISOString() }) });
-    fetchUsers();
+    fetchData();
   };
 
   const handleReject = async (id: string) => {
     await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "rejected" }) });
-    fetchUsers();
+    fetchData();
   };
 
   const handleBlock = async (id: string) => {
     await fetch("/api/profiles/block", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-    fetchUsers();
-  };
-
-  const handleExpiresChange = async (id: string, date: string) => {
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, expiresAt: new Date(date).toISOString() }) });
-    fetchUsers();
+    fetchData();
   };
 
   const filtered = users.filter((u) => {
     if (search && !u.name.includes(search)) return false;
     if (statusFilter && u.status !== statusFilter) return false;
     if (genderFilter && u.gender !== genderFilter) return false;
+    if (matchFilter) {
+      const ms = matchMap.get(u.id);
+      if (matchFilter === "has_match" && (!ms || ms.total === 0)) return false;
+      if (matchFilter === "has_accepted" && (!ms || ms.accepted === 0)) return false;
+      if (matchFilter === "has_pending" && (!ms || ms.pending === 0)) return false;
+      if (matchFilter === "has_rejected" && (!ms || ms.rejected === 0)) return false;
+      if (matchFilter === "no_match" && ms && ms.total > 0) return false;
+    }
     return true;
   });
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
@@ -118,6 +155,15 @@ export default function AdminPage() {
             <option value="남자">남자</option>
             <option value="여자">여자</option>
           </select>
+          <select value={matchFilter} onChange={(e) => { setMatchFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">전체 매칭</option>
+            <option value="has_match">매칭 있음</option>
+            <option value="has_accepted">수락된 매칭</option>
+            <option value="has_pending">대기중 매칭</option>
+            <option value="has_rejected">거절된 매칭</option>
+            <option value="no_match">매칭 없음</option>
+          </select>
           <span className="text-sm text-muted-fg">{filtered.length}명</span>
         </div>
 
@@ -128,6 +174,7 @@ export default function AdminPage() {
             {paged.map((u) => {
               const st = statusLabel(u.status);
               const expired = u.expiresAt && new Date(u.expiresAt) < new Date();
+              const ms = matchMap.get(u.id);
               return (
                 <div key={u.id} className={`flex items-center gap-3 sm:gap-4 p-4 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${u.blocked ? "opacity-50 line-through" : ""} ${expired ? "border-danger/30 bg-danger/5" : ""}`}
                   onClick={() => router.push(`/admin/${u.id}`)}>
@@ -141,9 +188,29 @@ export default function AdminPage() {
                       {isNew(u.createdAt) && <span className="text-[10px] font-bold text-white bg-primary px-1.5 py-0.5 rounded-md">NEW</span>}
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-fg">{u.gender}</span>
+                      {/* Match badge */}
+                      {ms && ms.total > 0 && (
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${ms.accepted > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
+                          매칭 {ms.total}
+                          {ms.accepted > 0 && <span className="text-primary">(수락 {ms.accepted})</span>}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-fg mt-0.5 truncate">{u.birthYear} · {u.height}cm · {regionLabel(u.city, u.district)} · {u.jobType} · {u.mbti}</p>
-                    {u.expiresAt && <p className={`text-[10px] mt-0.5 ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}</p>}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {u.expiresAt && <p className={`text-[10px] ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}</p>}
+                      {/* Match detail line */}
+                      {ms && ms.total > 0 && (
+                        <p className="text-[10px] text-muted-fg">
+                          {ms.pending > 0 && <span className="text-warning">대기 {ms.pending}</span>}
+                          {ms.pending > 0 && (ms.accepted > 0 || ms.rejected > 0) && " · "}
+                          {ms.accepted > 0 && <span className="text-success">수락 {ms.accepted}</span>}
+                          {ms.accepted > 0 && ms.rejected > 0 && " · "}
+                          {ms.rejected > 0 && <span className="text-danger">거절 {ms.rejected}</span>}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     {u.status === "pending" && (

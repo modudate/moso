@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import {
-  addMatchRequest, getMatchesForUser, getMatchesByFrom,
-  updateMatchAction, clearCart, getUser, isRejectionCooldown,
+  addMatchRequest, getMatchRequests, getMatchesForUser, getMatchesByFrom,
+  updateMatchAction, clearCart, isRejectionCooldown,
 } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const toUserId = req.nextUrl.searchParams.get("toUserId");
   const fromUserId = req.nextUrl.searchParams.get("fromUserId");
+  const all = req.nextUrl.searchParams.get("all");
+  if (all === "true") return NextResponse.json(getMatchRequests());
   if (toUserId) return NextResponse.json(getMatchesForUser(toUserId));
   if (fromUserId) return NextResponse.json(getMatchesByFrom(fromUserId));
   return NextResponse.json({ error: "toUserId 또는 fromUserId 필요" }, { status: 400 });
