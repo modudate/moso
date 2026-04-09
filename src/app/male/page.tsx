@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { User, MatchRequest } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 
@@ -15,12 +16,16 @@ export default function MalePage() {
   const [tab, setTab] = useState<"all" | "pending" | "accepted" | "rejected">("all");
 
   useEffect(() => {
+    // TODO: 실제 Google OAuth 연동 시 Supabase Auth로 교체
     const stored = localStorage.getItem("ourmo_user");
-    if (!stored) { router.push("/login"); return; }
-    const u = JSON.parse(stored);
-    if (u.gender !== "남자") { router.push("/female"); return; }
-    setCurrentUser(u);
-    fetchData(u.id);
+    if (stored) {
+      const u = JSON.parse(stored);
+      setCurrentUser(u);
+      fetchData(u.id);
+    } else {
+      setCurrentUser({ id: "dev-male", name: "개발용남성", gender: "남자" } as User);
+      fetchData("dev-male");
+    }
   }, [router]);
 
   const fetchData = async (userId: string) => {
@@ -60,7 +65,7 @@ export default function MalePage() {
           <h1 className="text-xl font-bold">OUR<span className="text-primary">MO</span></h1>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-fg">{currentUser.name}님</span>
-            <button onClick={() => { localStorage.removeItem("ourmo_user"); router.push("/login"); }} className="text-xs text-muted-fg hover:text-foreground">로그아웃</button>
+            <Link href="/" className="text-xs text-muted-fg hover:text-foreground">홈으로</Link>
           </div>
         </div>
       </header>

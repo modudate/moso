@@ -10,18 +10,22 @@ erDiagram
     users ||--o| male_profiles : "1:1 CASCADE"
     users ||--o| female_profiles : "1:1 CASCADE"
     users ||--o| ideal_types : "1:1 CASCADE"
+    users ||--o{ admin_notes : "1:N CASCADE"
 
     male_profiles ||--o{ cart_items : "1:N CASCADE"
     male_profiles ||--o{ match_requests : "1:N CASCADE"
     male_profiles ||--o{ rejection_logs : "1:N CASCADE"
+    male_profiles ||--o{ md_recommendations : "1:N CASCADE"
 
     female_profiles ||--o{ cart_items : "1:N CASCADE"
     female_profiles ||--o{ match_requests : "1:N CASCADE"
     female_profiles ||--o{ rejection_logs : "1:N CASCADE"
+    female_profiles ||--o{ md_recommendations : "1:N CASCADE"
 
     users {
         UUID id PK
-        TEXT email
+        TEXT email UK
+        TEXT phone UK
         user_role role
         user_status status
         TIMESTAMPTZ created_at
@@ -36,16 +40,20 @@ erDiagram
     male_profiles {
         UUID id PK
         UUID user_id FK
-        TEXT name
+        TEXT real_name
+        TEXT nickname
         INT birth_year
         INT height
         TEXT city
         TEXT district
-        job_type job
+        workplace_type workplace
+        TEXT job
         income_range_type income_range
         education_type education
-        smoking_type smoking
+        BOOLEAN smoking
         mbti_type mbti
+        TEXT charm
+        TEXT dating_style
         TEXT[] photo_urls
         BOOLEAN is_new
         TIMESTAMPTZ expires_at
@@ -55,15 +63,20 @@ erDiagram
     female_profiles {
         UUID id PK
         UUID user_id FK
-        TEXT name
+        TEXT real_name
+        TEXT nickname
         INT birth_year
         INT height
         TEXT city
         TEXT district
-        job_type job
+        workplace_type workplace
+        TEXT job
+        income_range_type income_range
         education_type education
-        smoking_type smoking
+        BOOLEAN smoking
         mbti_type mbti
+        TEXT charm
+        TEXT dating_style
         TEXT[] photo_urls
         BOOLEAN is_new
         TIMESTAMPTZ expires_at
@@ -73,17 +86,27 @@ erDiagram
     ideal_types {
         UUID id PK
         UUID user_id FK
+        TEXT ideal_age_range
         INT min_height
         INT max_height
         TEXT[] cities
-        job_type[] jobs
+        workplace_type[] workplaces
+        TEXT[] jobs
         income_range_type[] income_ranges
         education_type[] education
-        smoking_type[] smoking
-        INT min_age
-        INT max_age
-        TEXT notes
+        BOOLEAN ideal_smoking
+        mbti_type[] ideal_mbti
+        TEXT[] top_priorities
         TIMESTAMPTZ created_at
+    }
+
+    md_recommendations {
+        UUID id PK
+        UUID male_profile_id FK
+        UUID female_profile_id FK
+        match_status status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ responded_at
     }
 
     cart_items {
@@ -109,6 +132,14 @@ erDiagram
         TIMESTAMPTZ rejected_at
         TIMESTAMPTZ visible_after
     }
+
+    admin_notes {
+        UUID id PK
+        UUID user_id FK
+        TEXT content
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
 ```
 
 ---
@@ -118,14 +149,17 @@ erDiagram
 ```
 users 삭제
 ├── male_profiles        (ON DELETE CASCADE)
-│   ├── cart_items       (ON DELETE CASCADE)
-│   ├── match_requests   (ON DELETE CASCADE)
-│   └── rejection_logs   (ON DELETE CASCADE)
+│   ├── cart_items          (ON DELETE CASCADE)
+│   ├── match_requests      (ON DELETE CASCADE)
+│   ├── rejection_logs      (ON DELETE CASCADE)
+│   └── md_recommendations  (ON DELETE CASCADE)
 ├── female_profiles      (ON DELETE CASCADE)
-│   ├── cart_items       (ON DELETE CASCADE)
-│   ├── match_requests   (ON DELETE CASCADE)
-│   └── rejection_logs   (ON DELETE CASCADE)
-└── ideal_types          (ON DELETE CASCADE)
+│   ├── cart_items          (ON DELETE CASCADE)
+│   ├── match_requests      (ON DELETE CASCADE)
+│   ├── rejection_logs      (ON DELETE CASCADE)
+│   └── md_recommendations  (ON DELETE CASCADE)
+├── ideal_types          (ON DELETE CASCADE)
+└── admin_notes          (ON DELETE CASCADE)
 ```
 
 > `users` 레코드 하나를 삭제하면 연관된 모든 데이터가 자동으로 삭제된다.
@@ -144,6 +178,8 @@ users 삭제
 | `cart_items` | 여성 장바구니 (female → male 담기) | `female_profiles`, `male_profiles` |
 | `match_requests` | 매칭 요청 및 응답 | `female_profiles`, `male_profiles` |
 | `rejection_logs` | 거절 기록 + 1주일 쿨타임 관리 | `male_profiles`, `female_profiles` |
+| `md_recommendations` | MD 추천 (관리자 → 남성에게 여성 추천) | `male_profiles`, `female_profiles` |
+| `admin_notes` | 관리자 메모 (유저별) | `users` 1:N |
 
 ---
 
@@ -163,8 +199,8 @@ users 삭제
 | `male` | 남성 유저 |
 | `female` | 여성 유저 |
 
-### job_type
-`대기업` / `중견기업` / `중소기업` / `공기업` / `공무원` / `전문직` / `개인사업` / `프리랜서`
+### workplace_type
+`대기업` / `중견기업` / `중소기업` / `공기업` / `공무원` / `전문직` / `개인사업/자영업` / `프리랜서`
 
 ### income_range_type
 | 값 |
@@ -193,8 +229,8 @@ users 삭제
 | `전문대학교 졸업` |
 | `고등학교 졸업` |
 
-### smoking_type
-`연초` / `전자담배` / `비흡연`
+### smoking
+흡연 여부는 BOOLEAN으로 처리: `true` = 유, `false` = 무
 
 ### mbti_type
 `INTJ` / `INTP` / `ENTJ` / `ENTP` / `INFJ` / `INFP` / `ENFJ` / `ENFP`
@@ -219,14 +255,14 @@ CREATE TYPE user_role AS ENUM (
   'female'
 );
 
-CREATE TYPE job_type AS ENUM (
+CREATE TYPE workplace_type AS ENUM (
   '대기업',
   '중견기업',
   '중소기업',
   '공기업',
   '공무원',
   '전문직',
-  '개인사업',
+  '개인사업/자영업',
   '프리랜서'
 );
 
@@ -255,11 +291,7 @@ CREATE TYPE education_type AS ENUM (
   '고등학교 졸업'
 );
 
-CREATE TYPE smoking_type AS ENUM (
-  '연초',
-  '전자담배',
-  '비흡연'
-);
+-- smoking은 BOOLEAN (true=유, false=무)으로 처리, ENUM 불필요
 
 CREATE TYPE mbti_type AS ENUM (
   'INTJ', 'INTP', 'ENTJ', 'ENTP',
@@ -279,9 +311,11 @@ CREATE TYPE match_status AS ENUM (
 CREATE TABLE users (
   id         UUID PRIMARY KEY REFERENCES auth.users(id),
   email      TEXT UNIQUE NOT NULL,
+  phone      TEXT UNIQUE NOT NULL,
   role       user_role NOT NULL,
   status     user_status NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (id, email, phone)
 );
 
 CREATE TABLE admins (
@@ -295,16 +329,20 @@ CREATE TABLE admins (
 CREATE TABLE male_profiles (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name         TEXT NOT NULL,
+  real_name    TEXT NOT NULL,
+  nickname     TEXT NOT NULL,
   birth_year   INT,
   height       INT,
   city         TEXT,
   district     TEXT,
-  job          job_type,
+  workplace    workplace_type,
+  job          TEXT,
   income_range income_range_type,
   education    education_type,
-  smoking      smoking_type,
+  smoking      BOOLEAN DEFAULT false,
   mbti         mbti_type,
+  charm        TEXT,
+  dating_style TEXT,
   photo_urls   TEXT[],
   is_new       BOOLEAN DEFAULT true,
   expires_at   TIMESTAMPTZ,
@@ -314,15 +352,20 @@ CREATE TABLE male_profiles (
 CREATE TABLE female_profiles (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name         TEXT NOT NULL,
+  real_name    TEXT NOT NULL,
+  nickname     TEXT NOT NULL,
   birth_year   INT,
   height       INT,
   city         TEXT,
   district     TEXT,
-  job          job_type,
+  workplace    workplace_type,
+  job          TEXT,
+  income_range income_range_type,
   education    education_type,
-  smoking      smoking_type,
+  smoking      BOOLEAN DEFAULT false,
   mbti         mbti_type,
+  charm        TEXT,
+  dating_style TEXT,
   photo_urls   TEXT[],
   is_new       BOOLEAN DEFAULT true,
   expires_at   TIMESTAMPTZ,
@@ -331,19 +374,20 @@ CREATE TABLE female_profiles (
 
 -- 이상형 (관리자 상세 조회 시에만 join)
 CREATE TABLE ideal_types (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  min_height    INT,
-  max_height    INT,
-  cities        TEXT[],
-  jobs          job_type[],
-  income_ranges income_range_type[],
-  education     education_type[],
-  smoking       smoking_type[],
-  min_age       INT,
-  max_age       INT,
-  notes         TEXT,
-  created_at    TIMESTAMPTZ DEFAULT now()
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ideal_age_range TEXT,
+  min_height      INT,
+  max_height      INT,
+  cities          TEXT[],
+  workplaces      workplace_type[],
+  jobs            TEXT[],
+  income_ranges   income_range_type[],
+  education       education_type[],
+  ideal_smoking   BOOLEAN,
+  ideal_mbti      mbti_type[],
+  top_priorities  TEXT[],
+  created_at      TIMESTAMPTZ DEFAULT now()
 );
 
 -- ── female 종속 ──────────────────────────────────────────────────
@@ -380,7 +424,43 @@ CREATE TABLE rejection_logs (
   UNIQUE (male_profile_id, female_profile_id)
 );
 
+-- ── MD 추천 ─────────────────────────────────────────────────────
+
+CREATE TABLE md_recommendations (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  male_profile_id   UUID NOT NULL REFERENCES male_profiles(id) ON DELETE CASCADE,
+  female_profile_id UUID NOT NULL REFERENCES female_profiles(id) ON DELETE CASCADE,
+  status            match_status NOT NULL DEFAULT 'pending',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  responded_at      TIMESTAMPTZ,
+  UNIQUE (male_profile_id, female_profile_id)
+);
+
+-- ── 관리자 메모 ──────────────────────────────────────────────────
+
+CREATE TABLE admin_notes (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content    TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS: admin_notes는 관리자만 접근 가능 (일반 회원 API에 절대 노출 금지)
+ALTER TABLE admin_notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY admin_notes_admin_only ON admin_notes
+  FOR ALL
+  USING (
+    auth.uid() IN (SELECT id FROM admins)
+  )
+  WITH CHECK (
+    auth.uid() IN (SELECT id FROM admins)
+  );
+
 -- ── 인덱스 ───────────────────────────────────────────────────────
+
+CREATE INDEX idx_admin_notes_user ON admin_notes(user_id, created_at DESC);
 
 -- 목록 조회
 CREATE INDEX idx_male_profiles_created_at   ON male_profiles(created_at DESC);
@@ -402,6 +482,9 @@ CREATE INDEX idx_match_requests_female ON match_requests(female_profile_id, stat
 
 -- 장바구니 조회
 CREATE INDEX idx_cart_items_female ON cart_items(female_profile_id);
+
+-- MD 추천 조회
+CREATE INDEX idx_md_recommendations_male ON md_recommendations(male_profile_id, status);
 ```
 
 ---
@@ -449,12 +532,19 @@ ORDER BY mp.created_at DESC
 LIMIT 20 OFFSET :offset;
 ```
 
-### 남성 - 나를 선택한 여성 목록
+### 남성 - 나를 선택한 여성 목록 (매칭 요청 + MD 추천 통합)
 ```sql
-SELECT fp.*, mr.status, mr.requested_at
+SELECT fp.*, mr.status, mr.requested_at, 'match_request' AS source
 FROM match_requests mr
 JOIN female_profiles fp ON fp.id = mr.female_profile_id
 WHERE mr.male_profile_id = :my_male_profile_id
-  AND mr.status = 'pending'
-ORDER BY mr.requested_at DESC;
+
+UNION ALL
+
+SELECT fp.*, md.status, md.created_at AS requested_at, 'md_recommendation' AS source
+FROM md_recommendations md
+JOIN female_profiles fp ON fp.id = md.female_profile_id
+WHERE md.male_profile_id = :my_male_profile_id
+
+ORDER BY requested_at DESC;
 ```

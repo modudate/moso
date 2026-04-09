@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { User, MatchRequest } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 
-const ADMIN_PW = "ourmo2026";
 const PER_PAGE = 20;
 
 function isNew(createdAt: string) {
@@ -49,8 +49,6 @@ function buildMatchMap(matches: MatchRequest[], users: User[]) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [authed, setAuthed] = useState(false);
-  const [pw, setPw] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [matches, setMatches] = useState<MatchRequest[]>([]);
   const [matchMap, setMatchMap] = useState<Map<string, MatchSummary>>(new Map());
@@ -75,9 +73,8 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (authed) fetchData(); }, [authed]);
-
-  const handleLogin = () => { if (pw === ADMIN_PW) setAuthed(true); };
+  // TODO: 실제 Google OAuth 연동 시 admins 테이블 체크로 교체
+  useEffect(() => { fetchData(); }, []);
 
   const handleApprove = async (id: string) => {
     const expires = new Date();
@@ -113,27 +110,12 @@ export default function AdminPage() {
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  if (!authed) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light via-background to-white px-4">
-        <div className="bg-card rounded-3xl shadow-xl p-10 max-w-sm w-full space-y-6">
-          <h1 className="text-2xl font-bold text-center">관리자 로그인</h1>
-          <p className="text-center text-xs text-muted-fg bg-muted rounded-lg px-3 py-2">데모 비밀번호: {ADMIN_PW}</p>
-          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호"
-            className="w-full px-5 py-3 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
-          <button onClick={handleLogin} className="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-colors">로그인</button>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold">OUR<span className="text-primary">MO</span> <span className="text-sm font-normal text-muted-fg">관리자</span></h1>
-          <button onClick={() => setAuthed(false)} className="text-xs text-muted-fg hover:text-foreground">로그아웃</button>
+          <Link href="/" className="text-xs text-muted-fg hover:text-foreground">홈으로</Link>
         </div>
       </header>
 

@@ -32,12 +32,16 @@ export default function FemalePage() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    // TODO: 실제 Google OAuth 연동 시 Supabase Auth로 교체
     const stored = localStorage.getItem("ourmo_user");
-    if (!stored) { router.push("/login"); return; }
-    const u = JSON.parse(stored);
-    if (u.gender !== "여자") { router.push("/male"); return; }
-    setCurrentUser(u);
-    fetchData(u.id);
+    if (stored) {
+      const u = JSON.parse(stored);
+      setCurrentUser(u);
+      fetchData(u.id);
+    } else {
+      setCurrentUser({ id: "dev-female", name: "개발용여성", gender: "여자" } as User);
+      fetchData("dev-female");
+    }
   }, [router]);
 
   const fetchData = async (userId: string) => {
@@ -86,7 +90,7 @@ export default function FemalePage() {
             <Link href="/female/cart" className="relative px-3 py-1.5 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
               매칭 요청 목록 {cart.size > 0 && <span className="ml-1 bg-primary text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center">{cart.size}</span>}
             </Link>
-            <button onClick={() => { localStorage.removeItem("ourmo_user"); router.push("/login"); }} className="text-xs text-muted-fg hover:text-foreground">로그아웃</button>
+            <Link href="/" className="text-xs text-muted-fg hover:text-foreground">홈으로</Link>
           </div>
         </div>
       </header>
