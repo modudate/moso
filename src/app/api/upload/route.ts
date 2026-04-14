@@ -34,12 +34,10 @@ export async function POST(req: NextRequest) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // EXIF/GPS 메타데이터 제거 + 리사이즈 + WebP 변환
   const processed = await sharp(buffer)
     .rotate()
     .resize(1200, 1600, { fit: "inside", withoutEnlargement: true })
-    .withMetadata({})
-    .webp({ quality: 85 })
+    .webp({ quality: 85, effort: 2 })
     .toBuffer();
 
   const fileName = `${user.id}/${category}-${nanoid()}.webp`;

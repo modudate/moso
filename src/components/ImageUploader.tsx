@@ -11,6 +11,32 @@ interface ImageUploaderProps {
   label?: string;
 }
 
+function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("리사이즈 실패"))),
+        "image/webp",
+        quality,
+      );
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export default function ImageUploader({ value, category, onUploaded, onRemove, size = "md", label }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(value);
@@ -21,8 +47,9 @@ export default function ImageUploader({ value, category, onUploaded, onRemove, s
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
+      const resized = await resizeImage(file, 1200, 1600, 0.85);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", new File([resized], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
       formData.append("category", category);
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
@@ -44,6 +71,7 @@ export default function ImageUploader({ value, category, onUploaded, onRemove, s
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleUpload(file);
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handleDrop = (e: React.DragEvent) => {

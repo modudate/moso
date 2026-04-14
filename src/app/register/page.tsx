@@ -321,14 +321,14 @@ export default function RegisterPage() {
 
             <Field label="저의 매력은">
               <textarea value={charm} onChange={(e) => { if (e.target.value.length <= 200) setCharm(e.target.value); }}
-                placeholder="본인의 매력포인트를 자유롭게 적어주세요" rows={3} maxLength={200}
+                placeholder="저의 매력을 자유롭게 적어주세요" rows={3} maxLength={200}
                 className="input-field resize-none" />
               <span className="text-xs text-muted-fg">{charm.length}/200자</span>
             </Field>
 
             <Field label="연인이 생기면 하고 싶은 일은">
               <textarea value={datingStyle} onChange={(e) => { if (e.target.value.length <= 200) setDatingStyle(e.target.value); }}
-                placeholder="연애스타일을 자유롭게 적어주세요" rows={3} maxLength={200}
+                placeholder="연인이 생기면 함께 하고 싶은 일을 적어주세요" rows={3} maxLength={200}
                 className="input-field resize-none" />
               <span className="text-xs text-muted-fg">{datingStyle.length}/200자</span>
             </Field>
