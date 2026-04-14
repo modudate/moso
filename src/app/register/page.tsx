@@ -1,241 +1,519 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BIRTH_YEARS, GENDERS, CITIES, DISTRICTS, EDUCATIONS,
-  JOB_TYPES, SALARIES, SMOKING, MBTI_TYPES, PRIORITIES,
+  GENDERS, BIRTH_YEARS, CITIES, DISTRICTS, EDUCATIONS, WORKPLACES, JOBS,
+  WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, AGE_RANGES,
+  HEIGHT_RANGES, TOP_PRIORITIES,
 } from "@/lib/options";
+import MultiImageUploader from "@/components/MultiImageUploader";
+import ImageUploader from "@/components/ImageUploader";
 
-interface StepConfig {
-  key: string;
-  title: string;
-  subtitle?: string;
-  type: "text" | "select" | "phone" | "image" | "email" | "password" | "number" | "city-district";
-  options?: string[];
-  placeholder?: string;
-}
-
-const STEPS: StepConfig[] = [
-  { key: "email", title: "이메일을 입력해주세요", subtitle: "로그인에 사용됩니다.", type: "email", placeholder: "example@email.com" },
-  { key: "password", title: "비밀번호를 설정해주세요", type: "password", placeholder: "4자리 이상" },
-  { key: "image", title: "프로필 사진을 등록해주세요!", subtitle: "이성에게 공개됩니다.", type: "image" },
-  { key: "name", title: "성함을 알려주세요!", type: "text", placeholder: "홍길동" },
-  { key: "gender", title: "성별을 선택해주세요!", type: "select", options: [...GENDERS] },
-  { key: "birthYear", title: "출생년도를 알려주세요!", type: "select", options: BIRTH_YEARS },
-  { key: "region", title: "거주지를 선택해주세요!", type: "city-district" },
-  { key: "education", title: "학력을 알려주세요!", subtitle: "이성에게 공개됩니다.", type: "select", options: EDUCATIONS },
-  { key: "height", title: "키를 알려주세요! (cm)", subtitle: "이성에게 공개됩니다.", type: "number", placeholder: "178" },
-  { key: "job", title: "직무를 알려주세요!", subtitle: "이성에게 공개됩니다.", type: "text", placeholder: "공무원_행정직, IT회사_개발자" },
-  { key: "jobType", title: "직업 형태를 선택해주세요!", subtitle: "이성에게 공개됩니다.", type: "select", options: JOB_TYPES },
-  { key: "salary", title: "연봉을 알려주세요!", subtitle: "이성에게 공개됩니다.", type: "select", options: SALARIES },
-  { key: "smoking", title: "흡연을 하시나요?", subtitle: "이성에게 공개됩니다.", type: "select", options: SMOKING },
-  { key: "mbti", title: "MBTI를 알려주세요!", subtitle: "이성에게 공개됩니다.", type: "select", options: MBTI_TYPES },
-  { key: "charm", title: "매력포인트를 알려주세요!", subtitle: "이성에게 공개됩니다.", type: "text", placeholder: "예: 유머감각이 좋아요" },
-  { key: "datingStyle", title: "연애스타일을 알려주세요!", subtitle: "이성에게 공개됩니다.", type: "text", placeholder: "예: 매일 연락하는 스타일" },
-  { key: "phone", title: "연락처를 알려주세요.", subtitle: "비상 시 외에는 사용되지 않습니다.", type: "phone", placeholder: "01012345678" },
-  { key: "idealHeight", title: "이상형의 키를 선택해주세요!", subtitle: "이상형 정보 입력", type: "select", options: ["151 ~ 155","156 ~ 160","161 ~ 165","166 ~ 170","171 ~ 175","176 ~ 180","181 ~ 185","185 이상"] },
-  { key: "idealAge", title: "이상형의 나이 범위를 선택해주세요!", subtitle: "이상형 정보 입력", type: "select", options: ["2006년 ~ 1997년","1996년 ~ 1994년","1993년 ~ 1990년","1989년 ~ 1987년","1986년 ~ 1984년","1983년 ~ 1981년"] },
-  { key: "idealRegion", title: "이상형의 거주지를 선택해주세요!", subtitle: "이상형 정보 입력", type: "city-district" },
-  { key: "idealSmoking", title: "이상형의 흡연여부를 선택해주세요!", subtitle: "이상형 정보 입력", type: "select", options: SMOKING },
-  { key: "idealEducation", title: "이상형의 학력을 선택해주세요!", subtitle: "이상형 정보 입력", type: "select", options: EDUCATIONS },
-  { key: "idealJobType", title: "이상형의 직업 형태를 선택해주세요!", subtitle: "이상형 정보 입력", type: "select", options: JOB_TYPES },
-  { key: "idealSalary", title: "이상형의 연봉을 선택해주세요!", subtitle: "이상형 정보 입력", type: "select", options: SALARIES },
-  { key: "priority", title: "가장 중요한 우선순위를 선택해주세요!", type: "select", options: PRIORITIES },
-];
+type Step = 1 | 2;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState<Step>(1);
 
-  const current = STEPS[step];
-  const totalSteps = STEPS.length;
-  const progress = ((step + 1) / totalSteps) * 100;
-  const isIdealSection = step >= 17;
+  const [realName, setRealName] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [gender, setGender] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [height, setHeight] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+  const [workplace, setWorkplace] = useState("");
+  const [job, setJob] = useState("");
+  const [workPattern, setWorkPattern] = useState("");
+  const [salary, setSalary] = useState("");
+  const [education, setEducation] = useState("");
+  const [smoking, setSmoking] = useState("");
+  const [mbti, setMbti] = useState("");
+  const [charm, setCharm] = useState("");
+  const [datingStyle, setDatingStyle] = useState("");
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [charmPhotoUrl, setCharmPhotoUrl] = useState<string | null>(null);
+  const [datePhotoUrl, setDatePhotoUrl] = useState<string | null>(null);
 
-  const setValue = (val: string) => setFormData((p) => ({ ...p, [current.key]: val }));
+  const [idealAge, setIdealAge] = useState("");
+  const [idealMinHeight, setIdealMinHeight] = useState("");
+  const [idealMaxHeight, setIdealMaxHeight] = useState("");
+  const [idealCities, setIdealCities] = useState<string[]>([]);
+  const [idealWorkplaces, setIdealWorkplaces] = useState<string[]>([]);
+  const [idealSalaries, setIdealSalaries] = useState<string[]>([]);
+  const [idealEducation, setIdealEducation] = useState<string[]>([]);
+  const [idealSmoking, setIdealSmoking] = useState("");
+  const [idealMbti, setIdealMbti] = useState<string[]>([]);
+  const [topPriorities, setTopPriorities] = useState<string[]>([]);
 
-  const canNext = () => {
-    const v = formData[current.key]?.trim();
-    if (!v) return current.type === "image";
-    if (current.type === "email") return v.includes("@");
-    if (current.type === "password") return v.length >= 4;
-    if (current.type === "city-district") return !!formData[current.key + "_city"];
-    return true;
+  const [error, setError] = useState("");
+
+  const districtOptions = DISTRICTS[city] || [];
+  const jobOptions = JOBS[workplace] || [];
+
+  const toggleMulti = (arr: string[], val: string, setter: (v: string[]) => void) => {
+    setter(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val]);
   };
 
-  const next = () => { if (step < totalSteps - 1) setStep(s => s + 1); else handleSubmit(); };
-  const prev = () => { if (step > 0) setStep(s => s - 1); };
+  const togglePriority = (val: string) => {
+    if (topPriorities.includes(val)) {
+      setTopPriorities(topPriorities.filter(v => v !== val));
+    } else if (topPriorities.length < 4) {
+      setTopPriorities([...topPriorities, val]);
+    }
+  };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setValue(reader.result as string);
-    reader.readAsDataURL(file);
+  const validateStep1 = () => {
+    if (!realName.trim()) return "본명을 입력해주세요";
+    if (!nickname.trim()) return "닉네임을 입력해주세요";
+    if (!gender) return "성별을 선택해주세요";
+    if (!birthYear) return "출생년도를 선택해주세요";
+    if (!height || isNaN(Number(height)) || Number(height) < 130 || Number(height) > 230) return "키를 정확히 입력해주세요 (130~230)";
+    if (!/^010-\d{4}-\d{4}$/.test(phone)) return "전화번호를 올바르게 입력해주세요 (010-0000-0000)";
+    if (!city) return "거주지(시/도)를 선택해주세요";
+    if (districtOptions.length > 0 && !district) return "거주지(구역)를 선택해주세요";
+    if (!workplace) return "직장을 선택해주세요";
+    if (jobOptions.length > 0 && !job) return "직업을 선택해주세요";
+    if (!workPattern) return "근무패턴을 선택해주세요";
+    if (!salary) return "연봉을 선택해주세요";
+    if (!education) return "학력을 선택해주세요";
+    if (!smoking) return "흡연 여부를 선택해주세요";
+    if (!mbti) return "MBTI를 선택해주세요";
+    if (!charm.trim()) return "매력을 입력해주세요";
+    if (!datingStyle.trim()) return "연애스타일을 입력해주세요";
+    return "";
+  };
+
+  const validateStep2 = () => {
+    if (!idealAge) return "선호 나이를 선택해주세요";
+    if (!idealMinHeight || !idealMaxHeight) return "선호 키 범위를 입력해주세요";
+    if (Number(idealMinHeight) > Number(idealMaxHeight)) return "선호 키: 최소가 최대보다 클 수 없습니다";
+    if (idealCities.length === 0) return "선호 거주지를 1개 이상 선택해주세요";
+    if (idealWorkplaces.length === 0) return "선호 직장을 1개 이상 선택해주세요";
+    if (idealSalaries.length === 0) return "선호 연봉을 1개 이상 선택해주세요";
+    if (idealEducation.length === 0) return "선호 학력을 1개 이상 선택해주세요";
+    if (!idealSmoking) return "선호 흡연여부를 선택해주세요";
+    if (idealMbti.length === 0) return "선호 MBTI를 1개 이상 선택해주세요";
+    if (topPriorities.length !== 4) return "최애 포인트를 정확히 4개 선택해주세요";
+    return "";
+  };
+
+  const handleNext = () => {
+    const err = validateStep1();
+    if (err) { setError(err); return; }
+    setError("");
+    setStep(2);
+    window.scrollTo(0, 0);
   };
 
   const handleSubmit = async () => {
-    setSubmitting(true);
-    try {
-      const payload = {
-        action: "register",
-        email: formData.email,
-        password: formData.password,
-        image: formData.image || "",
-        name: formData.name,
-        gender: formData.gender,
-        birthYear: formData.birthYear,
-        city: formData.region_city || "",
-        district: formData.region_district || "",
-        education: formData.education,
-        height: formData.height,
-        job: formData.job,
-        jobType: formData.jobType,
-        salary: formData.salary,
-        smoking: formData.smoking,
-        mbti: formData.mbti,
-        charm: formData.charm,
-        datingStyle: formData.datingStyle,
-        phone: formData.phone,
-        idealHeight: formData.idealHeight,
-        idealAge: formData.idealAge,
-        idealCity: formData.idealRegion_city || "",
-        idealDistrict: formData.idealRegion_district || "",
-        idealSmoking: formData.idealSmoking,
-        idealEducation: formData.idealEducation,
-        idealJobType: formData.idealJobType,
-        idealSalary: formData.idealSalary,
-        priority: formData.priority,
-      };
-      const res = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) setDone(true);
-    } finally { setSubmitting(false); }
+    const err = validateStep2();
+    if (err) { setError(err); return; }
+    setError("");
+
+    const body = {
+      realName: realName.trim(),
+      nickname: nickname.trim(),
+      role: gender === "남" ? "male" : "female",
+      birthYear: parseInt(birthYear),
+      height: parseInt(height),
+      phone,
+      city,
+      district: district || "",
+      workplace,
+      job: job || workplace,
+      workPattern,
+      salary,
+      education,
+      smoking: smoking === "유",
+      mbti,
+      charm: charm.trim(),
+      datingStyle: datingStyle.trim(),
+      idealType: {
+        idealAge,
+        idealMinHeight: parseInt(idealMinHeight),
+        idealMaxHeight: parseInt(idealMaxHeight),
+        idealCities,
+        idealWorkplaces,
+        idealJobs: [],
+        idealSalaries,
+        idealEducation,
+        idealSmoking: idealSmoking === "상관없음" ? null : idealSmoking === "비흡연",
+        idealMbti,
+        topPriorities,
+      },
+    };
+
+    const useSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const endpoint = useSupabase ? "/api/register" : "/api/profiles";
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      router.push("/register/complete");
+    } else {
+      const data = await res.json();
+      setError(data.error || "등록에 실패했습니다");
+    }
   };
 
-  if (done) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light via-background to-white px-4">
-        <div className="bg-card rounded-3xl shadow-xl p-10 text-center space-y-6 max-w-md w-full">
-          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-          </div>
-          <h2 className="text-2xl font-bold">회원가입이 완료되었습니다!</h2>
-          <p className="text-muted-fg">관리자 승인 후 서비스 이용이 가능합니다.</p>
-          <button onClick={() => router.push("/login")} className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-colors">
-            로그인 페이지로
-          </button>
-        </div>
-      </main>
-    );
-  }
+  const formatPhone = (v: string) => {
+    const digits = v.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light via-background to-white flex flex-col">
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-4">
-          <button onClick={prev} disabled={step === 0} className="text-muted-fg hover:text-foreground disabled:opacity-30 transition-colors">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <div className="flex-1"><div className="h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} /></div></div>
-          <span className="text-sm font-medium text-muted-fg whitespace-nowrap">{step + 1} / {totalSteps}</span>
+    <main className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
+        <div className="max-w-[430px] mx-auto px-5 py-4 flex items-center gap-3">
+          {step === 2 ? (
+            <button onClick={() => { setStep(1); setError(""); window.scrollTo(0, 0); }} className="text-white/80 hover:text-white">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+          ) : (
+            <button onClick={() => router.push("/")} className="text-white/80 hover:text-white">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+          )}
+          <h1 className="text-lg font-bold text-white flex-1">회원가입</h1>
+          <span className="text-white/70 text-sm">{step} / 2</span>
         </div>
-      </div>
+      </header>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-2xl space-y-8">
-          <div className="text-center space-y-2">
-            {isIdealSection && <span className="inline-block px-3 py-1 bg-accent/10 text-accent text-sm font-semibold rounded-full mb-2">이상형 정보</span>}
-            <h2 className="text-2xl sm:text-3xl font-bold">{current.title}</h2>
-            {current.subtitle && <p className="text-muted-fg text-sm">{current.subtitle}</p>}
-          </div>
+      <div className="max-w-[430px] mx-auto px-5 py-6">
+        <div className="flex gap-1 mb-6">
+          <div className="flex-1 h-1 rounded-full" style={{ backgroundColor: "#ff8a3d" }} />
+          <div className="flex-1 h-1 rounded-full" style={{ backgroundColor: step === 2 ? "#ff8a3d" : "#e5e5e5" }} />
+        </div>
 
-          <div className="space-y-4">
-            {current.type === "image" && (
-              <div className="flex flex-col items-center gap-4">
-                <div onClick={() => fileInputRef.current?.click()} className="w-40 h-40 rounded-full border-3 border-dashed border-primary/40 flex items-center justify-center cursor-pointer hover:border-primary transition-colors bg-white overflow-hidden">
-                  {formData.image ? <img src={formData.image} alt="" className="w-full h-full object-cover" /> :
-                    <div className="text-center text-muted-fg"><svg className="w-10 h-10 mx-auto mb-1 text-primary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg><span className="text-xs">사진 업로드</span></div>}
-                </div>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-              </div>
-            )}
-            {(current.type === "text" || current.type === "email" || current.type === "password" || current.type === "number") && (
-              <input type={current.type === "number" ? "number" : current.type} value={formData[current.key] || ""} onChange={(e) => setValue(e.target.value)} placeholder={current.placeholder}
-                className="w-full px-6 py-4 rounded-2xl border border-border bg-white text-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                onKeyDown={(e) => e.key === "Enter" && canNext() && next()} />
-            )}
-            {current.type === "phone" && (
-              <input type="tel" value={formData[current.key] || ""} onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (v.length <= 11) setValue(v); }} placeholder={current.placeholder}
-                className="w-full px-6 py-4 rounded-2xl border border-border bg-white text-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary tracking-widest"
-                onKeyDown={(e) => e.key === "Enter" && canNext() && next()} />
-            )}
-            {current.type === "select" && current.options && (
-              <div className={`grid gap-3 ${current.options.length <= 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}>
-                {current.options.map((opt) => (
-                  <button key={opt} onClick={() => { setValue(opt); setTimeout(() => { if (step < totalSteps - 1) setStep(s => s + 1); else handleSubmit(); }, 200); }}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData[current.key] === opt ? "bg-primary text-white border-primary shadow-md scale-[1.02]" : "bg-white text-foreground border-border hover:border-primary/40 hover:bg-primary-light/50"}`}>
-                    {opt}
+        {error && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">{error}</div>
+        )}
+
+        {step === 1 && (
+          <div className="space-y-5">
+            <h2 className="text-xl font-bold">프로필 기본 정보</h2>
+            <p className="text-sm text-muted-fg -mt-3">모든 항목 필수 입력</p>
+
+            <Field label="본명">
+              <input type="text" value={realName} onChange={(e) => setRealName(e.target.value)} placeholder="실명을 입력해주세요"
+                className="input-field" />
+            </Field>
+
+            <Field label="닉네임">
+              <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="이성에게 보여질 닉네임"
+                className="input-field" />
+            </Field>
+
+            <Field label="성별">
+              <div className="flex gap-3">
+                {GENDERS.map(g => (
+                  <button key={g} onClick={() => setGender(g)}
+                    className={`flex-1 py-3 rounded-xl font-semibold transition-all ${gender === g ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={gender === g ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {g === "남" ? "남성" : "여성"}
                   </button>
                 ))}
               </div>
-            )}
-            {current.type === "city-district" && (
-              <CityDistrictPicker keyPrefix={current.key} formData={formData} setFormData={setFormData} onComplete={() => { if (step < totalSteps - 1) setStep(s => s + 1); else handleSubmit(); }} />
-            )}
-          </div>
+            </Field>
 
-          {current.type !== "select" && current.type !== "city-district" && (
-            <div className="flex justify-center">
-              <button onClick={next} disabled={!canNext() || submitting}
-                className="px-10 py-4 bg-primary text-white rounded-2xl font-semibold text-lg hover:bg-primary-dark transition-all disabled:opacity-40 shadow-lg hover:shadow-xl">
-                {submitting ? "등록 중..." : step === totalSteps - 1 ? "가입 완료" : "다음"}
-              </button>
+            <Field label="출생년도">
+              <select value={birthYear} onChange={(e) => setBirthYear(e.target.value)} className="input-field">
+                <option value="">선택해주세요</option>
+                {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </Field>
+
+            <Field label="키 (cm)">
+              <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="130 ~ 230" min={130} max={230}
+                className="input-field" />
+            </Field>
+
+            <Field label="전화번호">
+              <input type="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="010-0000-0000"
+                className="input-field" />
+              <p className="text-xs text-muted-fg mt-1">연락처는 비상시 외에는 절대 사용되지 않습니다</p>
+            </Field>
+
+            <Field label="거주지">
+              <div className="flex gap-3">
+                <select value={city} onChange={(e) => { setCity(e.target.value); setDistrict(""); }} className="input-field flex-1">
+                  <option value="">시/도</option>
+                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {districtOptions.length > 0 && (
+                  <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field flex-1">
+                    <option value="">구역</option>
+                    {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                )}
+              </div>
+            </Field>
+
+            <Field label="직장">
+              <select value={workplace} onChange={(e) => { setWorkplace(e.target.value); setJob(""); }} className="input-field">
+                <option value="">선택해주세요</option>
+                {WORKPLACES.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </Field>
+
+            {jobOptions.length > 0 && (
+              <Field label="직업">
+                <select value={job} onChange={(e) => setJob(e.target.value)} className="input-field">
+                  <option value="">선택해주세요</option>
+                  {jobOptions.map(j => <option key={j} value={j}>{j}</option>)}
+                </select>
+              </Field>
+            )}
+
+            <Field label="근무패턴">
+              <select value={workPattern} onChange={(e) => setWorkPattern(e.target.value)} className="input-field">
+                <option value="">선택해주세요</option>
+                {WORK_PATTERNS.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </Field>
+
+            <Field label="연봉">
+              <select value={salary} onChange={(e) => setSalary(e.target.value)} className="input-field">
+                <option value="">선택해주세요</option>
+                {SALARIES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+
+            <Field label="학력">
+              <select value={education} onChange={(e) => setEducation(e.target.value)} className="input-field">
+                <option value="">선택해주세요</option>
+                {EDUCATIONS.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </Field>
+
+            <Field label="흡연">
+              <div className="flex gap-3">
+                {SMOKING_OPTIONS.map(s => (
+                  <button key={s} onClick={() => setSmoking(s)}
+                    className={`flex-1 py-3 rounded-xl font-semibold transition-all ${smoking === s ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={smoking === s ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {s === "유" ? "흡연" : "비흡연"}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="MBTI">
+              <div className="grid grid-cols-4 gap-2">
+                {MBTI_TYPES.map(m => (
+                  <button key={m} onClick={() => setMbti(m)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition-all ${mbti === m ? "text-white shadow-md" : "bg-gray-100 text-gray-500"} ${m === "잘 모르겠어요" ? "col-span-2" : ""}`}
+                    style={mbti === m ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="저의 매력은">
+              <textarea value={charm} onChange={(e) => { if (e.target.value.length <= 200) setCharm(e.target.value); }}
+                placeholder="본인의 매력포인트를 자유롭게 적어주세요" rows={3} maxLength={200}
+                className="input-field resize-none" />
+              <span className="text-xs text-muted-fg">{charm.length}/200자</span>
+            </Field>
+
+            <Field label="연인이 생기면 하고 싶은 일은">
+              <textarea value={datingStyle} onChange={(e) => { if (e.target.value.length <= 200) setDatingStyle(e.target.value); }}
+                placeholder="연애스타일을 자유롭게 적어주세요" rows={3} maxLength={200}
+                className="input-field resize-none" />
+              <span className="text-xs text-muted-fg">{datingStyle.length}/200자</span>
+            </Field>
+
+            <div className="pt-2 space-y-5 border-t border-gray-200">
+              <MultiImageUploader
+                values={photoUrls}
+                maxCount={4}
+                category="photo"
+                onChanged={(_paths, urls) => setPhotoUrls(urls)}
+                label="대표 사진 (최대 4장)"
+              />
+
+              <ImageUploader
+                value={charmPhotoUrl}
+                category="charm"
+                onUploaded={(_path, url) => setCharmPhotoUrl(url)}
+                onRemove={() => setCharmPhotoUrl(null)}
+                label="저의 매력은 사진 (1장)"
+              />
+
+              <ImageUploader
+                value={datePhotoUrl}
+                category="date"
+                onUploaded={(_path, url) => setDatePhotoUrl(url)}
+                onRemove={() => setDatePhotoUrl(null)}
+                label="연인이 생기면 사진 (1장)"
+              />
             </div>
-          )}
-        </div>
+
+            <button onClick={handleNext}
+              className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all"
+              style={{ backgroundColor: "#ff8a3d" }}>
+              다음 →
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-5">
+            <h2 className="text-xl font-bold">이상형 정보</h2>
+            <p className="text-sm text-muted-fg -mt-3">모든 항목 필수 입력</p>
+
+            <Field label="선호 나이">
+              <select value={idealAge} onChange={(e) => setIdealAge(e.target.value)} className="input-field">
+                <option value="">선택해주세요</option>
+                {AGE_RANGES.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </Field>
+
+            <Field label="선호 키 (cm)">
+              <div className="flex items-center gap-3">
+                <input type="number" value={idealMinHeight} onChange={(e) => setIdealMinHeight(e.target.value)} placeholder="최소" min={130} max={230}
+                  className="input-field flex-1" />
+                <span className="text-muted-fg font-medium">~</span>
+                <input type="number" value={idealMaxHeight} onChange={(e) => setIdealMaxHeight(e.target.value)} placeholder="최대" min={130} max={230}
+                  className="input-field flex-1" />
+              </div>
+            </Field>
+
+            <Field label="선호 거주지 (복수 선택)">
+              <div className="flex flex-wrap gap-2">
+                {CITIES.map(c => (
+                  <button key={c} onClick={() => toggleMulti(idealCities, c, setIdealCities)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${idealCities.includes(c) ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={idealCities.includes(c) ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="선호 직장 (복수 선택)">
+              <div className="flex flex-wrap gap-2">
+                {WORKPLACES.map(w => (
+                  <button key={w} onClick={() => toggleMulti(idealWorkplaces, w, setIdealWorkplaces)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${idealWorkplaces.includes(w) ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={idealWorkplaces.includes(w) ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="선호 연봉 (복수 선택)">
+              <div className="flex flex-wrap gap-2">
+                {SALARIES.map(s => (
+                  <button key={s} onClick={() => toggleMulti(idealSalaries, s, setIdealSalaries)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${idealSalaries.includes(s) ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={idealSalaries.includes(s) ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="선호 학력 (복수 선택)">
+              <div className="flex flex-wrap gap-2">
+                {EDUCATIONS.map(e => (
+                  <button key={e} onClick={() => toggleMulti(idealEducation, e, setIdealEducation)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${idealEducation.includes(e) ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={idealEducation.includes(e) ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="선호 흡연여부">
+              <div className="flex gap-3">
+                {["비흡연", "상관없음"].map(s => (
+                  <button key={s} onClick={() => setIdealSmoking(s)}
+                    className={`flex-1 py-3 rounded-xl font-semibold transition-all ${idealSmoking === s ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={idealSmoking === s ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label="선호 MBTI (복수 선택)">
+              <div className="grid grid-cols-4 gap-2">
+                {MBTI_TYPES.map(m => (
+                  <button key={m} onClick={() => toggleMulti(idealMbti, m, setIdealMbti)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition-all ${idealMbti.includes(m) ? "text-white shadow-md" : "bg-gray-100 text-gray-500"} ${m === "잘 모르겠어요" ? "col-span-2" : ""}`}
+                    style={idealMbti.includes(m) ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field label={`나의 최애 포인트 (${topPriorities.length}/4 선택)`}>
+              <p className="text-xs text-muted-fg mb-2">가장 중요하게 생각하는 4가지를 선택해주세요</p>
+              <div className="grid grid-cols-4 gap-2">
+                {TOP_PRIORITIES.map(p => {
+                  const selected = topPriorities.includes(p);
+                  const idx = topPriorities.indexOf(p);
+                  const disabled = !selected && topPriorities.length >= 4;
+                  return (
+                    <button key={p} onClick={() => togglePriority(p)} disabled={disabled}
+                      className={`py-3 rounded-xl text-sm font-semibold transition-all relative ${selected ? "text-white shadow-md" : disabled ? "bg-gray-100 text-gray-300" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                      style={selected ? { backgroundColor: "#ff8a3d" } : {}}>
+                      {selected && <span className="absolute top-1 right-2 text-[10px] font-bold text-white/80">{idx + 1}</span>}
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+
+            <button onClick={handleSubmit}
+              className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all"
+              style={{ backgroundColor: "#ff8a3d" }}>
+              가입 신청하기
+            </button>
+          </div>
+        )}
       </div>
+
+      <style jsx>{`
+        .input-field {
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid #e5e5e5;
+          background: white;
+          font-size: 15px;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .input-field:focus {
+          border-color: #ff8a3d;
+          box-shadow: 0 0 0 3px rgba(255,138,61,0.1);
+        }
+      `}</style>
     </main>
   );
 }
 
-function CityDistrictPicker({ keyPrefix, formData, setFormData, onComplete }: {
-  keyPrefix: string; formData: Record<string, string>; setFormData: React.Dispatch<React.SetStateAction<Record<string, string>>>; onComplete: () => void;
-}) {
-  const city = formData[keyPrefix + "_city"] || "";
-  const district = formData[keyPrefix + "_district"] || "";
-  const districts = city ? (DISTRICTS[city] || []) : [];
-
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {CITIES.map((c) => (
-          <button key={c} onClick={() => {
-            setFormData(p => ({ ...p, [keyPrefix + "_city"]: c, [keyPrefix + "_district"]: "", [keyPrefix]: c }));
-            if (!DISTRICTS[c]?.length) setTimeout(onComplete, 200);
-          }}
-            className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${city === c ? "bg-primary text-white border-primary" : "bg-white text-foreground border-border hover:border-primary/40"}`}>
-            {c}
-          </button>
-        ))}
-      </div>
-      {districts.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {districts.map((d) => (
-            <button key={d} onClick={() => {
-              setFormData(p => ({ ...p, [keyPrefix + "_district"]: d, [keyPrefix]: `${city} ${d}` }));
-              setTimeout(onComplete, 200);
-            }}
-              className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${district === d ? "bg-accent text-white border-accent" : "bg-white text-foreground border-border hover:border-accent/40"}`}>
-              {d}
-            </button>
-          ))}
-        </div>
-      )}
+    <div>
+      <label className="block text-sm font-semibold text-foreground mb-2">{label}</label>
+      {children}
     </div>
   );
 }

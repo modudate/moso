@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
   const { id } = await req.json();
   const user = getUser(id);
   if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
-  updateUser(id, { blocked: !user.blocked });
-  return NextResponse.json({ success: true, blocked: !user.blocked });
+  const newStatus = user.status === "blocked" ? "active" : "blocked";
+  updateUser(id, { status: newStatus });
+  return NextResponse.json({ success: true, status: newStatus });
 }

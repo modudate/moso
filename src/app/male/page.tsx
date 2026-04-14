@@ -3,138 +3,124 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, MatchRequest } from "@/lib/types";
+import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 
-type EnrichedMatch = MatchRequest & { fromUser?: User };
+const SCROLL_KEY = "male_scroll";
+
+type FemaleCard = {
+  user: User;
+  matchId: string;
+  status: string;
+  source: "match" | "md";
+  requestedAt: string;
+};
 
 export default function MalePage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [matches, setMatches] = useState<EnrichedMatch[]>([]);
+  const [cards, setCards] = useState<FemaleCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"all" | "pending" | "accepted" | "rejected">("all");
+
+  useEffect(() => { fetchData(); }, []);
 
   useEffect(() => {
-    // TODO: 실제 Google OAuth 연동 시 Supabase Auth로 교체
-    const stored = localStorage.getItem("ourmo_user");
-    if (stored) {
-      const u = JSON.parse(stored);
-      setCurrentUser(u);
-      fetchData(u.id);
-    } else {
-      setCurrentUser({ id: "dev-male", name: "개발용남성", gender: "남자" } as User);
-      fetchData("dev-male");
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    if (saved) {
+      setTimeout(() => window.scrollTo(0, parseInt(saved)), 100);
+      sessionStorage.removeItem(SCROLL_KEY);
     }
-  }, [router]);
+  }, [loading]);
 
-  const fetchData = async (userId: string) => {
+  const fetchData = async () => {
     setLoading(true);
     const [matchRes, femalesRes] = await Promise.all([
-      fetch(`/api/match?toUserId=${userId}`),
-      fetch("/api/profiles?gender=여자&status=approved"),
+      fetch("/api/match?maleId=m-001"),
+      fetch("/api/profiles?role=female&status=active"),
     ]);
-    const matchData: MatchRequest[] = await matchRes.json();
+    const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();
     const females: User[] = await femalesRes.json();
     const femaleMap = new Map(females.map(f => [f.id, f]));
-    setMatches(matchData.map(m => ({ ...m, fromUser: femaleMap.get(m.fromUserId) })));
+
+    const result: FemaleCard[] = [];
+    for (const m of matches) {
+      const user = femaleMap.get(m.femaleProfileId);
+      if (user) result.push({ user, matchId: m.id, status: m.status, source: "match", requestedAt: m.requestedAt });
+    }
+    for (const md of mdRecs) {
+      const user = femaleMap.get(md.femaleProfileId);
+      if (user) result.push({ user, matchId: md.id, status: md.status, source: "md", requestedAt: md.createdAt });
+    }
+    result.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+    setCards(result);
     setLoading(false);
   };
 
-  const handleAction = async (e: React.MouseEvent, matchId: string, action: "accepted" | "rejected") => {
+  const handleAction = async (e: React.MouseEvent, matchId: string, status: "approved" | "rejected") => {
     e.stopPropagation();
     await fetch("/api/match", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, action }),
+      body: JSON.stringify({ matchId, status }),
     });
-    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, action } : m));
+    setCards(prev => prev.map(c => c.matchId === matchId ? { ...c, status } : c));
   };
 
-  if (loading || !currentUser) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  const handleCardClick = (id: string, matchId: string) => {
+    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    router.push(`/male/${id}?matchId=${matchId}`);
+  };
 
-  const filtered = tab === "all" ? matches : matches.filter(m => m.action === tab);
-  const pendingCount = matches.filter(m => m.action === "pending").length;
-  const acceptedCount = matches.filter(m => m.action === "accepted").length;
-  const rejectedCount = matches.filter(m => m.action === "rejected").length;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold">OUR<span className="text-primary">MO</span></h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-fg">{currentUser.name}님</span>
-            <Link href="/" className="text-xs text-muted-fg hover:text-foreground">홈으로</Link>
-          </div>
+    <main className="min-h-screen bg-background mx-auto max-w-[430px]">
+      <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
+        <div className="px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-white">모두의 모임</h1>
+          <Link href="/" className="text-xs text-white/80 hover:text-white">홈으로</Link>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        {matches.length === 0 ? (
+      <div className="px-4">
+        {cards.length === 0 ? (
           <EmptyState />
         ) : (
-          <>
-            {/* Tabs */}
-            <div className="flex gap-2 py-4 overflow-x-auto">
-              <TabBtn active={tab === "all"} onClick={() => setTab("all")} label="전체" count={matches.length} />
-              <TabBtn active={tab === "pending"} onClick={() => setTab("pending")} label="대기중" count={pendingCount} color="warning" />
-              <TabBtn active={tab === "accepted"} onClick={() => setTab("accepted")} label="매칭 확정" count={acceptedCount} color="success" />
-              <TabBtn active={tab === "rejected"} onClick={() => setTab("rejected")} label="거절" count={rejectedCount} color="muted" />
-            </div>
-
-            {/* Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 pb-6">
-              {filtered.map((m) => m.fromUser && (
-                <div key={m.id} onClick={() => router.push(`/male/${m.fromUser!.id}?matchId=${m.id}`)}
-                  className={`group rounded-2xl overflow-hidden bg-card border border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${m.action === "rejected" ? "opacity-60" : ""}`}>
-                  <div className="relative aspect-[3/4] bg-muted overflow-hidden">
-                    {m.fromUser.imageUrl ? <img src={m.fromUser.imageUrl} alt={m.fromUser.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
-                      <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{m.fromUser.name?.[0]}</div>}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-                      <h3 className="text-white font-bold text-base sm:text-lg drop-shadow-md">{m.fromUser.name}</h3>
-                      <p className="text-white/80 text-xs sm:text-sm drop-shadow-md mt-0.5">{m.fromUser.birthYear} · {m.fromUser.height}cm</p>
-                    </div>
-                    {/* Status badge */}
-                    <div className="absolute top-3 left-3">
-                      {m.action === "pending" && <span className="text-[10px] font-bold text-white bg-warning px-2 py-1 rounded-lg shadow-md">대기중</span>}
-                      {m.action === "accepted" && <span className="text-[10px] font-bold text-white bg-success px-2 py-1 rounded-lg shadow-md">매칭 확정</span>}
-                      {m.action === "rejected" && <span className="text-[10px] font-bold text-white bg-muted-fg px-2 py-1 rounded-lg shadow-md">거절됨</span>}
-                    </div>
+          <div className="grid grid-cols-2 gap-3 py-6">
+            {cards.map((c) => (
+              <div key={c.matchId} onClick={() => handleCardClick(c.user.id, c.matchId)}
+                className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
+                <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+                  {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
+                    <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{c.user.nickname?.[0]}</div>}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="absolute top-3 left-3 flex gap-1.5">
+                    {c.source === "md" && <span className="text-[10px] font-bold text-white bg-accent px-2 py-1 rounded-lg shadow-md">MD 추천</span>}
+                    {c.status === "pending" && <span className="text-[10px] font-bold text-white bg-warning px-2 py-1 rounded-lg shadow-md">대기중</span>}
+                    {c.status === "approved" && <span className="text-[10px] font-bold text-white bg-success px-2 py-1 rounded-lg shadow-md">매칭 확정</span>}
+                    {c.status === "rejected" && <span className="text-[10px] font-bold text-white bg-muted-fg px-2 py-1 rounded-lg shadow-md">거절됨</span>}
                   </div>
-                  <div className="p-3 sm:p-4 space-y-2">
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="px-2 py-0.5 bg-primary-light text-primary text-xs font-medium rounded-full">{regionLabel(m.fromUser.city, m.fromUser.district)}</span>
-                      <span className="px-2 py-0.5 bg-accent/10 text-accent text-xs font-medium rounded-full">{m.fromUser.jobType}</span>
+                  <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
+                    <h3 className="text-white font-bold text-base drop-shadow-lg">{c.user.nickname}</h3>
+                    <p className="text-white/90 text-xs drop-shadow-md">{c.user.birthYear}년생 · {c.user.height}cm</p>
+                    <div className="flex flex-wrap gap-1">
+                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{regionLabel(c.user.city, c.user.district)}</span>
+                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{c.user.workplace}</span>
+                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{c.user.mbti}</span>
                     </div>
-                    <span className="px-2 py-0.5 bg-muted text-muted-fg text-xs rounded-full">{m.fromUser.mbti}</span>
-                    {/* Quick action */}
-                    {m.action === "pending" && (
+                    {c.status === "pending" && (
                       <div className="flex gap-2 pt-1">
-                        <button onClick={(e) => handleAction(e, m.id, "accepted")} className="flex-1 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-primary-dark transition-colors">매칭 확정</button>
-                        <button onClick={(e) => handleAction(e, m.id, "rejected")} className="flex-1 py-2 bg-muted text-muted-fg text-xs font-semibold rounded-xl hover:bg-danger/10 hover:text-danger transition-colors">거절</button>
+                        <button onClick={(e) => handleAction(e, c.matchId, "approved")} className="flex-1 py-2 bg-white/90 text-[#ff8a3d] text-xs font-bold rounded-xl hover:bg-white transition-colors backdrop-blur-sm">매칭 확정</button>
+                        <button onClick={(e) => handleAction(e, c.matchId, "rejected")} className="flex-1 py-2 bg-white/20 text-white text-xs font-bold rounded-xl hover:bg-white/30 transition-colors backdrop-blur-sm">거절</button>
                       </div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </main>
-  );
-}
-
-function TabBtn({ active, onClick, label, count, color }: { active: boolean; onClick: () => void; label: string; count: number; color?: string }) {
-  const colorCls = color === "success" ? "text-success" : color === "warning" ? "text-warning" : color === "muted" ? "text-muted-fg" : "text-foreground";
-  return (
-    <button onClick={onClick}
-      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${active ? "bg-primary text-white shadow-md" : "bg-white border border-border hover:border-primary/30"}`}>
-      {label}
-      <span className={`text-xs ${active ? "text-white/80" : colorCls}`}>{count}</span>
-    </button>
   );
 }
 

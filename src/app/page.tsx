@@ -1,7 +1,22 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+
+const IS_DEV = process.env.NODE_ENV === "development";
 
 export default function Home() {
+  const handleGoogleLogin = async () => {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "#ff8a3d" }}>
       <div className="flex-1 flex items-center justify-center">
@@ -15,29 +30,19 @@ export default function Home() {
       </div>
 
       <div className="w-full px-6 pb-12 flex flex-col items-center gap-3">
-        <div className="flex gap-3 w-full max-w-sm">
-          <Link
-            href="/female"
-            className="flex-1 py-3 bg-pink-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-pink-600 transition-colors"
-          >
-            여성
-          </Link>
-          <Link
-            href="/male"
-            className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-blue-600 transition-colors"
-          >
-            남성
-          </Link>
-          <Link
-            href="/admin"
-            className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-semibold text-center shadow-md hover:bg-gray-800 transition-colors"
-          >
-            관리자
-          </Link>
-        </div>
+        {IS_DEV && (
+          <>
+            <div className="flex gap-3 w-full max-w-sm">
+              <Link href="/female" className="flex-1 py-3 bg-pink-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-pink-600 transition-colors">여성</Link>
+              <Link href="/male" className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-blue-600 transition-colors">남성</Link>
+              <Link href="/admin" className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-semibold text-center shadow-md hover:bg-gray-800 transition-colors">관리자</Link>
+            </div>
+            <Link href="/register" className="w-full max-w-sm py-3 bg-white/20 text-white rounded-xl font-semibold text-center border border-white/40 hover:bg-white/30 transition-colors">회원가입</Link>
+          </>
+        )}
 
-        <a
-          href="/api/auth/google"
+        <button
+          onClick={handleGoogleLogin}
           className="flex items-center justify-center gap-3 w-full max-w-sm px-6 py-4 bg-white rounded-2xl font-semibold text-gray-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
         >
           <svg width="20" height="20" viewBox="0 0 48 48">
@@ -47,7 +52,7 @@ export default function Home() {
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
           Google 계정으로 계속하기
-        </a>
+        </button>
       </div>
     </main>
   );

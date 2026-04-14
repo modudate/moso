@@ -1,249 +1,563 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { User, MatchRequest } from "@/lib/types";
-import { regionLabel, EDUCATIONS, JOB_TYPES, SALARIES, SMOKING, MBTI_TYPES, PRIORITIES, BIRTH_YEARS, CITIES, DISTRICTS } from "@/lib/options";
+import { User, IdealType, AdminNote, MdRecommendation, MatchRequest } from "@/lib/types";
+import { regionLabel, smokingLabel, EDUCATIONS, WORKPLACES, JOBS, WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, BIRTH_YEARS, CITIES, DISTRICTS } from "@/lib/options";
 
-const ADMIN_PW = "ourmo2026";
-
-const HEIGHTS_OPTS = ["151 ~ 155","156 ~ 160","161 ~ 165","166 ~ 170","171 ~ 175","176 ~ 180","181 ~ 185","185 이상"];
-const AGE_RANGES = ["2006년 ~ 1997년","1996년 ~ 1994년","1993년 ~ 1990년","1989년 ~ 1987년","1986년 ~ 1984년","1983년 ~ 1981년"];
-
-interface FieldDef {
-  key: keyof User;
-  label: string;
-  type: "text" | "select" | "city-district";
-  options?: string[];
-  cityKey?: keyof User;
-  districtKey?: keyof User;
-}
-
-const PROFILE_FIELDS: FieldDef[] = [
-  { key: "name", label: "이름", type: "text" },
-  { key: "gender", label: "성별", type: "select", options: ["남자", "여자"] },
-  { key: "birthYear", label: "출생년도", type: "select", options: BIRTH_YEARS },
-  { key: "city", label: "거주지", type: "city-district", cityKey: "city", districtKey: "district" },
-  { key: "education", label: "학력", type: "select", options: EDUCATIONS },
-  { key: "height", label: "키(cm)", type: "text" },
-  { key: "job", label: "직무", type: "text" },
-  { key: "jobType", label: "직업형태", type: "select", options: JOB_TYPES },
-  { key: "salary", label: "연봉", type: "select", options: SALARIES },
-  { key: "smoking", label: "흡연", type: "select", options: SMOKING },
-  { key: "mbti", label: "MBTI", type: "select", options: MBTI_TYPES },
-  { key: "charm", label: "매력포인트", type: "text" },
-  { key: "datingStyle", label: "연애스타일", type: "text" },
-  { key: "phone", label: "연락처", type: "text" },
-];
-
-const IDEAL_FIELDS: FieldDef[] = [
-  { key: "idealHeight", label: "이상형 키", type: "select", options: HEIGHTS_OPTS },
-  { key: "idealAge", label: "이상형 나이", type: "select", options: AGE_RANGES },
-  { key: "idealCity", label: "이상형 거주지", type: "city-district", cityKey: "idealCity", districtKey: "idealDistrict" },
-  { key: "idealSmoking", label: "이상형 흡연", type: "select", options: SMOKING },
-  { key: "idealEducation", label: "이상형 학력", type: "select", options: EDUCATIONS },
-  { key: "idealJobType", label: "이상형 직업형태", type: "select", options: JOB_TYPES },
-  { key: "idealSalary", label: "이상형 연봉", type: "select", options: SALARIES },
-  { key: "priority", label: "우선순위", type: "select", options: PRIORITIES },
-];
+const MD_PER_PAGE = 6;
 
 export default function AdminDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const { id: userId } = use(params);
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [matches, setMatches] = useState<(MatchRequest & { otherUser?: User })[]>([]);
+  const [idealType, setIdealType] = useState<IdealType | null>(null);
+  const [notes, setNotes] = useState<AdminNote[]>([]);
+  const [mdRecs, setMdRecs] = useState<MdRecommendation[]>([]);
+  const [matches, setMatches] = useState<MatchRequest[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [imageModal, setImageModal] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [newNote, setNewNote] = useState("");
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [mdTarget, setMdTarget] = useState("");
+  const [showMdForm, setShowMdForm] = useState(false);
+  const [mdSearch, setMdSearch] = useState("");
+  const [mdPage, setMdPage] = useState(1);
+  const [editingPhoto, setEditingPhoto] = useState<string | null>(null);
+  const [photoInput, setPhotoInput] = useState("");
 
-  useEffect(() => {
-    fetchDetail();
-  }, [id]);
+  useEffect(() => { fetchData(); }, [userId]);
 
-  const fetchDetail = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const res = await fetch("/api/profiles");
-    const allUsers: User[] = await res.json();
-    const found = allUsers.find(u => u.id === id);
-    if (!found) { router.push("/admin"); return; }
-    setUser(found);
+    const [detailRes, matchRes, usersRes] = await Promise.all([
+      fetch(`/api/profiles?id=${userId}`),
+      fetch(`/api/match?all=true`),
+      fetch("/api/profiles"),
+    ]);
+    const detail = await detailRes.json();
+    const allMatches: MatchRequest[] = await matchRes.json();
+    const users: User[] = await usersRes.json();
 
-    const mRes = found.gender === "남자"
-      ? await fetch(`/api/match?toUserId=${id}`)
-      : await fetch(`/api/match?fromUserId=${id}`);
-    const matchData: MatchRequest[] = await mRes.json();
-    const enriched = matchData.map(m => {
-      const otherId = found.gender === "남자" ? m.fromUserId : m.toUserId;
-      return { ...m, otherUser: allUsers.find(u => u.id === otherId) };
-    });
-    setMatches(enriched);
+    setUser(detail.user);
+    setIdealType(detail.idealType || null);
+    setNotes(detail.notes || []);
+    setMdRecs(detail.mdRecs || []);
+    setAllUsers(users);
+    const userMatches = allMatches.filter(m => m.femaleProfileId === userId || m.maleProfileId === userId);
+    setMatches(userMatches);
     setLoading(false);
   };
 
-  const updateField = async (key: string, value: string) => {
-    if (!user) return;
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: user.id, [key]: value }) });
-    setUser(prev => prev ? { ...prev, [key]: value } : null);
+  const saveField = async (key: string, value: unknown) => {
+    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: userId, [key]: value }) });
+    setUser(prev => prev ? { ...prev, [key]: value } : prev);
+    setEditing(null);
   };
 
-  const updateExpires = async (date: string) => {
-    if (!user) return;
-    const val = new Date(date).toISOString();
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: user.id, expiresAt: val }) });
-    setUser(prev => prev ? { ...prev, expiresAt: val } : null);
+  const handleDoubleClick = (key: string, currentValue: string) => { setEditing(key); setEditValue(String(currentValue)); };
+  const handleKeyDown = (e: React.KeyboardEvent, key: string) => { if (e.key === "Enter") saveField(key, editValue); if (e.key === "Escape") setEditing(null); };
+
+  const sendMdRecommendation = async () => {
+    if (!mdTarget) return;
+    const res = await fetch("/api/md-recommendation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ maleProfileId: userId, femaleProfileId: mdTarget }),
+    });
+    const data = await res.json();
+    if (res.ok && data.md) {
+      setMdRecs(prev => [...prev, data.md]);
+    }
+    setMdTarget("");
+    setShowMdForm(false);
+    setMdSearch("");
+    setMdPage(1);
   };
+
+  const alreadyRecommended = useMemo(() => new Set(mdRecs.map(md => md.femaleProfileId)), [mdRecs]);
+
+  const mdCandidates = useMemo(() => {
+    let list = allUsers.filter(u => u.role === "female" && u.status === "active" && !alreadyRecommended.has(u.id));
+    if (mdSearch.length >= 1) {
+      list = list.filter(u => u.realName.includes(mdSearch) || u.nickname.includes(mdSearch) || u.phone.includes(mdSearch));
+    }
+    return list;
+  }, [allUsers, alreadyRecommended, mdSearch]);
+
+  const mdTotalPages = Math.ceil(mdCandidates.length / MD_PER_PAGE);
+  const mdPaged = mdCandidates.slice((mdPage - 1) * MD_PER_PAGE, mdPage * MD_PER_PAGE);
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
-  const expired = user.expiresAt && new Date(user.expiresAt) < new Date();
+  const getUser = (id: string) => allUsers.find(u => u.id === id);
+  const getUserName = (id: string) => { const u = getUser(id); return u ? `${u.realName} (${u.nickname})` : id; };
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
+      {lightbox && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setLightbox(null)}>
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <img src={lightbox} alt="원본" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
+      <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <button onClick={() => router.push("/admin")} className="text-muted-fg hover:text-foreground">
+          <button onClick={() => router.push("/admin")} className="text-white/80 hover:text-white">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h1 className="text-lg font-bold flex-1">{user.name} 상세</h1>
+          <h1 className="text-lg font-bold flex-1 text-white">{user.realName} ({user.nickname})</h1>
+          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${user.status === "active" ? "bg-white/20 text-white" : user.status === "pending" ? "bg-yellow-300/30 text-white" : user.status === "blocked" ? "bg-red-600/30 text-white" : "bg-white/10 text-white/70"}`}>
+            {user.status}
+          </span>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-        {/* Profile Image & Status */}
-        <div className="flex flex-col sm:flex-row gap-6 items-start">
-          <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-4 ring-primary/20 transition-all" onClick={() => setImageModal(true)}>
-            {user.imageUrl ? <img src={user.imageUrl} alt={user.name} className="w-full h-full object-cover" /> :
-              <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-primary/20">{user.name?.[0]}</div>}
-          </div>
-          <div className="space-y-3 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-2xl font-bold">{user.name}</h2>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${user.status === "approved" ? "bg-success/10 text-success" : user.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
-                {user.status === "approved" ? "승인됨" : user.status === "pending" ? "승인대기" : "반려됨"}
-              </span>
-              {user.blocked && <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-muted text-muted-fg">차단됨</span>}
-            </div>
-            <p className="text-sm text-muted-fg">가입일: {new Date(user.createdAt).toLocaleDateString("ko-KR")}</p>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-fg">만료일:</span>
-              <input type="date"
-                value={user.expiresAt ? new Date(user.expiresAt).toISOString().split("T")[0] : ""}
-                onChange={(e) => updateExpires(e.target.value)}
-                className={`text-sm px-3 py-1.5 rounded-lg border ${expired ? "border-danger text-danger" : "border-border"} bg-white focus:outline-none focus:ring-2 focus:ring-primary/30`} />
-              {expired && <span className="text-xs text-danger font-semibold">만료됨</span>}
-            </div>
-          </div>
-        </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* 사진 관리 */}
+        <section className="bg-card rounded-2xl border border-border p-6 space-y-5">
+          <h2 className="font-bold">사진 관리</h2>
 
-        {/* Profile Fields */}
-        <FieldSection title="기본 정보" fields={PROFILE_FIELDS} user={user} onUpdate={updateField} />
-        <FieldSection title="이상형 정보" fields={IDEAL_FIELDS} user={user} onUpdate={updateField} />
-
-        {/* Match Status */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-bold">매칭 현황 ({matches.length})</h3>
-          {matches.length === 0 ? (
-            <p className="text-sm text-muted-fg bg-muted rounded-xl p-4">매칭 내역이 없습니다.</p>
-          ) : (
-            <div className="space-y-2">
-              {matches.map(m => (
-                <div key={m.id} className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border">
-                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    {m.otherUser?.imageUrl ? <img src={m.otherUser.imageUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary/10" />}
+          {/* 대표 사진 */}
+          <div>
+            <p className="text-xs text-muted-fg mb-2">대표 사진 (최대 4장)</p>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {user.photoUrls.map((url, i) => (
+                <div key={i} className="relative flex-shrink-0">
+                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(url)}>
+                    <img src={url} alt={`대표 ${i + 1}`} className="w-full h-full object-cover" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{m.otherUser?.name || "알수없음"}</p>
-                    <p className="text-xs text-muted-fg">{user.gender === "남자" ? "← 선택받음" : "→ 선택함"} · {new Date(m.createdAt).toLocaleDateString("ko-KR")}</p>
+                  <span className="absolute top-1 left-1 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded">{i + 1}</span>
+                  <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
+                    <button onClick={() => { setEditingPhoto(`photo-${i}`); setPhotoInput(url); }}
+                      className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow hover:bg-primary-dark transition-colors" title="수정">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </button>
+                    <button onClick={() => { const next = user.photoUrls.filter((_, j) => j !== i); saveField("photoUrls", next); }}
+                      className="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors" title="삭제">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${m.action === "accepted" ? "bg-success/10 text-success" : m.action === "rejected" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"}`}>
-                    {m.action === "accepted" ? "수락" : m.action === "rejected" ? "거절" : "대기"}
-                  </span>
                 </div>
               ))}
+              {user.photoUrls.length < 4 && (
+                <button onClick={() => { setEditingPhoto("photo-new"); setPhotoInput(""); }}
+                  className="w-28 h-28 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-fg hover:border-primary hover:text-primary transition-colors flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                  <span className="text-[10px] mt-1">추가</span>
+                </button>
+              )}
+            </div>
+            {editingPhoto?.startsWith("photo-") && (
+              <div className="mt-2 flex gap-2 items-center">
+                <input type="text" value={photoInput} onChange={(e) => setPhotoInput(e.target.value)} placeholder="이미지 URL 입력"
+                  className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && photoInput.trim()) {
+                      if (editingPhoto === "photo-new") {
+                        saveField("photoUrls", [...user.photoUrls, photoInput.trim()]);
+                      } else {
+                        const idx = parseInt(editingPhoto.replace("photo-", ""));
+                        const next = [...user.photoUrls]; next[idx] = photoInput.trim();
+                        saveField("photoUrls", next);
+                      }
+                      setEditingPhoto(null); setPhotoInput("");
+                    }
+                    if (e.key === "Escape") { setEditingPhoto(null); setPhotoInput(""); }
+                  }} />
+                <button onClick={() => {
+                  if (!photoInput.trim()) return;
+                  if (editingPhoto === "photo-new") {
+                    saveField("photoUrls", [...user.photoUrls, photoInput.trim()]);
+                  } else {
+                    const idx = parseInt(editingPhoto.replace("photo-", ""));
+                    const next = [...user.photoUrls]; next[idx] = photoInput.trim();
+                    saveField("photoUrls", next);
+                  }
+                  setEditingPhoto(null); setPhotoInput("");
+                }} className="px-3 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary-dark transition-colors">확인</button>
+                <button onClick={() => { setEditingPhoto(null); setPhotoInput(""); }} className="px-3 py-2 bg-muted text-muted-fg text-xs font-semibold rounded-lg">취소</button>
+              </div>
+            )}
+          </div>
+
+          {/* 매력 / 연인 사진 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-fg mb-2">저의 매력은 사진</p>
+              <div className="relative inline-block">
+                {user.charmPhoto ? (
+                  <>
+                    <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(user.charmPhoto!)}>
+                      <img src={user.charmPhoto} alt="매력 사진" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
+                      <button onClick={() => { setEditingPhoto("charm"); setPhotoInput(user.charmPhoto || ""); }}
+                        className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow hover:bg-primary-dark transition-colors" title="수정">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      </button>
+                      <button onClick={() => saveField("charmPhoto", null)}
+                        className="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors" title="삭제">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button onClick={() => { setEditingPhoto("charm"); setPhotoInput(""); }}
+                    className="w-28 h-28 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-fg hover:border-primary hover:text-primary transition-colors">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span className="text-[10px] mt-1">등록</span>
+                  </button>
+                )}
+              </div>
+              {editingPhoto === "charm" && (
+                <div className="mt-2 flex gap-2 items-center">
+                  <input type="text" value={photoInput} onChange={(e) => setPhotoInput(e.target.value)} placeholder="이미지 URL"
+                    className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && photoInput.trim()) { saveField("charmPhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); }
+                      if (e.key === "Escape") { setEditingPhoto(null); setPhotoInput(""); }
+                    }} />
+                  <button onClick={() => { if (photoInput.trim()) { saveField("charmPhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); } }}
+                    className="px-2 py-2 bg-primary text-white text-xs font-semibold rounded-lg">확인</button>
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-xs text-muted-fg mb-2">연인이 생기면 사진</p>
+              <div className="relative inline-block">
+                {user.datePhoto ? (
+                  <>
+                    <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(user.datePhoto!)}>
+                      <img src={user.datePhoto} alt="연인 사진" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
+                      <button onClick={() => { setEditingPhoto("date"); setPhotoInput(user.datePhoto || ""); }}
+                        className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow hover:bg-primary-dark transition-colors" title="수정">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      </button>
+                      <button onClick={() => saveField("datePhoto", null)}
+                        className="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors" title="삭제">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button onClick={() => { setEditingPhoto("date"); setPhotoInput(""); }}
+                    className="w-28 h-28 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-fg hover:border-primary hover:text-primary transition-colors">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span className="text-[10px] mt-1">등록</span>
+                  </button>
+                )}
+              </div>
+              {editingPhoto === "date" && (
+                <div className="mt-2 flex gap-2 items-center">
+                  <input type="text" value={photoInput} onChange={(e) => setPhotoInput(e.target.value)} placeholder="이미지 URL"
+                    className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && photoInput.trim()) { saveField("datePhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); }
+                      if (e.key === "Escape") { setEditingPhoto(null); setPhotoInput(""); }
+                    }} />
+                  <button onClick={() => { if (photoInput.trim()) { saveField("datePhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); } }}
+                    className="px-2 py-2 bg-primary text-white text-xs font-semibold rounded-lg">확인</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* 프로필 정보 */}
+        <section className="bg-card rounded-2xl border border-border p-6">
+          <h2 className="font-bold text-lg mb-4">프로필 정보</h2>
+          <div className="grid grid-cols-2 gap-5 text-base">
+            <EditableField label="본명" value={user.realName} fieldKey="realName" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={saveField} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} />
+            <EditableField label="닉네임" value={user.nickname} fieldKey="nickname" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={saveField} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} />
+            <SelectField label="출생년도" value={String(user.birthYear) + "년"} options={BIRTH_YEARS} onSelect={(v) => saveField("birthYear", parseInt(v))} />
+            <EditableField label="키" value={String(user.height)} fieldKey="height" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={(k, v) => saveField(k, parseInt(v as string))} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} suffix="cm" />
+            <SelectField label="거주지 (시/도)" value={user.city} options={CITIES} onSelect={(v) => saveField("city", v)} />
+            <SelectField label="거주지 (구역)" value={user.district} options={DISTRICTS[user.city] || []} onSelect={(v) => saveField("district", v)} />
+            <SelectField label="직장" value={user.workplace} options={WORKPLACES} onSelect={(v) => { saveField("workplace", v); const jobs = JOBS[v]; if (jobs && !jobs.includes(user.job)) saveField("job", jobs[0]); }} />
+            <SelectField label="직업" value={user.job} options={JOBS[user.workplace] || ["기타"]} onSelect={(v) => saveField("job", v)} />
+            <SelectField label="근무패턴" value={user.workPattern} options={WORK_PATTERNS} onSelect={(v) => saveField("workPattern", v)} />
+            <SelectField label="연봉" value={user.salary} options={SALARIES} onSelect={(v) => saveField("salary", v)} />
+            <SelectField label="학력" value={user.education} options={EDUCATIONS} onSelect={(v) => saveField("education", v)} />
+            <SelectField label="흡연" value={smokingLabel(user.smoking)} options={["유", "무"]} onSelect={(v) => saveField("smoking", v === "유")} />
+            <SelectField label="MBTI" value={user.mbti} options={MBTI_TYPES} onSelect={(v) => saveField("mbti", v)} />
+            <EditableField label="저의 매력은" value={user.charm} fieldKey="charm" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={saveField} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} maxLength={200} />
+            <EditableField label="연인이 생기면 하고 싶은 일은" value={user.datingStyle} fieldKey="datingStyle" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={saveField} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} maxLength={200} />
+            <EditableField label="전화번호" value={user.phone} fieldKey="phone" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={saveField} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} />
+          </div>
+        </section>
+
+        {/* 이상형 정보 */}
+        {idealType && (
+          <section className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-bold text-lg mb-4">이상형 정보</h2>
+            <div className="grid grid-cols-2 gap-5 text-base">
+              <InfoDisplay label="선호 나이" value={idealType.idealAge} />
+              <InfoDisplay label="선호 키" value={`${idealType.idealMinHeight}cm ~ ${idealType.idealMaxHeight}cm`} />
+              <InfoDisplay label="선호 거주지" value={idealType.idealCities.join(", ") || "-"} />
+              <InfoDisplay label="선호 직장" value={idealType.idealWorkplaces.join(", ") || "-"} />
+              <InfoDisplay label="선호 연봉" value={idealType.idealSalaries.join(", ") || "-"} />
+              <InfoDisplay label="선호 학력" value={idealType.idealEducation.join(", ") || "-"} />
+              <InfoDisplay label="선호 흡연" value={idealType.idealSmoking === null ? "상관없음" : idealType.idealSmoking ? "흡연" : "비흡연"} />
+              <InfoDisplay label="선호 MBTI" value={idealType.idealMbti.join(", ") || "상관없음"} />
+              <div className="col-span-2">
+                <span className="text-muted-fg text-sm">최애 포인트 (우선순위)</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {idealType.topPriorities.map((p, i) => (
+                    <span key={p} className="px-4 py-1.5 rounded-full text-sm font-semibold" style={{ backgroundColor: i === 0 ? "#ff8a3d" : i === 1 ? "#ffb380" : i === 2 ? "#ffd9c2" : "#f3f0ed", color: i < 2 ? "white" : i === 2 ? "#ff8a3d" : "#8a8480" }}>
+                      {i + 1}. {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 매칭 내역 */}
+        <section className="bg-card rounded-2xl border border-border p-6">
+          <h2 className="font-bold text-lg mb-4">매칭 내역 ({matches.length}건)</h2>
+          {matches.length === 0 ? (
+            <p className="text-base text-muted-fg">매칭 내역이 없습니다</p>
+          ) : (
+            <div className="space-y-3">
+              {matches.map(m => {
+                const otherId = m.femaleProfileId === userId ? m.maleProfileId : m.femaleProfileId;
+                const other = getUser(otherId);
+                return (
+                  <div key={m.id} className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl">
+                    {other?.photoUrls[0] ? (
+                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(other.photoUrls[0])}>
+                        <img src={other.photoUrls[0]} alt={other.nickname} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-primary/30">{other?.nickname?.[0] || "?"}</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold truncate">{other ? `${other.realName} (${other.nickname})` : otherId}</p>
+                      <p className="text-sm text-muted-fg">{other?.role === "male" ? "남성" : "여성"} · {other?.birthYear}년생 · {other ? regionLabel(other.city, other.district) : ""}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${m.status === "approved" ? "bg-success/10 text-success" : m.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
+                        {m.status === "approved" ? "수락" : m.status === "pending" ? "대기중" : "거절"}
+                      </span>
+                      <span className="text-xs text-muted-fg">{new Date(m.requestedAt).toLocaleDateString("ko-KR")}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* Full image modal */}
-      {imageModal && user.imageUrl && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={() => setImageModal(false)}>
-          <img src={user.imageUrl} alt={user.name} className="max-w-full max-h-[90vh] rounded-2xl object-contain" />
-        </div>
-      )}
+        {/* MD 추천 (남성만) */}
+        {user.role === "male" && (
+          <section className="bg-card rounded-2xl border border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">MD 추천 ({mdRecs.length}건)</h2>
+              <button onClick={() => { setShowMdForm(!showMdForm); setMdSearch(""); setMdPage(1); setMdTarget(""); }}
+                className="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors"
+                style={{ backgroundColor: "#7c5cfc" }}>
+                {showMdForm ? "닫기" : "+ 여성 추천하기"}
+              </button>
+            </div>
+
+            {showMdForm && (
+              <div className="mb-4 p-5 bg-accent/5 rounded-xl border border-accent/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <p className="text-base font-semibold text-accent flex-1">추천할 여성 회원 선택</p>
+                  <span className="text-sm text-muted-fg">{mdCandidates.length}명</span>
+                </div>
+                <input type="text" value={mdSearch} onChange={(e) => { setMdSearch(e.target.value); setMdPage(1); }} placeholder="이름 / 닉네임 / 전화번호 검색"
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-accent/30" />
+
+                <div className="space-y-2">
+                  {mdPaged.map(f => (
+                    <label key={f.id} className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all border ${mdTarget === f.id ? "bg-accent/10 border-accent/40 ring-1 ring-accent/20" : "border-transparent hover:bg-muted/40"}`}>
+                      <input type="radio" name="mdTarget" value={f.id} checked={mdTarget === f.id} onChange={() => setMdTarget(f.id)} className="accent-[#7c5cfc] flex-shrink-0 w-4 h-4" />
+                      {f.photoUrls[0] ? (
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                          <img src={f.photoUrls[0]} alt={f.nickname} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-primary/30">{f.nickname?.[0]}</div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold">{f.realName} ({f.nickname})</p>
+                        <p className="text-sm text-muted-fg">{f.birthYear}년생 · {f.height}cm · {regionLabel(f.city, f.district)}</p>
+                        <p className="text-sm text-muted-fg">{f.workplace} · {f.mbti}</p>
+                      </div>
+                    </label>
+                  ))}
+                  {mdPaged.length === 0 && <p className="text-base text-muted-fg py-4 text-center">추천 가능한 여성 회원이 없습니다</p>}
+                </div>
+
+                {mdTotalPages > 1 && (
+                  <div className="flex justify-center gap-1.5 pt-2">
+                    {Array.from({ length: mdTotalPages }, (_, i) => (
+                      <button key={i} onClick={() => setMdPage(i + 1)}
+                        className={`w-8 h-8 rounded-lg text-xs font-medium transition-all ${mdPage === i + 1 ? "text-white" : "bg-white border border-border text-muted-fg hover:border-accent/30"}`}
+                        style={mdPage === i + 1 ? { backgroundColor: "#7c5cfc" } : {}}>
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <button onClick={sendMdRecommendation} disabled={!mdTarget}
+                    className="px-5 py-2.5 text-base font-semibold text-white rounded-xl disabled:opacity-40 transition-colors"
+                    style={{ backgroundColor: "#7c5cfc" }}>
+                    추천 보내기
+                  </button>
+                  <button onClick={() => { setShowMdForm(false); setMdTarget(""); setMdSearch(""); }}
+                    className="px-5 py-2.5 text-base font-semibold text-muted-fg bg-muted rounded-xl hover:bg-muted/70 transition-colors">
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {mdRecs.length === 0 && !showMdForm ? (
+              <p className="text-base text-muted-fg">MD 추천 이력이 없습니다</p>
+            ) : (
+              <div className="space-y-3">
+                {mdRecs.map(md => {
+                  const female = getUser(md.femaleProfileId);
+                  return (
+                    <div key={md.id} className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl">
+                      {female?.photoUrls[0] ? (
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-accent transition-all" onClick={() => setLightbox(female.photoUrls[0])}>
+                          <img src={female.photoUrls[0]} alt={female.nickname} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-accent/30">{female?.nickname?.[0] || "?"}</div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white px-2 py-0.5 rounded" style={{ backgroundColor: "#7c5cfc" }}>MD</span>
+                          <p className="text-base font-semibold truncate">{female ? `${female.realName} (${female.nickname})` : md.femaleProfileId}</p>
+                        </div>
+                        <p className="text-sm text-muted-fg mt-0.5">{female?.birthYear}년생 · {female ? regionLabel(female.city, female.district) : ""}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${md.status === "approved" ? "bg-success/10 text-success" : md.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
+                          {md.status === "approved" ? "수락" : md.status === "pending" ? "대기중" : "거절"}
+                        </span>
+                        <span className="text-xs text-muted-fg">{new Date(md.createdAt).toLocaleDateString("ko-KR")}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* 관리자 메모 */}
+        <section className="bg-card rounded-2xl border border-border p-6">
+          <h2 className="font-bold text-lg mb-4">관리자 메모</h2>
+          <div className="space-y-3 mb-4">
+            {notes.map(n => (
+              <div key={n.id} className="p-4 bg-muted/40 rounded-xl">
+                <p className="text-base">{n.content}</p>
+                <p className="text-xs text-muted-fg mt-1">{new Date(n.createdAt).toLocaleString("ko-KR")}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input type="text" value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="메모 작성..."
+              onKeyDown={(e) => { if (e.key === "Enter" && newNote.trim()) { setNotes(prev => [{ id: `an-${Date.now()}`, userId, content: newNote, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...prev]); setNewNote(""); } }}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <button onClick={() => { if (newNote.trim()) { setNotes(prev => [{ id: `an-${Date.now()}`, userId, content: newNote, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...prev]); setNewNote(""); } }}
+              className="px-5 py-2.5 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors">추가</button>
+          </div>
+        </section>
+
+        {/* 만료일 */}
+        <section className="bg-card rounded-2xl border border-border p-6">
+          <h2 className="font-bold text-lg mb-4">만료일 관리</h2>
+          <input type="date" value={user.expiresAt ? new Date(user.expiresAt).toISOString().split("T")[0] : ""}
+            onChange={(e) => saveField("expiresAt", e.target.value ? new Date(e.target.value).toISOString() : null)}
+            className="px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          {user.expiresAt && <p className="text-sm text-muted-fg mt-2">현재 만료일: {new Date(user.expiresAt).toLocaleDateString("ko-KR")}</p>}
+        </section>
+
+        {/* 상태 관리 */}
+        <section className="flex gap-3 pb-6">
+          {user.status === "pending" && (
+            <>
+              <button onClick={() => saveField("status", "active")} className="flex-1 py-3 bg-success text-white rounded-xl font-semibold">승인</button>
+              <button onClick={() => saveField("status", "rejected")} className="flex-1 py-3 bg-danger text-white rounded-xl font-semibold">반려</button>
+            </>
+          )}
+          {user.status === "active" && (
+            <button onClick={() => saveField("status", "blocked")} className="flex-1 py-3 bg-muted text-muted-fg rounded-xl font-semibold hover:bg-danger/10 hover:text-danger transition-colors">차단</button>
+          )}
+          {user.status === "blocked" && (
+            <button onClick={() => saveField("status", "active")} className="flex-1 py-3 bg-muted text-muted-fg rounded-xl font-semibold hover:bg-success/10 hover:text-success transition-colors">해제</button>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
 
-function FieldSection({ title, fields, user, onUpdate }: { title: string; fields: FieldDef[]; user: User; onUpdate: (key: string, val: string) => void }) {
+function InfoDisplay({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-3">
-      <h3 className="text-lg font-bold">{title}</h3>
-      <div className="bg-card rounded-2xl border border-border divide-y divide-border">
-        {fields.map(f => (
-          <EditableRow key={f.key} field={f} user={user} onUpdate={onUpdate} />
-        ))}
-      </div>
+    <div>
+      <span className="text-muted-fg text-sm">{label}</span>
+      <p className="font-medium text-base">{value}</p>
     </div>
   );
 }
 
-function EditableRow({ field, user, onUpdate }: { field: FieldDef; user: User; onUpdate: (key: string, val: string) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(String(user[field.key] || ""));
-
-  const save = () => { onUpdate(field.key, val); setEditing(false); };
-  const cancel = () => { setVal(String(user[field.key] || "")); setEditing(false); };
-
-  if (field.type === "city-district" && field.cityKey && field.districtKey) {
-    const city = String(user[field.cityKey] || "");
-    const district = String(user[field.districtKey] || "");
+function EditableField({ label, value, fieldKey, editing, editValue, suffix, maxLength, onDoubleClick, onSave, onChange, onKeyDown, onCancel }: {
+  label: string; value: string; fieldKey: string; editing: string | null; editValue: string; suffix?: string; maxLength?: number;
+  onDoubleClick: (key: string, val: string) => void; onSave: (key: string, val: unknown) => void; onChange: (v: string) => void; onKeyDown: (e: React.KeyboardEvent, key: string) => void; onCancel: () => void;
+}) {
+  if (editing === fieldKey) {
     return (
-      <div className="flex items-center px-4 py-3 gap-4">
-        <span className="text-sm text-muted-fg w-28 flex-shrink-0">{field.label}</span>
-        <div className="flex-1 flex gap-2">
-          <select value={city} onChange={(e) => { onUpdate(String(field.cityKey), e.target.value); onUpdate(String(field.districtKey), ""); }}
-            className="text-sm px-3 py-1.5 bg-muted/40 border-0 rounded-lg cursor-pointer focus:ring-2 focus:ring-primary/20 focus:outline-none">
-            <option value="">선택</option>
-            {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {DISTRICTS[city]?.length > 0 && (
-            <select value={district} onChange={(e) => onUpdate(String(field.districtKey), e.target.value)}
-              className="text-sm px-3 py-1.5 bg-muted/40 border-0 rounded-lg cursor-pointer focus:ring-2 focus:ring-primary/20 focus:outline-none">
-              <option value="">선택</option>
-              {DISTRICTS[city].map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          )}
-        </div>
+      <div>
+        <span className="text-muted-fg text-sm">{label}</span>
+        {maxLength ? (
+          <div>
+            <textarea autoFocus value={editValue} onChange={(e) => { if (e.target.value.length <= maxLength) onChange(e.target.value); }}
+              onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+              onBlur={onCancel} rows={3} maxLength={maxLength}
+              className="w-full px-3 py-2 border border-primary rounded-lg text-base focus:outline-none resize-none" />
+            <span className="text-xs text-muted-fg">{editValue.length}/{maxLength}자</span>
+          </div>
+        ) : (
+          <input autoFocus value={editValue} onChange={(e) => onChange(e.target.value)} onKeyDown={(e) => onKeyDown(e, fieldKey)} onBlur={onCancel}
+            className="w-full px-3 py-2 border border-primary rounded-lg text-base focus:outline-none" />
+        )}
       </div>
     );
   }
-
-  if (field.type === "select" && field.options) {
-    return (
-      <div className="flex items-center px-4 py-3 gap-4">
-        <span className="text-sm text-muted-fg w-28 flex-shrink-0">{field.label}</span>
-        <select value={String(user[field.key] || "")} onChange={(e) => onUpdate(field.key, e.target.value)}
-          className="flex-1 text-sm px-3 py-1.5 bg-muted/40 border-0 rounded-lg cursor-pointer focus:ring-2 focus:ring-primary/20 focus:outline-none">
-          <option value="">선택</option>
-          {field.options.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center px-4 py-3 gap-4" onDoubleClick={() => setEditing(true)}>
-      <span className="text-sm text-muted-fg w-28 flex-shrink-0">{field.label}</span>
-      {editing ? (
-        <div className="flex-1 flex gap-2">
-          <input type="text" value={val} onChange={(e) => setVal(e.target.value)} autoFocus
-            className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-primary/30 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
-            onBlur={save} />
-        </div>
-      ) : (
-        <span className="flex-1 text-sm text-foreground cursor-pointer hover:text-primary transition-colors">{String(user[field.key] || "-")}</span>
-      )}
+    <div onDoubleClick={() => onDoubleClick(fieldKey, value)} className="cursor-pointer hover:bg-muted/30 rounded-lg px-1 -mx-1 transition-colors">
+      <span className="text-muted-fg text-sm">{label}</span>
+      <p className="font-medium text-base">{value}{suffix}</p>
+    </div>
+  );
+}
+
+function SelectField({ label, value, options, onSelect }: { label: string; value: string; options: string[]; onSelect: (v: string) => void }) {
+  return (
+    <div>
+      <span className="text-muted-fg text-sm">{label}</span>
+      <select value={value} onChange={(e) => onSelect(e.target.value)}
+        className="w-full text-base font-medium bg-transparent border-b border-transparent hover:border-border cursor-pointer focus:outline-none">
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
     </div>
   );
 }

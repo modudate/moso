@@ -4,20 +4,20 @@ import { getCart, addToCart, removeFromCart, clearCart } from "@/lib/store";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "userId 필요" }, { status: 400 });
-  return NextResponse.json(getCart(userId));
+  const femaleId = req.nextUrl.searchParams.get("femaleId");
+  if (!femaleId) return NextResponse.json({ error: "femaleId 필요" }, { status: 400 });
+  return NextResponse.json(getCart(femaleId));
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, targetId } = await req.json();
-  addToCart({ userId, targetId, addedAt: new Date().toISOString() });
+  const { femaleProfileId, maleProfileId } = await req.json();
+  addToCart({ femaleProfileId, maleProfileId, addedAt: new Date().toISOString() });
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(req: NextRequest) {
-  const { userId, targetId, clearAll } = await req.json();
-  if (clearAll) clearCart(userId);
-  else removeFromCart(userId, targetId);
+  const { femaleProfileId, maleProfileId, clearAll } = await req.json();
+  if (clearAll) clearCart(femaleProfileId);
+  else removeFromCart(femaleProfileId, maleProfileId);
   return NextResponse.json({ success: true });
 }

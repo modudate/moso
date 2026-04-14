@@ -1,55 +1,81 @@
-export type UserStatus = "pending" | "approved" | "rejected" | "blocked";
-export type Gender = "남자" | "여자";
-export type MatchAction = "pending" | "accepted" | "rejected";
+export type UserStatus = "pending" | "active" | "blocked" | "rejected";
+export type Gender = "male" | "female";
+export type MatchAction = "pending" | "approved" | "rejected";
 
 export interface User {
   id: string;
   email: string;
-  password: string;
-  gender: Gender;
+  phone: string;
+  role: Gender;
   status: UserStatus;
   createdAt: string;
-  expiresAt: string | null;
-  blocked: boolean;
-  imageUrl: string;
-  name: string;
-  birthYear: string;
+
+  realName: string;
+  nickname: string;
+  birthYear: number;
+  height: number;
   city: string;
   district: string;
-  education: string;
-  height: string;
+  workplace: string;
   job: string;
-  jobType: string;
+  workPattern: string;
   salary: string;
-  smoking: string;
+  education: string;
+  smoking: boolean;
   mbti: string;
   charm: string;
   datingStyle: string;
-  phone: string;
-  idealHeight: string;
+  photoUrls: string[];
+  charmPhoto: string | null;
+  datePhoto: string | null;
+  expiresAt: string | null;
+}
+
+export interface IdealType {
+  userId: string;
   idealAge: string;
-  idealCity: string;
-  idealDistrict: string;
-  idealSmoking: string;
-  idealEducation: string;
-  idealJobType: string;
-  idealSalary: string;
-  priority: string;
+  idealMinHeight: number;
+  idealMaxHeight: number;
+  idealCities: string[];
+  idealWorkplaces: string[];
+  idealJobs: string[];
+  idealSalaries: string[];
+  idealEducation: string[];
+  idealSmoking: boolean | null;
+  idealMbti: string[];
+  topPriorities: string[];
 }
 
 export interface MatchRequest {
   id: string;
-  fromUserId: string;
-  toUserId: string;
-  action: MatchAction;
-  createdAt: string;
-  rejectedAt: string | null;
+  femaleProfileId: string;
+  maleProfileId: string;
+  status: MatchAction;
+  requestedAt: string;
+  respondedAt: string | null;
 }
 
 export interface CartItem {
-  userId: string;
-  targetId: string;
+  femaleProfileId: string;
+  maleProfileId: string;
   addedAt: string;
+}
+
+export interface MdRecommendation {
+  id: string;
+  maleProfileId: string;
+  femaleProfileId: string;
+  status: MatchAction;
+  createdAt: string;
+  respondedAt: string | null;
+}
+
+export interface AdminNote {
+  id: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProfileLink {
@@ -57,4 +83,14 @@ export interface ProfileLink {
   userId: string;
   createdAt: string;
   expiresAt: string;
+  accessCount: number;
+  maxAccess: number;
+}
+
+export interface RejectionLog {
+  id: string;
+  maleProfileId: string;
+  femaleProfileId: string;
+  rejectedAt: string;
+  visibleAfter: string;
 }
