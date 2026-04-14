@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -7,7 +8,11 @@ import { createClient } from "@/lib/supabase/client";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 export default function Home() {
+  const [loading, setLoading] = useState(false);
+
   const handleGoogleLogin = async () => {
+    if (loading) return;
+    setLoading(true);
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -19,6 +24,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "#ff8a3d" }}>
+      {loading && (
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-2xl">
+            <div className="w-8 h-8 border-3 border-[#ff8a3d] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium text-gray-700">로그인 중...</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex items-center justify-center">
         <Image
           src="/logo.png"
@@ -43,15 +57,20 @@ export default function Home() {
 
         <button
           onClick={handleGoogleLogin}
-          className="flex items-center justify-center gap-3 w-full max-w-sm px-6 py-4 bg-white rounded-2xl font-semibold text-gray-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+          disabled={loading}
+          className="flex items-center justify-center gap-3 w-full max-w-sm px-6 py-4 bg-white rounded-2xl font-semibold text-gray-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:pointer-events-none"
         >
-          <svg width="20" height="20" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          </svg>
-          Google 계정으로 계속하기
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-[#ff8a3d] border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+          )}
+          {loading ? "로그인 중..." : "Google 계정으로 계속하기"}
         </button>
       </div>
     </main>

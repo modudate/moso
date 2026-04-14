@@ -193,6 +193,14 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      {submitting && (
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-2xl">
+            <div className="w-8 h-8 border-3 border-[#ff8a3d] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium text-gray-700">가입 신청 중...</p>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="max-w-[430px] mx-auto px-5 py-4 flex items-center gap-3">
           {step === 2 ? (
@@ -505,8 +513,9 @@ export default function RegisterPage() {
             </Field>
 
             <button onClick={handleSubmit} disabled={submitting}
-              className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-60"
+              className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2"
               style={{ backgroundColor: "#ff8a3d" }}>
+              {submitting && <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               {submitting ? "제출 중..." : "가입 신청하기"}
             </button>
           </div>

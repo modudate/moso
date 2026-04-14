@@ -4,57 +4,41 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      const { data: { user } } = await supabase.auth.getUser();
+    if (!error && data.user) {
+      const userId = data.user.id;
 
-      if (user) {
-        const { data: dbUser } = await supabase
-          .from("users")
-          .select("id, role, status")
-          .eq("id", user.id)
-          .single();
+      const [{ data: dbUser }, { data: adminRow }] = await Promise.all([
+        supabase.from("users").select("role, status").eq("id", userId).single(),
+        supabase.from("admins").select("id").eq("id", userId).single(),
+      ]);
 
-        if (!dbUser) {
-          return NextResponse.redirect(`${origin}/register`);
-        }
-
-        if (dbUser.status === "pending") {
-          return NextResponse.redirect(`${origin}/pending`);
-        }
-        if (dbUser.status === "blocked") {
-          return NextResponse.redirect(`${origin}/blocked`);
-        }
-        if (dbUser.status === "rejected") {
-          return NextResponse.redirect(`${origin}/rejected`);
-        }
-
-        const isAdmin = await checkAdmin(supabase, user.id);
-        if (isAdmin) {
-          return NextResponse.redirect(`${origin}/admin`);
-        }
-
-        if (dbUser.role === "female") {
-          return NextResponse.redirect(`${origin}/female`);
-        }
-        return NextResponse.redirect(`${origin}/male`);
+      if (adminRow) {
+        return NextResponse.redirect(`${origin}/admin`);
       }
+
+      if (!dbUser) {
+        return NextResponse.redirect(`${origin}/register`);
+      }
+
+      const statusRedirects: Record<string, string> = {
+        pending: "/pending",
+        blocked: "/blocked",
+        rejected: "/rejected",
+      };
+      if (statusRedirects[dbUser.status]) {
+        return NextResponse.redirect(`${origin}${statusRedirects[dbUser.status]}`);
+      }
+
+      return NextResponse.redirect(
+        `${origin}/${dbUser.role === "female" ? "female" : "male"}`
+      );
     }
   }
 
   return NextResponse.redirect(`${origin}/?message=auth_error`);
-}
-
-async function checkAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase
-    .from("admins")
-    .select("id")
-    .eq("id", userId)
-    .single();
-  return !!data;
 }
