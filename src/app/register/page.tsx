@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   GENDERS, BIRTH_YEARS, CITIES, DISTRICTS, EDUCATIONS, WORKPLACES, JOBS,
   WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, AGE_RANGES,
   HEIGHT_RANGES, TOP_PRIORITIES,
 } from "@/lib/options";
-import MultiImageUploader from "@/components/MultiImageUploader";
-import ImageUploader from "@/components/ImageUploader";
+import MultiImageUploader, { type MultiImageUploaderHandle } from "@/components/MultiImageUploader";
+import ImageUploader, { type ImageUploaderHandle } from "@/components/ImageUploader";
 
 type Step = 1 | 2;
 
@@ -49,6 +49,11 @@ export default function RegisterPage() {
   const [topPriorities, setTopPriorities] = useState<string[]>([]);
 
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const multiRef = useRef<MultiImageUploaderHandle>(null);
+  const charmRef = useRef<ImageUploaderHandle>(null);
+  const dateRef = useRef<ImageUploaderHandle>(null);
 
   const districtOptions = DISTRICTS[city] || [];
   const jobOptions = JOBS[workplace] || [];
@@ -112,54 +117,70 @@ export default function RegisterPage() {
     const err = validateStep2();
     if (err) { setError(err); return; }
     setError("");
+    setSubmitting(true);
 
-    const body = {
-      realName: realName.trim(),
-      nickname: nickname.trim(),
-      role: gender === "남" ? "male" : "female",
-      birthYear: parseInt(birthYear),
-      height: parseInt(height),
-      phone,
-      city,
-      district: district || "",
-      workplace,
-      job: job || workplace,
-      workPattern,
-      salary,
-      education,
-      smoking: smoking === "유",
-      mbti,
-      charm: charm.trim(),
-      datingStyle: datingStyle.trim(),
-      idealType: {
-        idealAge,
-        idealMinHeight: parseInt(idealMinHeight),
-        idealMaxHeight: parseInt(idealMaxHeight),
-        idealCities,
-        idealWorkplaces,
-        idealJobs: [],
-        idealSalaries,
-        idealEducation,
-        idealSmoking: idealSmoking === "상관없음" ? null : idealSmoking === "비흡연",
-        idealMbti,
-        topPriorities,
-      },
-    };
+    try {
+      const [photoResult, charmResult, dateResult] = await Promise.all([
+        multiRef.current?.waitForUploads(),
+        charmRef.current?.waitForUpload(),
+        dateRef.current?.waitForUpload(),
+      ]);
 
-    const useSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const endpoint = useSupabase ? "/api/register" : "/api/profiles";
+      const body = {
+        realName: realName.trim(),
+        nickname: nickname.trim(),
+        gender,
+        birthYear: parseInt(birthYear),
+        height: parseInt(height),
+        phone,
+        city,
+        district: district || "",
+        workplace,
+        job: job || workplace,
+        workPattern,
+        salary,
+        education,
+        smoking: smoking === "유",
+        mbti,
+        charm: charm.trim(),
+        datingStyle: datingStyle.trim(),
+        photoUrls: photoResult?.urls ?? photoUrls,
+        charmPhotoUrl: charmResult?.url ?? charmPhotoUrl,
+        datePhotoUrl: dateResult?.url ?? datePhotoUrl,
+        idealType: {
+          idealAge,
+          idealMinHeight: parseInt(idealMinHeight),
+          idealMaxHeight: parseInt(idealMaxHeight),
+          idealCities,
+          idealWorkplaces,
+          idealJobs: [],
+          idealSalaries,
+          idealEducation,
+          idealSmoking: idealSmoking === "상관없음" ? null : idealSmoking === "비흡연",
+          idealMbti,
+          topPriorities,
+        },
+      };
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+      const useSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const endpoint = useSupabase ? "/api/register" : "/api/profiles";
 
-    if (res.ok) {
-      router.push("/register/complete");
-    } else {
-      const data = await res.json();
-      setError(data.error || "등록에 실패했습니다");
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        router.push("/register/complete");
+      } else {
+        const data = await res.json();
+        setError(data.error || "등록에 실패했습니다");
+      }
+    } catch {
+      setError("제출 중 오류가 발생했습니다");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -335,6 +356,7 @@ export default function RegisterPage() {
 
             <div className="pt-2 space-y-5 border-t border-gray-200">
               <MultiImageUploader
+                ref={multiRef}
                 values={photoUrls}
                 maxCount={4}
                 category="photo"
@@ -343,6 +365,7 @@ export default function RegisterPage() {
               />
 
               <ImageUploader
+                ref={charmRef}
                 value={charmPhotoUrl}
                 category="charm"
                 onUploaded={(_path, url) => setCharmPhotoUrl(url)}
@@ -351,6 +374,7 @@ export default function RegisterPage() {
               />
 
               <ImageUploader
+                ref={dateRef}
                 value={datePhotoUrl}
                 category="date"
                 onUploaded={(_path, url) => setDatePhotoUrl(url)}
@@ -480,10 +504,10 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <button onClick={handleSubmit}
-              className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all"
+            <button onClick={handleSubmit} disabled={submitting}
+              className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-60"
               style={{ backgroundColor: "#ff8a3d" }}>
-              가입 신청하기
+              {submitting ? "제출 중..." : "가입 신청하기"}
             </button>
           </div>
         )}
