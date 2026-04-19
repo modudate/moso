@@ -1,30 +1,58 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 const IS_DEV = process.env.NODE_ENV === "development";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+function dec2hex(n: number) {
+  return ("0" + n.toString(16)).slice(-2);
+}
+
+function generateVerifier(): string {
+  const arr = new Uint32Array(56);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, dec2hex).join("");
+}
+
+async function generateChallenge(verifier: string): Promise<string> {
+  const data = new TextEncoder().encode(verifier);
+  const hashBuf = await crypto.subtle.digest("SHA-256", data);
+  const bytes = new Uint8Array(hashBuf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlAscii(str: string): string {
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
 
-  useEffect(() => {
-    supabaseRef.current = createClient();
-  }, []);
-
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     if (loading) return;
     setLoading(true);
-    const supabase = supabaseRef.current ?? createClient();
-    supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const ref = new URL(SUPABASE_URL).hostname.split(".")[0];
+      const verifier = generateVerifier();
+      const challenge = await generateChallenge(verifier);
+
+      const cookieName = `sb-${ref}-auth-token-code-verifier`;
+      const cookieValue = `base64-${base64UrlAscii(verifier)}`;
+      const isLocal = window.location.hostname === "localhost";
+      document.cookie = `${cookieName}=${cookieValue}; path=/; max-age=600; SameSite=Lax${isLocal ? "" : "; Secure"}`;
+
+      const redirectTo = encodeURIComponent(
+        `${window.location.origin}/auth/callback`,
+      );
+      window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&code_challenge=${challenge}&code_challenge_method=s256`;
+    } catch {
+      setLoading(false);
+    }
   };
 
   return (
