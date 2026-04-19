@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,6 +57,12 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(""), 4000);
+    return () => clearTimeout(t);
+  }, [error]);
+
   const allRequiredAgreed = agreeTerms && agreePrivacy && agreeAge;
   const allAgreed = allRequiredAgreed && agreeMarketing;
   const toggleAll = () => {
@@ -86,44 +92,56 @@ export default function RegisterPage() {
     }
   };
 
-  const validateStep1 = () => {
-    if (!realName.trim()) return "본명을 입력해주세요";
-    if (!nickname.trim()) return "닉네임을 입력해주세요";
-    if (!gender) return "성별을 선택해주세요";
-    if (!birthYear) return "출생년도를 선택해주세요";
-    if (!height || isNaN(Number(height)) || Number(height) < 130 || Number(height) > 230) return "키를 정확히 입력해주세요 (130~230)";
-    if (!/^010-\d{4}-\d{4}$/.test(phone)) return "전화번호를 올바르게 입력해주세요 (010-0000-0000)";
-    if (!city) return "거주지(시/도)를 선택해주세요";
-    if (districtOptions.length > 0 && !district) return "거주지(구역)를 선택해주세요";
-    if (!workplace) return "직장을 선택해주세요";
-    if (jobOptions.length > 0 && !job) return "직업을 선택해주세요";
-    if (!workPattern) return "근무패턴을 선택해주세요";
-    if (!salary) return "연봉을 선택해주세요";
-    if (!education) return "학력을 선택해주세요";
-    if (!smoking) return "흡연 여부를 선택해주세요";
-    if (!mbti) return "MBTI를 선택해주세요";
-    if (!charm.trim()) return "매력을 입력해주세요";
-    if (!datingStyle.trim()) return "연애스타일을 입력해주세요";
-    return "";
+  type VErr = { msg: string; key: string } | null;
+
+  const validateStep1 = (): VErr => {
+    if (!realName.trim()) return { msg: "본명을 입력해주세요", key: "realName" };
+    if (!nickname.trim()) return { msg: "닉네임을 입력해주세요", key: "nickname" };
+    if (!gender) return { msg: "성별을 선택해주세요", key: "gender" };
+    if (!birthYear) return { msg: "출생년도를 선택해주세요", key: "birthYear" };
+    if (!height || isNaN(Number(height)) || Number(height) < 130 || Number(height) > 230) return { msg: "키를 정확히 입력해주세요 (130~230)", key: "height" };
+    if (!/^010-\d{4}-\d{4}$/.test(phone)) return { msg: "전화번호를 올바르게 입력해주세요 (010-0000-0000)", key: "phone" };
+    if (!city) return { msg: "거주지(시/도)를 선택해주세요", key: "city" };
+    if (districtOptions.length > 0 && !district) return { msg: "거주지(구역)를 선택해주세요", key: "city" };
+    if (!workplace) return { msg: "직장을 선택해주세요", key: "workplace" };
+    if (jobOptions.length > 0 && !job) return { msg: "직업을 선택해주세요", key: "job" };
+    if (!workPattern) return { msg: "근무패턴을 선택해주세요", key: "workPattern" };
+    if (!salary) return { msg: "연봉을 선택해주세요", key: "salary" };
+    if (!education) return { msg: "학력을 선택해주세요", key: "education" };
+    if (!smoking) return { msg: "흡연 여부를 선택해주세요", key: "smoking" };
+    if (!mbti) return { msg: "MBTI를 선택해주세요", key: "mbti" };
+    if (!charm.trim()) return { msg: "매력을 입력해주세요", key: "charm" };
+    if (!datingStyle.trim()) return { msg: "연애스타일을 입력해주세요", key: "datingStyle" };
+    return null;
   };
 
-  const validateStep2 = () => {
-    if (!idealAge) return "선호 나이를 선택해주세요";
-    if (!idealMinHeight || !idealMaxHeight) return "선호 키 범위를 입력해주세요";
-    if (Number(idealMinHeight) > Number(idealMaxHeight)) return "선호 키: 최소가 최대보다 클 수 없습니다";
-    if (idealCities.length === 0) return "선호 거주지를 1개 이상 선택해주세요";
-    if (idealWorkplaces.length === 0) return "선호 직장을 1개 이상 선택해주세요";
-    if (idealSalaries.length === 0) return "선호 연봉을 1개 이상 선택해주세요";
-    if (idealEducation.length === 0) return "선호 학력을 1개 이상 선택해주세요";
-    if (!idealSmoking) return "선호 흡연여부를 선택해주세요";
-    if (idealMbti.length === 0) return "선호 MBTI를 1개 이상 선택해주세요";
-    if (topPriorities.length !== 4) return "최애 포인트를 정확히 4개 선택해주세요";
-    return "";
+  const validateStep2 = (): VErr => {
+    if (!idealAge) return { msg: "선호 나이를 선택해주세요", key: "idealAge" };
+    if (!idealMinHeight || !idealMaxHeight) return { msg: "선호 키 범위를 입력해주세요", key: "idealHeight" };
+    if (Number(idealMinHeight) > Number(idealMaxHeight)) return { msg: "선호 키: 최소가 최대보다 클 수 없습니다", key: "idealHeight" };
+    if (idealCities.length === 0) return { msg: "선호 거주지를 1개 이상 선택해주세요", key: "idealCities" };
+    if (idealWorkplaces.length === 0) return { msg: "선호 직장을 1개 이상 선택해주세요", key: "idealWorkplaces" };
+    if (idealSalaries.length === 0) return { msg: "선호 연봉을 1개 이상 선택해주세요", key: "idealSalaries" };
+    if (idealEducation.length === 0) return { msg: "선호 학력을 1개 이상 선택해주세요", key: "idealEducation" };
+    if (!idealSmoking) return { msg: "선호 흡연여부를 선택해주세요", key: "idealSmoking" };
+    if (idealMbti.length === 0) return { msg: "선호 MBTI를 1개 이상 선택해주세요", key: "idealMbti" };
+    if (topPriorities.length !== 4) return { msg: "최애 포인트를 정확히 4개 선택해주세요", key: "topPriorities" };
+    return null;
+  };
+
+  const flashAndScrollTo = (id: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(`field-${id}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-red-400", "rounded-2xl");
+      setTimeout(() => el.classList.remove("ring-2", "ring-red-400", "rounded-2xl"), 1800);
+    }, 30);
   };
 
   const handleNext = () => {
     const err = validateStep1();
-    if (err) { setError(err); return; }
+    if (err) { setError(err.msg); flashAndScrollTo(err.key); return; }
     setError("");
     setStep(2);
     window.scrollTo(0, 0);
@@ -131,8 +149,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async () => {
     const err = validateStep2();
-    if (err) { setError(err); return; }
-    if (!allRequiredAgreed) { setError("필수 약관에 모두 동의해 주세요"); return; }
+    if (err) { setError(err.msg); flashAndScrollTo(err.key); return; }
+    if (!allRequiredAgreed) { setError("필수 약관에 모두 동의해 주세요"); flashAndScrollTo("consent"); return; }
     setError("");
     setSubmitting(true);
 
@@ -241,7 +259,9 @@ export default function RegisterPage() {
         </div>
 
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">{error}</div>
+          <div className="error-toast fixed top-20 left-1/2 -translate-x-1/2 z-[100] max-w-[90%] px-5 py-3 bg-red-500 text-white rounded-xl shadow-2xl text-sm font-medium">
+            {error}
+          </div>
         )}
 
         {step === 1 && (
@@ -249,17 +269,17 @@ export default function RegisterPage() {
             <h2 className="text-xl font-bold">프로필 기본 정보</h2>
             <p className="text-sm text-muted-fg -mt-3">모든 항목 필수 입력</p>
 
-            <Field label="본명">
+            <Field label="본명" id="realName">
               <input type="text" value={realName} onChange={(e) => setRealName(e.target.value)} placeholder="실명을 입력해주세요"
                 className="input-field" />
             </Field>
 
-            <Field label="닉네임">
+            <Field label="닉네임" id="nickname">
               <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="이성에게 보여질 닉네임"
                 className="input-field" />
             </Field>
 
-            <Field label="성별">
+            <Field label="성별" id="gender">
               <div className="flex gap-3">
                 {GENDERS.map(g => (
                   <button key={g} onClick={() => setGender(g)}
@@ -271,25 +291,25 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="출생년도">
+            <Field label="출생년도" id="birthYear">
               <select value={birthYear} onChange={(e) => setBirthYear(e.target.value)} className="input-field">
                 <option value="">선택해주세요</option>
                 {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </Field>
 
-            <Field label="키 (cm)">
+            <Field label="키 (cm)" id="height">
               <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="130 ~ 230" min={130} max={230}
                 className="input-field" />
             </Field>
 
-            <Field label="전화번호">
+            <Field label="전화번호" id="phone">
               <input type="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="010-0000-0000"
                 className="input-field" />
               <p className="text-xs text-muted-fg mt-1">연락처는 비상시 외에는 절대 사용되지 않습니다</p>
             </Field>
 
-            <Field label="거주지">
+            <Field label="거주지" id="city">
               <div className="flex gap-3">
                 <select value={city} onChange={(e) => { setCity(e.target.value); setDistrict(""); }} className="input-field flex-1">
                   <option value="">시/도</option>
@@ -304,7 +324,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="직장">
+            <Field label="직장" id="workplace">
               <select value={workplace} onChange={(e) => { setWorkplace(e.target.value); setJob(""); }} className="input-field">
                 <option value="">선택해주세요</option>
                 {WORKPLACES.map(w => <option key={w} value={w}>{w}</option>)}
@@ -312,7 +332,7 @@ export default function RegisterPage() {
             </Field>
 
             {jobOptions.length > 0 && (
-              <Field label="직업">
+              <Field label="직업" id="job">
                 <select value={job} onChange={(e) => setJob(e.target.value)} className="input-field">
                   <option value="">선택해주세요</option>
                   {jobOptions.map(j => <option key={j} value={j}>{j}</option>)}
@@ -320,28 +340,28 @@ export default function RegisterPage() {
               </Field>
             )}
 
-            <Field label="근무패턴">
+            <Field label="근무패턴" id="workPattern">
               <select value={workPattern} onChange={(e) => setWorkPattern(e.target.value)} className="input-field">
                 <option value="">선택해주세요</option>
                 {WORK_PATTERNS.map(w => <option key={w} value={w}>{w}</option>)}
               </select>
             </Field>
 
-            <Field label="연봉">
+            <Field label="연봉" id="salary">
               <select value={salary} onChange={(e) => setSalary(e.target.value)} className="input-field">
                 <option value="">선택해주세요</option>
                 {SALARIES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </Field>
 
-            <Field label="학력">
+            <Field label="학력" id="education">
               <select value={education} onChange={(e) => setEducation(e.target.value)} className="input-field">
                 <option value="">선택해주세요</option>
                 {EDUCATIONS.map(e => <option key={e} value={e}>{e}</option>)}
               </select>
             </Field>
 
-            <Field label="흡연">
+            <Field label="흡연" id="smoking">
               <div className="flex gap-3">
                 {SMOKING_OPTIONS.map(s => (
                   <button key={s} onClick={() => setSmoking(s)}
@@ -353,7 +373,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="MBTI">
+            <Field label="MBTI" id="mbti">
               <div className="grid grid-cols-4 gap-2">
                 {MBTI_TYPES.map(m => (
                   <button key={m} onClick={() => setMbti(m)}
@@ -365,14 +385,14 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="저의 매력은">
+            <Field label="저의 매력은" id="charm">
               <textarea value={charm} onChange={(e) => { if (e.target.value.length <= 200) setCharm(e.target.value); }}
                 placeholder="저의 매력을 자유롭게 적어주세요" rows={3} maxLength={200}
                 className="input-field resize-none" />
               <span className="text-xs text-muted-fg">{charm.length}/200자</span>
             </Field>
 
-            <Field label="연인이 생기면 하고 싶은 일은">
+            <Field label="연인이 생기면 하고 싶은 일은" id="datingStyle">
               <textarea value={datingStyle} onChange={(e) => { if (e.target.value.length <= 200) setDatingStyle(e.target.value); }}
                 placeholder="연인이 생기면 함께 하고 싶은 일을 적어주세요" rows={3} maxLength={200}
                 className="input-field resize-none" />
@@ -421,14 +441,14 @@ export default function RegisterPage() {
             <h2 className="text-xl font-bold">이상형 정보</h2>
             <p className="text-sm text-muted-fg -mt-3">모든 항목 필수 입력</p>
 
-            <Field label="선호 나이">
+            <Field label="선호 나이" id="idealAge">
               <select value={idealAge} onChange={(e) => setIdealAge(e.target.value)} className="input-field">
                 <option value="">선택해주세요</option>
                 {AGE_RANGES.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </Field>
 
-            <Field label="선호 키 (cm)">
+            <Field label="선호 키 (cm)" id="idealHeight">
               <div className="flex items-center gap-3">
                 <input type="number" value={idealMinHeight} onChange={(e) => setIdealMinHeight(e.target.value)} placeholder="최소" min={130} max={230}
                   className="input-field flex-1" />
@@ -438,7 +458,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="선호 거주지 (복수 선택)">
+            <Field label="선호 거주지 (복수 선택)" id="idealCities">
               <div className="flex flex-wrap gap-2">
                 {CITIES.map(c => (
                   <button key={c} onClick={() => toggleMulti(idealCities, c, setIdealCities)}
@@ -450,7 +470,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="선호 직장 (복수 선택)">
+            <Field label="선호 직장 (복수 선택)" id="idealWorkplaces">
               <div className="flex flex-wrap gap-2">
                 {WORKPLACES.map(w => (
                   <button key={w} onClick={() => toggleMulti(idealWorkplaces, w, setIdealWorkplaces)}
@@ -462,7 +482,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="선호 연봉 (복수 선택)">
+            <Field label="선호 연봉 (복수 선택)" id="idealSalaries">
               <div className="flex flex-wrap gap-2">
                 {SALARIES.map(s => (
                   <button key={s} onClick={() => toggleMulti(idealSalaries, s, setIdealSalaries)}
@@ -474,7 +494,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="선호 학력 (복수 선택)">
+            <Field label="선호 학력 (복수 선택)" id="idealEducation">
               <div className="flex flex-wrap gap-2">
                 {EDUCATIONS.map(e => (
                   <button key={e} onClick={() => toggleMulti(idealEducation, e, setIdealEducation)}
@@ -486,7 +506,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="선호 흡연여부">
+            <Field label="선호 흡연여부" id="idealSmoking">
               <div className="flex gap-3">
                 {["비흡연", "상관없음"].map(s => (
                   <button key={s} onClick={() => setIdealSmoking(s)}
@@ -498,7 +518,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="선호 MBTI (복수 선택)">
+            <Field label="선호 MBTI (복수 선택)" id="idealMbti">
               <div className="grid grid-cols-4 gap-2">
                 {MBTI_TYPES.map(m => (
                   <button key={m} onClick={() => toggleMulti(idealMbti, m, setIdealMbti)}
@@ -510,7 +530,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label={`나의 최애 포인트 (${topPriorities.length}/4 선택)`}>
+            <Field label={`나의 최애 포인트 (${topPriorities.length}/4 선택)`} id="topPriorities">
               <p className="text-xs text-muted-fg mb-2">가장 중요하게 생각하는 4가지를 선택해주세요</p>
               <div className="grid grid-cols-4 gap-2">
                 {TOP_PRIORITIES.map(p => {
@@ -529,7 +549,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <div className="rounded-2xl border border-border bg-white p-4 space-y-3">
+            <div id="field-consent" className="rounded-2xl border border-border bg-white p-4 space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={allAgreed} onChange={toggleAll}
                   className="w-5 h-5 accent-[#ff8a3d] cursor-pointer" />
@@ -568,14 +588,21 @@ export default function RegisterPage() {
           border-color: #ff8a3d;
           box-shadow: 0 0 0 3px rgba(255,138,61,0.1);
         }
+        @keyframes toastIn {
+          from { opacity: 0; transform: translate(-50%, -8px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .error-toast {
+          animation: toastIn 0.18s ease-out;
+        }
       `}</style>
     </main>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, id }: { label: string; children: React.ReactNode; id?: string }) {
   return (
-    <div>
+    <div id={id ? `field-${id}` : undefined} className="transition-shadow p-1 -m-1">
       <label className="block text-sm font-semibold text-foreground mb-2">{label}</label>
       {children}
     </div>
