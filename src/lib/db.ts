@@ -121,6 +121,12 @@ export async function addMdRecommendation(maleProfileId: string, femaleProfileId
   return mapMdRec(data);
 }
 
+export async function deleteMdRecommendation(id: string) {
+  const db = await getDb();
+  const { error } = await db.from("md_recommendations").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ── Admin Notes ────────────────────────────────────────────────────
 
 export async function getAdminNotes(userId: string) {

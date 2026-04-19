@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMdRecsForMale, addMdRecommendation } from "@/lib/db";
+import { getMdRecsForMale, addMdRecommendation, deleteMdRecommendation } from "@/lib/db";
 import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +27,18 @@ export async function POST(req: NextRequest) {
   try {
     const md = await addMdRecommendation(maleProfileId, femaleProfileId);
     return NextResponse.json({ success: true, md });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id 필수" }, { status: 400 });
+
+  try {
+    await deleteMdRecommendation(id);
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

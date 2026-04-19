@@ -76,6 +76,17 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
     setMdPage(1);
   };
 
+  const cancelMdRecommendation = async (mdId: string) => {
+    if (!confirm("이 MD 추천을 취소하시겠습니까?")) return;
+    const prev = mdRecs;
+    setMdRecs(p => p.filter(m => m.id !== mdId));
+    const res = await fetch(`/api/md-recommendation?id=${mdId}`, { method: "DELETE" });
+    if (!res.ok) {
+      setMdRecs(prev);
+      alert("취소에 실패했습니다");
+    }
+  };
+
   const alreadyRecommended = useMemo(() => new Set(mdRecs.map(md => md.femaleProfileId)), [mdRecs]);
 
   const mdCandidates = useMemo(() => {
@@ -327,11 +338,17 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <p className="text-sm text-muted-fg mt-0.5">{female?.birthYear}년생 · {female ? regionLabel(female.city, female.district) : ""}</p>
                       </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${md.status === "approved" ? "bg-success/10 text-success" : md.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
                           {md.status === "approved" ? "수락" : md.status === "pending" ? "대기중" : "거절"}
                         </span>
                         <span className="text-xs text-muted-fg">{new Date(md.createdAt).toLocaleDateString("ko-KR")}</span>
+                        <button
+                          onClick={() => cancelMdRecommendation(md.id)}
+                          className="text-xs px-2.5 py-1 rounded-lg border border-danger/30 text-danger hover:bg-danger/10 transition-colors"
+                        >
+                          취소
+                        </button>
                       </div>
                     </div>
                   );
