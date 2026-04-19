@@ -4,6 +4,8 @@ import { useState, useEffect, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { User, IdealType, AdminNote, MdRecommendation, MatchRequest } from "@/lib/types";
 import { regionLabel, smokingLabel, EDUCATIONS, WORKPLACES, JOBS, WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, BIRTH_YEARS, CITIES, DISTRICTS } from "@/lib/options";
+import MultiImageUploader from "@/components/MultiImageUploader";
+import ImageUploader from "@/components/ImageUploader";
 
 const MD_PER_PAGE = 6;
 
@@ -25,9 +27,6 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   const [showMdForm, setShowMdForm] = useState(false);
   const [mdSearch, setMdSearch] = useState("");
   const [mdPage, setMdPage] = useState(1);
-  const [editingPhoto, setEditingPhoto] = useState<string | null>(null);
-  const [photoInput, setPhotoInput] = useState("");
-
   useEffect(() => { fetchData(); }, [userId]);
 
   const fetchData = async () => {
@@ -121,153 +120,34 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* 사진 관리 */}
         <section className="bg-card rounded-2xl border border-border p-6 space-y-5">
-          <h2 className="font-bold">사진 관리</h2>
+          <h2 className="font-bold text-lg">사진 관리</h2>
 
-          {/* 대표 사진 */}
-          <div>
-            <p className="text-xs text-muted-fg mb-2">대표 사진 (최대 4장)</p>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {user.photoUrls.map((url, i) => (
-                <div key={i} className="relative flex-shrink-0">
-                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(url)}>
-                    <img src={url} alt={`대표 ${i + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                  <span className="absolute top-1 left-1 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded">{i + 1}</span>
-                  <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
-                    <button onClick={() => { setEditingPhoto(`photo-${i}`); setPhotoInput(url); }}
-                      className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow hover:bg-primary-dark transition-colors" title="수정">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                    </button>
-                    <button onClick={() => { const next = user.photoUrls.filter((_, j) => j !== i); saveField("photoUrls", next); }}
-                      className="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors" title="삭제">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {user.photoUrls.length < 4 && (
-                <button onClick={() => { setEditingPhoto("photo-new"); setPhotoInput(""); }}
-                  className="w-28 h-28 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-fg hover:border-primary hover:text-primary transition-colors flex-shrink-0">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                  <span className="text-[10px] mt-1">추가</span>
-                </button>
-              )}
-            </div>
-            {editingPhoto?.startsWith("photo-") && (
-              <div className="mt-2 flex gap-2 items-center">
-                <input type="text" value={photoInput} onChange={(e) => setPhotoInput(e.target.value)} placeholder="이미지 URL 입력"
-                  className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && photoInput.trim()) {
-                      if (editingPhoto === "photo-new") {
-                        saveField("photoUrls", [...user.photoUrls, photoInput.trim()]);
-                      } else {
-                        const idx = parseInt(editingPhoto.replace("photo-", ""));
-                        const next = [...user.photoUrls]; next[idx] = photoInput.trim();
-                        saveField("photoUrls", next);
-                      }
-                      setEditingPhoto(null); setPhotoInput("");
-                    }
-                    if (e.key === "Escape") { setEditingPhoto(null); setPhotoInput(""); }
-                  }} />
-                <button onClick={() => {
-                  if (!photoInput.trim()) return;
-                  if (editingPhoto === "photo-new") {
-                    saveField("photoUrls", [...user.photoUrls, photoInput.trim()]);
-                  } else {
-                    const idx = parseInt(editingPhoto.replace("photo-", ""));
-                    const next = [...user.photoUrls]; next[idx] = photoInput.trim();
-                    saveField("photoUrls", next);
-                  }
-                  setEditingPhoto(null); setPhotoInput("");
-                }} className="px-3 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary-dark transition-colors">확인</button>
-                <button onClick={() => { setEditingPhoto(null); setPhotoInput(""); }} className="px-3 py-2 bg-muted text-muted-fg text-xs font-semibold rounded-lg">취소</button>
-              </div>
-            )}
-          </div>
+          <MultiImageUploader
+            key={`multi-${userId}`}
+            values={user.photoUrls}
+            maxCount={4}
+            category="photo"
+            onChanged={(_paths, urls) => saveField("photoUrls", urls)}
+            label="대표 사진 (최대 4장)"
+          />
 
-          {/* 매력 / 연인 사진 */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-fg mb-2">저의 매력은 사진</p>
-              <div className="relative inline-block">
-                {user.charmPhoto ? (
-                  <>
-                    <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(user.charmPhoto!)}>
-                      <img src={user.charmPhoto} alt="매력 사진" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
-                      <button onClick={() => { setEditingPhoto("charm"); setPhotoInput(user.charmPhoto || ""); }}
-                        className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow hover:bg-primary-dark transition-colors" title="수정">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                      </button>
-                      <button onClick={() => saveField("charmPhoto", null)}
-                        className="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors" title="삭제">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button onClick={() => { setEditingPhoto("charm"); setPhotoInput(""); }}
-                    className="w-28 h-28 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-fg hover:border-primary hover:text-primary transition-colors">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    <span className="text-[10px] mt-1">등록</span>
-                  </button>
-                )}
-              </div>
-              {editingPhoto === "charm" && (
-                <div className="mt-2 flex gap-2 items-center">
-                  <input type="text" value={photoInput} onChange={(e) => setPhotoInput(e.target.value)} placeholder="이미지 URL"
-                    className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && photoInput.trim()) { saveField("charmPhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); }
-                      if (e.key === "Escape") { setEditingPhoto(null); setPhotoInput(""); }
-                    }} />
-                  <button onClick={() => { if (photoInput.trim()) { saveField("charmPhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); } }}
-                    className="px-2 py-2 bg-primary text-white text-xs font-semibold rounded-lg">확인</button>
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="text-xs text-muted-fg mb-2">연인이 생기면 사진</p>
-              <div className="relative inline-block">
-                {user.datePhoto ? (
-                  <>
-                    <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(user.datePhoto!)}>
-                      <img src={user.datePhoto} alt="연인 사진" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
-                      <button onClick={() => { setEditingPhoto("date"); setPhotoInput(user.datePhoto || ""); }}
-                        className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow hover:bg-primary-dark transition-colors" title="수정">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                      </button>
-                      <button onClick={() => saveField("datePhoto", null)}
-                        className="w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors" title="삭제">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button onClick={() => { setEditingPhoto("date"); setPhotoInput(""); }}
-                    className="w-28 h-28 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-fg hover:border-primary hover:text-primary transition-colors">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    <span className="text-[10px] mt-1">등록</span>
-                  </button>
-                )}
-              </div>
-              {editingPhoto === "date" && (
-                <div className="mt-2 flex gap-2 items-center">
-                  <input type="text" value={photoInput} onChange={(e) => setPhotoInput(e.target.value)} placeholder="이미지 URL"
-                    className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && photoInput.trim()) { saveField("datePhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); }
-                      if (e.key === "Escape") { setEditingPhoto(null); setPhotoInput(""); }
-                    }} />
-                  <button onClick={() => { if (photoInput.trim()) { saveField("datePhoto", photoInput.trim()); setEditingPhoto(null); setPhotoInput(""); } }}
-                    className="px-2 py-2 bg-primary text-white text-xs font-semibold rounded-lg">확인</button>
-                </div>
-              )}
-            </div>
+            <ImageUploader
+              key={`charm-${userId}-${user.charmPhoto || "empty"}`}
+              value={user.charmPhoto}
+              category="charm"
+              onUploaded={(_path, url) => saveField("charmPhoto", url)}
+              onRemove={() => saveField("charmPhoto", null)}
+              label="저의 매력은 사진"
+            />
+            <ImageUploader
+              key={`date-${userId}-${user.datePhoto || "empty"}`}
+              value={user.datePhoto}
+              category="date"
+              onUploaded={(_path, url) => saveField("datePhoto", url)}
+              onRemove={() => saveField("datePhoto", null)}
+              label="연인이 생기면 사진"
+            />
           </div>
         </section>
 
@@ -474,9 +354,9 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="flex gap-2">
             <input type="text" value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="메모 작성..."
-              onKeyDown={(e) => { if (e.key === "Enter" && newNote.trim()) { setNotes(prev => [{ id: `an-${Date.now()}`, userId, content: newNote, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...prev]); setNewNote(""); } }}
+              onKeyDown={async (e) => { if (e.key === "Enter" && newNote.trim()) { const res = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, content: newNote }) }); const data = await res.json(); if (data.note) setNotes(prev => [data.note, ...prev]); setNewNote(""); } }}
               className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            <button onClick={() => { if (newNote.trim()) { setNotes(prev => [{ id: `an-${Date.now()}`, userId, content: newNote, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...prev]); setNewNote(""); } }}
+            <button onClick={async () => { if (newNote.trim()) { const res = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, content: newNote }) }); const data = await res.json(); if (data.note) setNotes(prev => [data.note, ...prev]); setNewNote(""); } }}
               className="px-5 py-2.5 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors">추가</button>
           </div>
         </section>

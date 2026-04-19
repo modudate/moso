@@ -37,6 +37,9 @@ yarn-error.log*
 # data
 /data
 
+# local scripts (may contain DB credentials)
+/scripts
+
 # uploads (user-generated, not seed images)
 # /public/uploads
 

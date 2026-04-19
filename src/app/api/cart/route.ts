@@ -1,23 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCart, addToCart, removeFromCart, clearCart } from "@/lib/store";
+import { getCartItems, addCartItem, removeCartItem } from "@/lib/db";
+import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const femaleId = req.nextUrl.searchParams.get("femaleId");
   if (!femaleId) return NextResponse.json({ error: "femaleId 필요" }, { status: 400 });
-  return NextResponse.json(getCart(femaleId));
+  const items = await getCartItems(femaleId);
+  return NextResponse.json(items);
 }
 
 export async function POST(req: NextRequest) {
   const { femaleProfileId, maleProfileId } = await req.json();
-  addToCart({ femaleProfileId, maleProfileId, addedAt: new Date().toISOString() });
+  await addCartItem(femaleProfileId, maleProfileId);
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(req: NextRequest) {
   const { femaleProfileId, maleProfileId, clearAll } = await req.json();
-  if (clearAll) clearCart(femaleProfileId);
-  else removeFromCart(femaleProfileId, maleProfileId);
+  if (clearAll) {
+    const db = await getDb();
+    await db.from("cart_items").delete().eq("female_profile_id", femaleProfileId);
+  } else {
+    await removeCartItem(femaleProfileId, maleProfileId);
+  }
   return NextResponse.json({ success: true });
 }

@@ -31,13 +31,12 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // 보호된 경로: 로그인 필요
   const protectedPaths = ["/female", "/male", "/admin"];
   const isProtected = protectedPaths.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 
-  if (isProtected && !user) {
+  if (isProtected && !user && process.env.NODE_ENV !== "development") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.searchParams.set("message", "login_required");

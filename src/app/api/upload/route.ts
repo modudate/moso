@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { nanoid } from "nanoid";
 import sharp from "sharp";
 
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const BUCKET = "profile-photos";
+const IS_DEV = process.env.NODE_ENV === "development";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
+  let uploaderId = user?.id;
+
+  if (!uploaderId) {
+    if (IS_DEV) {
+      uploaderId = "dev-anonymous";
+    } else {
+      return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
+    }
   }
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
-  const category = formData.get("category") as string; // "photo" | "charm" | "date"
+  const category = formData.get("category") as string;
 
   if (!file) {
     return NextResponse.json({ error: "파일이 필요합니다" }, { status: 400 });
@@ -40,7 +46,7 @@ export async function POST(req: NextRequest) {
     .webp({ quality: 85, effort: 2 })
     .toBuffer();
 
-  const fileName = `${user.id}/${category}-${nanoid()}.webp`;
+  const fileName = `${uploaderId}/${category}-${nanoid()}.webp`;
 
   const serviceClient = await createServiceClient();
   const { error: uploadError } = await serviceClient.storage
@@ -54,7 +60,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  // Signed URL 생성 (1시간)
   const { data: urlData } = await serviceClient.storage
     .from(BUCKET)
     .createSignedUrl(fileName, 3600);
