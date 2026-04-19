@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
+import LogoutButton from "@/components/LogoutButton";
 
 const SCROLL_KEY = "male_scroll";
 
@@ -55,14 +55,14 @@ export default function MalePage() {
     setLoading(false);
   };
 
-  const handleAction = async (e: React.MouseEvent, matchId: string, status: "approved" | "rejected") => {
+  const handleAction = (e: React.MouseEvent, matchId: string, status: "approved" | "rejected") => {
     e.stopPropagation();
-    await fetch("/api/match", {
+    setCards(prev => prev.map(c => c.matchId === matchId ? { ...c, status } : c));
+    fetch("/api/match", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ matchId, status }),
     });
-    setCards(prev => prev.map(c => c.matchId === matchId ? { ...c, status } : c));
   };
 
   const handleCardClick = (id: string, matchId: string) => {
@@ -77,7 +77,7 @@ export default function MalePage() {
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-white">모두의 모임</h1>
-          <Link href="/" className="text-xs text-white/80 hover:text-white">홈으로</Link>
+          <LogoutButton />
         </div>
       </header>
 

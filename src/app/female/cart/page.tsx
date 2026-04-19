@@ -35,9 +35,9 @@ export default function MatchRequestListPage() {
     setLoading(false);
   };
 
-  const removeFromList = async (maleId: string) => {
-    await fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }) });
+  const removeFromList = (maleId: string) => {
     setCartUsers(prev => prev.filter(u => u.id !== maleId));
+    fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }) });
   };
 
   const handleConfirm = async () => {

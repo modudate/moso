@@ -1,7 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PROTECTED_PREFIXES = ["/female", "/male", "/admin"];
+const IS_DEV = process.env.NODE_ENV === "development";
+
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  const isProtected = PROTECTED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+
+  if (!isProtected || IS_DEV) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -29,22 +42,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
-  const protectedPaths = ["/female", "/male", "/admin"];
-  const isProtected = protectedPaths.some(
-    (p) => pathname === p || pathname.startsWith(p + "/"),
-  );
-
-  if (isProtected && !user && process.env.NODE_ENV !== "development") {
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.searchParams.set("message", "login_required");
     return NextResponse.redirect(url);
   }
-
-  // 관리자 경로: admins 테이블 확인은 API 레벨에서 처리
-  // 여기서는 세션 유지만 담당
 
   return supabaseResponse;
 }

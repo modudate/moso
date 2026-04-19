@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS } from "@/lib/options";
+import LogoutButton from "@/components/LogoutButton";
 
 const PER_PAGE = 20;
 const SCROLL_KEY = "female_scroll";
@@ -43,14 +44,14 @@ export default function FemalePage() {
     setLoading(false);
   };
 
-  const toggleCart = async (e: React.MouseEvent, maleId: string) => {
+  const toggleCart = (e: React.MouseEvent, maleId: string) => {
     e.stopPropagation();
     if (cart.has(maleId)) {
-      await fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: "f-001", maleProfileId: maleId }) });
       setCart(prev => { const n = new Set(prev); n.delete(maleId); return n; });
+      fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: "f-001", maleProfileId: maleId }) });
     } else {
-      await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: "f-001", maleProfileId: maleId }) });
       setCart(prev => new Set(prev).add(maleId));
+      fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: "f-001", maleProfileId: maleId }) });
     }
   };
 
@@ -107,7 +108,7 @@ export default function FemalePage() {
             <Link href="/female/cart" className="relative px-3 py-1.5 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors">
               매칭 요청 목록 {cart.size > 0 && <span className="ml-1 bg-white text-[#ff8a3d] text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{cart.size}</span>}
             </Link>
-            <Link href="/" className="text-xs text-white/80 hover:text-white">홈으로</Link>
+            <LogoutButton />
           </div>
         </div>
       </header>

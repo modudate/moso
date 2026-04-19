@@ -50,10 +50,10 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
     setLoading(false);
   };
 
-  const saveField = async (key: string, value: unknown) => {
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: userId, [key]: value }) });
+  const saveField = (key: string, value: unknown) => {
     setUser(prev => prev ? { ...prev, [key]: value } : prev);
     setEditing(null);
+    fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: userId, [key]: value }) });
   };
 
   const handleDoubleClick = (key: string, currentValue: string) => { setEditing(key); setEditValue(String(currentValue)); };

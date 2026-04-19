@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
+import LogoutButton from "@/components/LogoutButton";
 
 const PER_PAGE = 20;
 
@@ -71,27 +71,20 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  const handleApprove = async (id: string) => {
+  const patchStatus = (id: string, updates: Record<string, unknown>) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } as User : u));
+    fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
+  };
+
+  const handleApprove = (id: string) => {
     const expires = new Date();
     expires.setDate(expires.getDate() + 30);
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "active", expiresAt: expires.toISOString() }) });
-    fetchData();
+    patchStatus(id, { status: "active", expiresAt: expires.toISOString() });
   };
 
-  const handleReject = async (id: string) => {
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "rejected" }) });
-    fetchData();
-  };
-
-  const handleBlock = async (id: string) => {
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "blocked" }) });
-    fetchData();
-  };
-
-  const handleUnblock = async (id: string) => {
-    await fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "active" }) });
-    fetchData();
-  };
+  const handleReject = (id: string) => patchStatus(id, { status: "rejected" });
+  const handleBlock = (id: string) => patchStatus(id, { status: "blocked" });
+  const handleUnblock = (id: string) => patchStatus(id, { status: "active" });
 
   const filtered = users.filter((u) => {
     if (search.length >= 2 && !u.realName.includes(search) && !u.phone.includes(search)) return false;
@@ -116,7 +109,7 @@ export default function AdminPage() {
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-white">모두의 모임 <span className="text-sm font-normal text-white/70">관리자</span></h1>
-          <Link href="/" className="text-xs text-white/80 hover:text-white">홈으로</Link>
+          <LogoutButton />
         </div>
       </header>
 
