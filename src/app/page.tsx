@@ -105,6 +105,14 @@ export default function Home() {
           )}
           {loading ? "로그인 중..." : "Google 계정으로 계속하기"}
         </button>
+
+        <p className="w-full max-w-sm text-[11px] leading-5 text-white/90 text-center mt-2">
+          ‘Google 계정으로 계속하기’를 누르면 모두의 모임{" "}
+          <Link href="/terms" className="underline font-medium">이용약관</Link>
+          에 동의하는 것으로 간주됩니다. 회원의 개인정보 처리 방식은{" "}
+          <Link href="/privacy" className="underline font-medium">개인정보처리방침</Link>
+          에서 확인해 주세요.
+        </p>
       </div>
     </main>
   );

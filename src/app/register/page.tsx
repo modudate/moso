@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   GENDERS, BIRTH_YEARS, CITIES, DISTRICTS, EDUCATIONS, WORKPLACES, JOBS,
   WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, AGE_RANGES,
@@ -48,8 +49,23 @@ export default function RegisterPage() {
   const [idealMbti, setIdealMbti] = useState<string[]>([]);
   const [topPriorities, setTopPriorities] = useState<string[]>([]);
 
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAge, setAgreeAge] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
+
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const allRequiredAgreed = agreeTerms && agreePrivacy && agreeAge;
+  const allAgreed = allRequiredAgreed && agreeMarketing;
+  const toggleAll = () => {
+    const next = !allAgreed;
+    setAgreeTerms(next);
+    setAgreePrivacy(next);
+    setAgreeAge(next);
+    setAgreeMarketing(next);
+  };
 
   const multiRef = useRef<MultiImageUploaderHandle>(null);
   const charmRef = useRef<ImageUploaderHandle>(null);
@@ -116,6 +132,7 @@ export default function RegisterPage() {
   const handleSubmit = async () => {
     const err = validateStep2();
     if (err) { setError(err); return; }
+    if (!allRequiredAgreed) { setError("필수 약관에 모두 동의해 주세요"); return; }
     setError("");
     setSubmitting(true);
 
@@ -512,7 +529,21 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <button onClick={handleSubmit} disabled={submitting}
+            <div className="rounded-2xl border border-border bg-white p-4 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={allAgreed} onChange={toggleAll}
+                  className="w-5 h-5 accent-[#ff8a3d] cursor-pointer" />
+                <span className="text-sm font-bold text-gray-900">전체 약관에 동의합니다</span>
+              </label>
+              <div className="border-t border-border pt-3 space-y-2.5">
+                <ConsentRow checked={agreeTerms} onChange={setAgreeTerms} required label="이용약관 동의" href="/terms" />
+                <ConsentRow checked={agreePrivacy} onChange={setAgreePrivacy} required label="개인정보 수집·이용 동의" href="/privacy" />
+                <ConsentRow checked={agreeAge} onChange={setAgreeAge} required label="만 19세 이상입니다" />
+                <ConsentRow checked={agreeMarketing} onChange={setAgreeMarketing} label="(선택) 이벤트·소식 알림 수신 동의" />
+              </div>
+            </div>
+
+            <button onClick={handleSubmit} disabled={submitting || !allRequiredAgreed}
               className="w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2"
               style={{ backgroundColor: "#ff8a3d" }}>
               {submitting && <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
@@ -547,6 +578,38 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="block text-sm font-semibold text-foreground mb-2">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function ConsentRow({
+  checked,
+  onChange,
+  label,
+  href,
+  required,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  href?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <label className="flex items-center gap-3 cursor-pointer flex-1">
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)}
+          className="w-4 h-4 accent-[#ff8a3d] cursor-pointer" />
+        <span className="text-sm text-gray-700">
+          {required && <span className="text-[#ff8a3d] font-bold mr-1">[필수]</span>}
+          {label}
+        </span>
+      </label>
+      {href && (
+        <Link href={href} target="_blank" className="text-xs text-gray-500 underline hover:text-gray-700 shrink-0">
+          전체보기
+        </Link>
+      )}
     </div>
   );
 }
