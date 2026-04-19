@@ -12,31 +12,37 @@ export async function GET(request: Request) {
     if (!error && data.user) {
       const userId = data.user.id;
 
-      const [{ data: dbUser }, { data: adminRow }] = await Promise.all([
-        supabase.from("users").select("role, status").eq("id", userId).single(),
-        supabase.from("admins").select("id").eq("id", userId).single(),
-      ]);
+      const { data: dbUser } = await supabase
+        .from("users")
+        .select("role, status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (dbUser) {
+        const statusRedirects: Record<string, string> = {
+          pending: "/pending",
+          blocked: "/blocked",
+          rejected: "/rejected",
+        };
+        if (statusRedirects[dbUser.status]) {
+          return NextResponse.redirect(`${origin}${statusRedirects[dbUser.status]}`);
+        }
+        return NextResponse.redirect(
+          `${origin}/${dbUser.role === "female" ? "female" : "male"}`
+        );
+      }
+
+      const { data: adminRow } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("id", userId)
+        .maybeSingle();
 
       if (adminRow) {
         return NextResponse.redirect(`${origin}/admin`);
       }
 
-      if (!dbUser) {
-        return NextResponse.redirect(`${origin}/register`);
-      }
-
-      const statusRedirects: Record<string, string> = {
-        pending: "/pending",
-        blocked: "/blocked",
-        rejected: "/rejected",
-      };
-      if (statusRedirects[dbUser.status]) {
-        return NextResponse.redirect(`${origin}${statusRedirects[dbUser.status]}`);
-      }
-
-      return NextResponse.redirect(
-        `${origin}/${dbUser.role === "female" ? "female" : "male"}`
-      );
+      return NextResponse.redirect(`${origin}/register`);
     }
   }
 

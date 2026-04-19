@@ -1,22 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 const IS_DEV = process.env.NODE_ENV === "development";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+
+  useEffect(() => {
+    supabaseRef.current = createClient();
+  }, []);
 
   const handleGoogleLogin = () => {
     if (loading) return;
     setLoading(true);
-    const redirectTo = encodeURIComponent(
-      `${window.location.origin}/auth/callback`,
-    );
-    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+    const supabase = supabaseRef.current ?? createClient();
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
   };
 
   return (
