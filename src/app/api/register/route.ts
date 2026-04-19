@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
     mbti: body.mbti,
     charm: body.charm || "",
     dating_style: body.datingStyle || "",
-    photo_urls: [],
-    charm_photo: null,
-    date_photo: null,
+    photo_urls: Array.isArray(body.photoUrls) ? body.photoUrls.filter(Boolean) : [],
+    charm_photo: body.charmPhotoUrl || null,
+    date_photo: body.datePhotoUrl || null,
   });
 
   if (profileError) {

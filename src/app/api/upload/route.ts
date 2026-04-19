@@ -60,13 +60,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  const { data: urlData } = await serviceClient.storage
+  const { data: publicData } = serviceClient.storage
     .from(BUCKET)
-    .createSignedUrl(fileName, 3600);
+    .getPublicUrl(fileName);
 
   return NextResponse.json({
     success: true,
     path: fileName,
-    signedUrl: urlData?.signedUrl || "",
+    signedUrl: publicData?.publicUrl || "",
   });
 }
