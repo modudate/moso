@@ -24,6 +24,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  // 피드백용 미리보기 쿠키 - 랜딩의 남성/여성/관리자 버튼에서 세팅.
+  // 추후 피드백 완료 후 이 블록만 제거하면 됨.
+  if (request.cookies.get("preview_bypass")?.value === "1") {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

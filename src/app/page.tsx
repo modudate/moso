@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
-const IS_DEV = process.env.NODE_ENV === "development";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 function dec2hex(n: number) {
@@ -32,6 +32,12 @@ function base64UrlAscii(str: string): string {
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const previewGo = (path: string) => {
+    document.cookie = "preview_bypass=1; path=/; max-age=86400; SameSite=Lax";
+    router.push(path);
+  };
 
   const handleGoogleLogin = async () => {
     if (loading) return;
@@ -77,16 +83,16 @@ export default function Home() {
       </div>
 
       <div className="w-full px-6 pb-12 flex flex-col items-center gap-3">
-        {IS_DEV && (
-          <>
-            <div className="flex gap-3 w-full max-w-sm">
-              <Link href="/female" className="flex-1 py-3 bg-pink-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-pink-600 transition-colors">여성</Link>
-              <Link href="/male" className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-blue-600 transition-colors">남성</Link>
-              <Link href="/admin" className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-semibold text-center shadow-md hover:bg-gray-800 transition-colors">관리자</Link>
-            </div>
-            <Link href="/register" className="w-full max-w-sm py-3 bg-white/20 text-white rounded-xl font-semibold text-center border border-white/40 hover:bg-white/30 transition-colors">회원가입</Link>
-          </>
-        )}
+        {/* 피드백용 임시 바로가기 (권한 우회 · 추후 제거 예정) */}
+        <div className="w-full max-w-sm">
+          <p className="text-[11px] text-white/80 text-center mb-2">피드백용 미리보기 · 권한 확인 없이 입장</p>
+          <div className="flex gap-3">
+            <button onClick={() => previewGo("/female")} className="flex-1 py-3 bg-pink-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-pink-600 transition-colors">여성</button>
+            <button onClick={() => previewGo("/male")} className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-blue-600 transition-colors">남성</button>
+            <button onClick={() => previewGo("/admin")} className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-semibold text-center shadow-md hover:bg-gray-800 transition-colors">관리자</button>
+          </div>
+          <button onClick={() => previewGo("/register")} className="w-full mt-2 py-3 bg-white/20 text-white rounded-xl font-semibold text-center border border-white/40 hover:bg-white/30 transition-colors">회원가입</button>
+        </div>
 
         <button
           onClick={handleGoogleLogin}
