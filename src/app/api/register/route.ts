@@ -52,9 +52,11 @@ export async function POST(req: NextRequest) {
     mbti: body.mbti,
     charm: body.charm || "",
     dating_style: body.datingStyle || "",
-    photo_urls: Array.isArray(body.photoUrls) ? body.photoUrls.filter(Boolean) : [],
-    charm_photo: body.charmPhotoUrl || null,
-    date_photo: body.datePhotoUrl || null,
+    photo_urls: Array.isArray(body.photoUrls)
+      ? body.photoUrls.filter((u: unknown): u is string => typeof u === "string" && !!u && !u.startsWith("blob:"))
+      : [],
+    charm_photo: typeof body.charmPhotoUrl === "string" && !body.charmPhotoUrl.startsWith("blob:") ? body.charmPhotoUrl : null,
+    date_photo: typeof body.datePhotoUrl === "string" && !body.datePhotoUrl.startsWith("blob:") ? body.datePhotoUrl : null,
   });
 
   if (profileError) {

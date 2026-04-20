@@ -41,13 +41,24 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
     expiresAt: "expires_at",
   };
 
+  const isBlob = (s: unknown) => typeof s === "string" && s.startsWith("blob:");
+
   for (const [key, val] of Object.entries(updates)) {
     if (key === "status") {
       await db.from("users").update({ status: val }).eq("id", userId);
       continue;
     }
     const dbKey = fieldMap[key];
-    if (dbKey) dbUpdates[dbKey] = val;
+    if (!dbKey) continue;
+
+    // blob: URL 방어 - 업로드 미완료/실패 상태 URL 을 DB 에 절대 저장 금지
+    if (key === "photoUrls" && Array.isArray(val)) {
+      dbUpdates[dbKey] = val.filter(u => typeof u === "string" && !isBlob(u));
+    } else if ((key === "charmPhoto" || key === "datePhoto") && isBlob(val)) {
+      continue;
+    } else {
+      dbUpdates[dbKey] = val;
+    }
   }
 
   if (Object.keys(dbUpdates).length > 0) {
