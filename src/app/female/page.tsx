@@ -6,8 +6,9 @@ import Link from "next/link";
 import { User } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
+import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
 
-const PER_PAGE = 20;
+const PAGE_SIZE = 10;
 const SCROLL_KEY = "female_scroll";
 
 export default function FemalePage() {
@@ -18,9 +19,10 @@ export default function FemalePage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [tempFilters, setTempFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [page, setPage] = useState(1);
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const [myId, setMyId] = useState<string>("f-001");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -75,7 +77,7 @@ export default function FemalePage() {
 
   const applyFilters = () => {
     setFilters({ ...tempFilters });
-    setPage(1);
+    setVisible(PAGE_SIZE);
     setShowFilters(false);
   };
 
@@ -102,16 +104,45 @@ export default function FemalePage() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   const tempActiveCount = Object.values(tempFilters).filter(Boolean).length;
   const filtered = males.filter(matchFilter);
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const paged = filtered.slice(0, visible);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  useEffect(() => {
+    if (loading) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setVisible((v) => Math.min(v + PAGE_SIZE, filtered.length));
+      }
+    }, { rootMargin: "400px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loading, filtered.length]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background mx-auto max-w-[430px]">
+        <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
+          <div className="px-4 py-4 flex items-center justify-between">
+            <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
+            <div className="flex items-center gap-3">
+              <div className="w-28 h-8 rounded-lg bg-white/20" />
+              <LogoutButton />
+            </div>
+          </div>
+        </header>
+        <div className="px-4">
+          <ProfileCardSkeleton count={6} />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background mx-auto max-w-[430px]" ref={scrollRef}>
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">모두의 모임</h1>
+          <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
           <div className="flex items-center gap-3">
             <Link href="/female/cart" className="relative px-3 py-1.5 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors">
               매칭 요청 목록 {cart.size > 0 && <span className="ml-1 bg-white text-[#ff8a3d] text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{cart.size}</span>}
@@ -129,7 +160,7 @@ export default function FemalePage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" /></svg>
             필터 {activeFilterCount > 0 && <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "#ff8a3d" }}>{activeFilterCount}</span>}
           </button>
-          {activeFilterCount > 0 && <button onClick={() => { setFilters({}); setPage(1); }} className="text-xs text-danger hover:underline">초기화</button>}
+          {activeFilterCount > 0 && <button onClick={() => { setFilters({}); setVisible(PAGE_SIZE); }} className="text-xs text-danger hover:underline">초기화</button>}
         </div>
 
         <div className="grid grid-cols-2 gap-3 pb-6">
@@ -168,16 +199,11 @@ export default function FemalePage() {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 pb-8">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button key={i} onClick={() => setPage(i + 1)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${page === i + 1 ? "text-white" : "bg-white border border-border hover:border-[#ff8a3d]/30"}`}
-                style={page === i + 1 ? { backgroundColor: "#ff8a3d" } : {}}>
-                {i + 1}
-              </button>
-            ))}
-          </div>
+        {visible < filtered.length && (
+          <>
+            <ProfileCardSkeleton count={4} />
+            <div ref={sentinelRef} className="h-1" />
+          </>
         )}
       </div>
 

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
 import { isPreviewMode } from "@/lib/preview";
+import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
 
 const SCROLL_KEY = "male_scroll";
+const PAGE_SIZE = 10;
 
 type FemaleCard = {
   user: User;
@@ -21,8 +23,23 @@ export default function MalePage() {
   const router = useRouter();
   const [cards, setCards] = useState<FemaleCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setVisible((v) => Math.min(v + PAGE_SIZE, cards.length));
+      }
+    }, { rootMargin: "400px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loading, cards.length]);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SCROLL_KEY);
@@ -86,13 +103,29 @@ export default function MalePage() {
     router.push(`/male/${id}?matchId=${matchId}`);
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background mx-auto max-w-[430px]">
+        <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
+          <div className="px-4 py-4 flex items-center justify-between">
+            <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
+            <LogoutButton />
+          </div>
+        </header>
+        <div className="px-4">
+          <ProfileCardSkeleton count={6} />
+        </div>
+      </main>
+    );
+  }
+
+  const paged = cards.slice(0, visible);
 
   return (
     <main className="min-h-screen bg-background mx-auto max-w-[430px]">
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">모두의 모임</h1>
+          <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
           <LogoutButton />
         </div>
       </header>
@@ -102,7 +135,7 @@ export default function MalePage() {
           <EmptyState />
         ) : (
           <div className="grid grid-cols-2 gap-3 py-6">
-            {cards.map((c) => (
+            {paged.map((c) => (
               <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
                 <div className="relative aspect-[4/5] bg-muted overflow-hidden">
@@ -128,6 +161,13 @@ export default function MalePage() {
               </div>
             ))}
           </div>
+        )}
+
+        {visible < cards.length && (
+          <>
+            <ProfileCardSkeleton count={4} />
+            <div ref={sentinelRef} className="h-1" />
+          </>
         )}
       </div>
     </main>

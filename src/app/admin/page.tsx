@@ -152,7 +152,10 @@ export default function AdminPage() {
     <main className="min-h-screen bg-background">
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">모두의 모임 <span className="text-sm font-normal text-white/70">관리자</span></h1>
+          <div className="flex items-center gap-3">
+            <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-9 w-auto" />
+            <span className="text-sm font-normal text-white/80">관리자</span>
+          </div>
           <LogoutButton />
         </div>
       </header>
@@ -220,7 +223,19 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-5 bg-card rounded-2xl border border-border animate-pulse">
+                <div className="w-16 h-16 rounded-xl bg-gray-200 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-1/3 bg-gray-200 rounded" />
+                  <div className="h-3 w-2/3 bg-gray-200 rounded" />
+                  <div className="h-3 w-1/4 bg-gray-200 rounded" />
+                </div>
+                <div className="w-16 h-8 bg-gray-200 rounded-lg flex-shrink-0" />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-3">
             {paged.map((u) => {
