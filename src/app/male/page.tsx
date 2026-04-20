@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
+import { isPreviewMode } from "@/lib/preview";
 
 const SCROLL_KEY = "male_scroll";
 
@@ -36,6 +37,7 @@ export default function MalePage() {
     const meRes = await fetch("/api/me");
     const { user } = await meRes.json();
     const uid = user?.id ?? "m-001";
+    const preview = isPreviewMode();
 
     const [matchRes, femalesRes] = await Promise.all([
       fetch(`/api/match?maleId=${encodeURIComponent(uid)}`),
@@ -53,6 +55,23 @@ export default function MalePage() {
     for (const md of mdRecs) {
       const user = femaleMap.get(md.femaleProfileId);
       if (user) result.push({ user, matchId: md.id, status: md.status, source: "md", requestedAt: md.createdAt });
+    }
+
+    // 피드백용 미리보기 - 매칭/MD 추천에 잡히지 않은 나머지 활성 여성도 모두 노출.
+    // matchId 는 비워서 상세에서 확정/거절 버튼이 뜨지 않도록 함.
+    if (preview) {
+      const alreadyIds = new Set(result.map(r => r.user.id));
+      for (const f of females) {
+        if (!alreadyIds.has(f.id)) {
+          result.push({
+            user: f,
+            matchId: "",
+            status: "preview",
+            source: "match",
+            requestedAt: f.createdAt,
+          });
+        }
+      }
     }
     result.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
     setCards(result);
@@ -81,7 +100,7 @@ export default function MalePage() {
         ) : (
           <div className="grid grid-cols-2 gap-3 py-6">
             {cards.map((c) => (
-              <div key={c.matchId} onClick={() => handleCardClick(c.user.id, c.matchId)}
+              <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
                 <div className="relative aspect-[4/5] bg-muted overflow-hidden">
                   {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :

@@ -10,6 +10,7 @@ import {
 } from "@/lib/options";
 import MultiImageUploader, { type MultiImageUploaderHandle } from "@/components/MultiImageUploader";
 import ImageUploader, { type ImageUploaderHandle } from "@/components/ImageUploader";
+import { isPreviewMode } from "@/lib/preview";
 
 type Step = 1 | 2;
 
@@ -56,6 +57,9 @@ export default function RegisterPage() {
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [preview, setPreview] = useState(false);
+
+  useEffect(() => { setPreview(isPreviewMode()); }, []);
 
   useEffect(() => {
     if (!error) return;
@@ -151,6 +155,13 @@ export default function RegisterPage() {
     const err = validateStep2();
     if (err) { setError(err.msg); flashAndScrollTo(err.key); return; }
     if (!allRequiredAgreed) { setError("필수 약관에 모두 동의해 주세요"); flashAndScrollTo("consent"); return; }
+
+    // 피드백용 미리보기 모드에서는 실제 가입을 막음
+    if (isPreviewMode()) {
+      alert("피드백용 미리보기입니다. 실제 가입은 'Google 계정으로 계속하기' 로 진행해주세요.");
+      return;
+    }
+
     setError("");
     setSubmitting(true);
 
@@ -253,6 +264,12 @@ export default function RegisterPage() {
       </header>
 
       <div className="max-w-[430px] mx-auto px-5 py-6">
+        {preview && (
+          <div className="mb-4 p-3 rounded-xl bg-yellow-50 border border-yellow-200 text-[13px] text-yellow-900">
+            피드백용 미리보기입니다. 입력한 내용은 실제 저장되지 않아요. 정식 가입은 홈 화면의 <b>Google 계정으로 계속하기</b> 로 진행해주세요.
+          </div>
+        )}
+
         <div className="flex gap-1 mb-6">
           <div className="flex-1 h-1 rounded-full" style={{ backgroundColor: "#ff8a3d" }} />
           <div className="flex-1 h-1 rounded-full" style={{ backgroundColor: step === 2 ? "#ff8a3d" : "#e5e5e5" }} />
