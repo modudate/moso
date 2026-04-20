@@ -72,7 +72,7 @@ export default function ProfileViewPage({ params }: { params: Promise<{ token: s
         </div>
       )}
       {profile.charmPhoto && (
-        <div className="mt-3 w-full aspect-[3/4] bg-muted">
+        <div className="mt-3 w-full aspect-square bg-muted">
           <img src={profile.charmPhoto} alt={`${profile.nickname} 매력`} className="w-full h-full object-cover" />
         </div>
       )}
@@ -84,7 +84,7 @@ export default function ProfileViewPage({ params }: { params: Promise<{ token: s
         </div>
       )}
       {profile.datePhoto && (
-        <div className="mt-3 w-full aspect-[3/4] bg-muted">
+        <div className="mt-3 w-full aspect-square bg-muted">
           <img src={profile.datePhoto} alt={`${profile.nickname} 연인`} className="w-full h-full object-cover" />
         </div>
       )}

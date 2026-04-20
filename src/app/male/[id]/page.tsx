@@ -79,7 +79,7 @@ export default function FemaleDetailPage() {
         <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{user.charm}</p>
       </div>
       {user.charmPhoto && (
-        <div className="mt-3 w-full aspect-[3/4] bg-muted">
+        <div className="mt-3 w-full aspect-square bg-muted">
           <img src={user.charmPhoto} alt={`${user.nickname} 매력`} className="w-full h-full object-cover" />
         </div>
       )}
@@ -90,7 +90,7 @@ export default function FemaleDetailPage() {
         <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{user.datingStyle}</p>
       </div>
       {user.datePhoto && (
-        <div className="mt-3 w-full aspect-[3/4] bg-muted">
+        <div className="mt-3 w-full aspect-square bg-muted">
           <img src={user.datePhoto} alt={`${user.nickname} 연인`} className="w-full h-full object-cover" />
         </div>
       )}

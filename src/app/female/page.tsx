@@ -133,7 +133,7 @@ export default function FemalePage() {
         <div className="grid grid-cols-2 gap-3 pb-6">
           {paged.map((m) => (
             <div key={m.id} onClick={() => handleCardClick(m.id)} className="group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative cursor-pointer">
-              <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+              <div className="relative aspect-square bg-muted overflow-hidden">
                 {m.photoUrls[0] ? <img src={m.photoUrls[0]} alt={m.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                   <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{m.nickname?.[0]}</div>}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
