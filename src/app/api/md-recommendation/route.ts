@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMdRecsForMale, addMdRecommendation, deleteMdRecommendation } from "@/lib/db";
-import { getDb } from "@/lib/db";
+import { getMdRecsForMale, addMdRecommendation, deleteMdRecommendation, getAllMdRecommendations } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const maleId = req.nextUrl.searchParams.get("maleId");
   if (maleId) return NextResponse.json(await getMdRecsForMale(maleId));
-
-  const db = await getDb();
-  const { data } = await db.from("md_recommendations").select("*").order("created_at", { ascending: false });
-  return NextResponse.json(data || []);
+  return NextResponse.json(await getAllMdRecommendations());
 }
 
 export async function POST(req: NextRequest) {

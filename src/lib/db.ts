@@ -121,6 +121,15 @@ export async function getMdRecsForMale(maleProfileId: string) {
   return (data || []).map(mapMdRec);
 }
 
+export async function getAllMdRecommendations() {
+  const db = await getDb();
+  const { data } = await db
+    .from("md_recommendations")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data || []).map(mapMdRec);
+}
+
 export async function addMdRecommendation(maleProfileId: string, femaleProfileId: string) {
   const db = await getDb();
   const { data, error } = await db

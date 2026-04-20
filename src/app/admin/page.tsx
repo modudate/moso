@@ -241,16 +241,16 @@ export default function AdminPage() {
                       <h3 className="font-bold text-base">{u.realName}</h3>
                       <span className="text-sm text-muted-fg">({u.nickname})</span>
                       {isNew(u.createdAt) && <span className="text-xs font-bold text-white bg-primary px-2 py-0.5 rounded-md">NEW</span>}
+                      {mdIds.has(u.id) && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
+                          MD {mdCountMap.get(u.id) ?? ""}
+                        </span>
+                      )}
                       <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
                       <span className="text-xs px-2.5 py-0.5 rounded-full bg-muted text-muted-fg">{u.role === "male" ? "남성" : "여성"}</span>
                       {ms && ms.total > 0 && (
                         <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
                           매칭 {ms.total}
-                        </span>
-                      )}
-                      {mdIds.has(u.id) && (
-                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#7c5cfc" }}>
-                          MD {mdCountMap.get(u.id) ?? ""}
                         </span>
                       )}
                     </div>
