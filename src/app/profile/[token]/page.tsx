@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "@/lib/types";
 import { regionLabel, smokingLabel } from "@/lib/options";
+import PhotoCarousel from "@/components/PhotoCarousel";
 
 type Status = "loading" | "ok" | "expired" | "limit" | "error";
 
@@ -46,11 +47,7 @@ export default function ProfileViewPage({ params }: { params: Promise<{ token: s
 
   return (
     <main className="min-h-screen bg-white mx-auto max-w-[430px]">
-      {profile.photoUrls[0] && (
-        <div className="w-full aspect-[3/4] bg-muted">
-          <img src={profile.photoUrls[0]} alt={profile.nickname} className="w-full h-full object-cover" />
-        </div>
-      )}
+      <PhotoCarousel photos={profile.photoUrls} alt={profile.nickname} />
 
       <div className="px-5 pt-6 pb-4">
         <h1 className="text-[28px] font-bold text-foreground">{profile.nickname}, {age}</h1>
@@ -89,16 +86,6 @@ export default function ProfileViewPage({ params }: { params: Promise<{ token: s
       {profile.datePhoto && (
         <div className="mt-3 w-full aspect-[3/4] bg-muted">
           <img src={profile.datePhoto} alt={`${profile.nickname} 연인`} className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      {profile.photoUrls.length > 1 && (
-        <div className="mt-3">
-          {profile.photoUrls.slice(1).map((url, i) => (
-            <div key={i} className="w-full aspect-[3/4] bg-muted">
-              <img src={url} alt={`${profile.nickname} ${i + 2}`} className="w-full h-full object-cover" />
-            </div>
-          ))}
         </div>
       )}
 

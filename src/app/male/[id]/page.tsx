@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { User } from "@/lib/types";
 import { regionLabel, smokingLabel } from "@/lib/options";
+import PhotoCarousel from "@/components/PhotoCarousel";
 
 export default function FemaleDetailPage() {
   const router = useRouter();
@@ -51,12 +52,8 @@ export default function FemaleDetailPage() {
         <div className="w-6" />
       </div>
 
-      {/* 대표 사진 */}
-      {user.photoUrls[0] && (
-        <div className="w-full aspect-[3/4] bg-muted">
-          <img src={user.photoUrls[0]} alt={user.nickname} className="w-full h-full object-cover" />
-        </div>
-      )}
+      {/* 대표 사진 슬라이드 (최대 4장) */}
+      <PhotoCarousel photos={user.photoUrls} alt={user.nickname} />
 
       {/* 이름 + 나이 */}
       <div className="px-5 pt-6 pb-4">
@@ -95,16 +92,6 @@ export default function FemaleDetailPage() {
       {user.datePhoto && (
         <div className="mt-3 w-full aspect-[3/4] bg-muted">
           <img src={user.datePhoto} alt={`${user.nickname} 연인`} className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      {user.photoUrls.length > 1 && (
-        <div className="mt-3">
-          {user.photoUrls.slice(1).map((url, i) => (
-            <div key={i} className="w-full aspect-[3/4] bg-muted">
-              <img src={url} alt={`${user.nickname} ${i + 2}`} className="w-full h-full object-cover" />
-            </div>
-          ))}
         </div>
       )}
 
