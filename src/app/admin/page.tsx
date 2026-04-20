@@ -29,6 +29,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [matchMap, setMatchMap] = useState<Map<string, MatchSummary>>(new Map());
   const [mdCountMap, setMdCountMap] = useState<Map<string, number>>(new Map());
+  const [mdIds, setMdIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -72,12 +73,14 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [uRes, mRes] = await Promise.all([
+    const [uRes, mRes, mdRes] = await Promise.all([
       fetch("/api/profiles"),
       fetch("/api/match?all=true"),
+      fetch("/api/md-recommendation"),
     ]);
     const uData: User[] = await uRes.json();
     const mData: MatchRequest[] = await mRes.json();
+    const mdData: MdRecommendation[] = await mdRes.json();
 
     const mm = new Map<string, MatchSummary>();
     for (const u of uData) mm.set(u.id, { total: 0, pending: 0, approved: 0, rejected: 0 });
@@ -93,12 +96,19 @@ export default function AdminPage() {
       }
     }
 
-    // TODO: fetch MD recommendations count from a dedicated API
     const mdMap = new Map<string, number>();
-    // For now, use a simple approach
+    const mdSet = new Set<string>();
+    for (const md of mdData) {
+      mdSet.add(md.maleProfileId);
+      mdSet.add(md.femaleProfileId);
+      mdMap.set(md.maleProfileId, (mdMap.get(md.maleProfileId) || 0) + 1);
+      mdMap.set(md.femaleProfileId, (mdMap.get(md.femaleProfileId) || 0) + 1);
+    }
+
     setUsers(uData);
     setMatchMap(mm);
     setMdCountMap(mdMap);
+    setMdIds(mdSet);
     setLoading(false);
   };
 
@@ -130,6 +140,8 @@ export default function AdminPage() {
       if (matchFilter === "has_rejected" && (!ms || ms.rejected === 0)) return false;
       if (matchFilter === "no_match" && ms && ms.total > 0) return false;
     }
+    if (mdFilter === "has_md" && !mdIds.has(u.id)) return false;
+    if (mdFilter === "no_md" && mdIds.has(u.id)) return false;
     if (!matchIdealFilter(u)) return false;
     return true;
   });
@@ -173,6 +185,12 @@ export default function AdminPage() {
             <option value="has_pending">대기중 있음</option>
             <option value="has_rejected">거절 있음</option>
             <option value="no_match">매칭 없음</option>
+          </select>
+          <select value={mdFilter} onChange={(e) => { setMdFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2.5 rounded-xl border border-border bg-white text-base">
+            <option value="">전체 MD 추천</option>
+            <option value="has_md">MD 추천 이력 있음</option>
+            <option value="no_md">MD 추천 이력 없음</option>
           </select>
           <button
             onClick={openIdealFilters}
@@ -228,6 +246,11 @@ export default function AdminPage() {
                       {ms && ms.total > 0 && (
                         <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
                           매칭 {ms.total}
+                        </span>
+                      )}
+                      {mdIds.has(u.id) && (
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#7c5cfc" }}>
+                          MD {mdCountMap.get(u.id) ?? ""}
                         </span>
                       )}
                     </div>
