@@ -59,16 +59,6 @@ export default function MalePage() {
     setLoading(false);
   };
 
-  const handleAction = (e: React.MouseEvent, matchId: string, status: "approved" | "rejected") => {
-    e.stopPropagation();
-    setCards(prev => prev.map(c => c.matchId === matchId ? { ...c, status } : c));
-    fetch("/api/match", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, status }),
-    });
-  };
-
   const handleCardClick = (id: string, matchId: string) => {
     sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
     router.push(`/male/${id}?matchId=${matchId}`);
@@ -111,12 +101,6 @@ export default function MalePage() {
                       <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{c.user.workplace}</span>
                       <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{c.user.mbti}</span>
                     </div>
-                    {c.status === "pending" && (
-                      <div className="flex gap-2 pt-1">
-                        <button onClick={(e) => handleAction(e, c.matchId, "approved")} className="flex-1 py-2 bg-white/90 text-[#ff8a3d] text-xs font-bold rounded-xl hover:bg-white transition-colors backdrop-blur-sm">매칭 확정</button>
-                        <button onClick={(e) => handleAction(e, c.matchId, "rejected")} className="flex-1 py-2 bg-white/20 text-white text-xs font-bold rounded-xl hover:bg-white/30 transition-colors backdrop-blur-sm">거절</button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
