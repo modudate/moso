@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
-import { regionLabel } from "@/lib/options";
+import { regionLabel, FILTER_ITEMS } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
 
 const PER_PAGE = 20;
@@ -35,7 +35,38 @@ export default function AdminPage() {
   const [genderFilter, setGenderFilter] = useState("");
   const [matchFilter, setMatchFilter] = useState("");
   const [mdFilter, setMdFilter] = useState("");
+  const [idealFilters, setIdealFilters] = useState<Record<string, string>>({});
+  const [tempIdealFilters, setTempIdealFilters] = useState<Record<string, string>>({});
+  const [showIdealFilters, setShowIdealFilters] = useState(false);
   const [page, setPage] = useState(1);
+
+  const openIdealFilters = () => {
+    setTempIdealFilters({ ...idealFilters });
+    setShowIdealFilters(true);
+  };
+  const applyIdealFilters = () => {
+    setIdealFilters({ ...tempIdealFilters });
+    setPage(1);
+    setShowIdealFilters(false);
+  };
+  const resetTempIdealFilters = () => setTempIdealFilters({});
+
+  const matchIdealFilter = (u: User) => {
+    for (const key of Object.keys(idealFilters)) {
+      const want = idealFilters[key];
+      if (!want) continue;
+      if (key === "smoking") {
+        const b = want === "유";
+        if (u.smoking !== b) return false;
+      } else if (key === "birthYear" || key === "height") {
+        continue;
+      } else {
+        const val = (u as unknown as Record<string, unknown>)[key];
+        if (String(val) !== want) return false;
+      }
+    }
+    return true;
+  };
 
   useEffect(() => { fetchData(); }, []);
 
@@ -99,8 +130,11 @@ export default function AdminPage() {
       if (matchFilter === "has_rejected" && (!ms || ms.rejected === 0)) return false;
       if (matchFilter === "no_match" && ms && ms.total > 0) return false;
     }
+    if (!matchIdealFilter(u)) return false;
     return true;
   });
+  const idealActiveCount = Object.values(idealFilters).filter(Boolean).length;
+  const tempIdealActiveCount = Object.values(tempIdealFilters).filter(Boolean).length;
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
@@ -140,6 +174,32 @@ export default function AdminPage() {
             <option value="has_rejected">거절 있음</option>
             <option value="no_match">매칭 없음</option>
           </select>
+          <button
+            onClick={openIdealFilters}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+              idealActiveCount > 0
+                ? "bg-[#ff8a3d]/10 border-[#ff8a3d]/30 text-[#ff8a3d]"
+                : "bg-white border-border hover:border-[#ff8a3d]/30"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+            </svg>
+            이상형 필터
+            {idealActiveCount > 0 && (
+              <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "#ff8a3d" }}>
+                {idealActiveCount}
+              </span>
+            )}
+          </button>
+          {idealActiveCount > 0 && (
+            <button
+              onClick={() => { setIdealFilters({}); setPage(1); }}
+              className="text-xs text-danger hover:underline"
+            >
+              이상형 초기화
+            </button>
+          )}
           <span className="text-base text-muted-fg font-medium">{filtered.length}명</span>
         </div>
 
@@ -205,6 +265,81 @@ export default function AdminPage() {
           </div>
         )}
 
+        {showIdealFilters && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 z-[60]"
+              onClick={() => setShowIdealFilters(false)}
+            />
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col pointer-events-auto animate-scaleIn">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                  <button onClick={resetTempIdealFilters} className="text-sm text-muted-fg hover:text-foreground transition-colors">
+                    초기화
+                  </button>
+                  <h3 className="text-lg font-bold">이상형 필터</h3>
+                  <button onClick={() => setShowIdealFilters(false)} className="text-muted-fg hover:text-foreground transition-colors">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="px-6 py-5 space-y-5 overflow-y-auto">
+                  {FILTER_ITEMS.map((fo) => (
+                    <div key={fo.key}>
+                      <label className="text-sm font-semibold text-foreground mb-2 block">{fo.label}</label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() =>
+                            setTempIdealFilters((p) => {
+                              const n = { ...p };
+                              delete n[fo.key];
+                              return n;
+                            })
+                          }
+                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                            !tempIdealFilters[fo.key]
+                              ? "text-white border-transparent"
+                              : "bg-white border-border text-muted-fg hover:border-gray-400"
+                          }`}
+                          style={!tempIdealFilters[fo.key] ? { backgroundColor: "#ff8a3d" } : {}}
+                        >
+                          전체
+                        </button>
+                        {fo.options.map((o) => (
+                          <button
+                            key={o}
+                            onClick={() => setTempIdealFilters((p) => ({ ...p, [fo.key]: o }))}
+                            className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                              tempIdealFilters[fo.key] === o
+                                ? "text-white border-transparent"
+                                : "bg-white border-border text-foreground hover:border-gray-400"
+                            }`}
+                            style={tempIdealFilters[fo.key] === o ? { backgroundColor: "#ff8a3d" } : {}}
+                          >
+                            {o}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="px-6 py-4 border-t border-border">
+                  <button
+                    onClick={applyIdealFilters}
+                    className="w-full py-3.5 rounded-xl text-white font-bold text-base transition-all hover:opacity-90"
+                    style={{ backgroundColor: "#ff8a3d" }}
+                  >
+                    {tempIdealActiveCount > 0 ? `필터 적용하기 (${tempIdealActiveCount}개)` : "전체 보기"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 pt-4">
             {Array.from({ length: totalPages }, (_, i) => (
@@ -216,6 +351,14 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.96); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scaleIn { animation: scaleIn 0.18s ease-out; }
+      `}</style>
     </main>
   );
 }
