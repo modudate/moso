@@ -73,14 +73,12 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [uRes, mRes, mdRes] = await Promise.all([
-      fetch("/api/profiles"),
-      fetch("/api/match?all=true"),
-      fetch("/api/md-recommendation"),
-    ]);
-    const uData: User[] = await uRes.json();
-    const mData: MatchRequest[] = await mRes.json();
-    const mdData: MdRecommendation[] = await mdRes.json();
+    const res = await fetch("/api/admin/bootstrap");
+    const {
+      users: uData,
+      matches: mData,
+      mdRecs: mdData,
+    }: { users: User[]; matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await res.json();
 
     const mm = new Map<string, MatchSummary>();
     for (const u of uData) mm.set(u.id, { total: 0, pending: 0, approved: 0, rejected: 0 });
