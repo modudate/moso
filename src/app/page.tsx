@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,6 +33,21 @@ function base64UrlAscii(str: string): string {
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Google 로그인 → 뒤로가기/취소로 돌아올 때 bfcache 로 복원되면 loading 이 true 인 채로 남아
+  // "로그인 중..." 오버레이가 계속 떠 있는 버그를 방지
+  useEffect(() => {
+    const reset = () => setLoading(false);
+    window.addEventListener("pageshow", reset);
+    window.addEventListener("focus", reset);
+    const onVis = () => { if (document.visibilityState === "visible") reset(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("pageshow", reset);
+      window.removeEventListener("focus", reset);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
 
   const previewGo = (path: string) => {
     document.cookie = "preview_bypass=1; path=/; max-age=86400; SameSite=Lax";
