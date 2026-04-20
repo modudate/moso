@@ -83,7 +83,7 @@ export default function MalePage() {
             {cards.map((c) => (
               <div key={c.matchId} onClick={() => handleCardClick(c.user.id, c.matchId)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
-                <div className="relative aspect-square bg-muted overflow-hidden">
+                <div className="relative aspect-[4/5] bg-muted overflow-hidden">
                   {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                     <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{c.user.nickname?.[0]}</div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
