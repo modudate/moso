@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { User } from "@/lib/types";
 import { regionLabel, smokingLabel } from "@/lib/options";
 import PhotoCarousel from "@/components/PhotoCarousel";
+import { isPreviewMode } from "@/lib/preview";
 
 export default function FemaleDetailPage() {
   const router = useRouter();
@@ -13,10 +14,12 @@ export default function FemaleDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [matchStatus, setMatchStatus] = useState<string>("pending");
   const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState(false);
 
   const femaleId = params.id as string;
   const matchId = searchParams.get("matchId") || "";
 
+  useEffect(() => { setPreview(isPreviewMode()); }, []);
   useEffect(() => { fetchData(); }, [femaleId]);
 
   const fetchData = async () => {
@@ -28,6 +31,11 @@ export default function FemaleDetailPage() {
   };
 
   const handleAction = async (status: "approved" | "rejected") => {
+    // 피드백용 미리보기에서는 실제 반영하지 않고 UI 상태만 변경
+    if (preview || !matchId) {
+      setMatchStatus(status);
+      return;
+    }
     await fetch("/api/match", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -95,8 +103,8 @@ export default function FemaleDetailPage() {
         </div>
       )}
 
-      {/* 하단 고정 버튼 */}
-      {matchId && (
+      {/* 하단 고정 버튼 (미리보기 모드일 땐 matchId 없어도 노출) */}
+      {(matchId || preview) && (
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 bg-white border-t border-border p-4">
           {matchStatus === "pending" && (
             <div className="flex gap-3">
