@@ -19,6 +19,7 @@ export default function FemalePage() {
   const [tempFilters, setTempFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [myId, setMyId] = useState<string>("f-001");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchData(); }, []);
@@ -33,9 +34,14 @@ export default function FemalePage() {
 
   const fetchData = async () => {
     setLoading(true);
+    const meRes = await fetch("/api/me");
+    const { user } = await meRes.json();
+    const uid = user?.id ?? "f-001";
+    setMyId(uid);
+
     const [mRes, cRes] = await Promise.all([
       fetch("/api/profiles?role=male&status=active"),
-      fetch("/api/cart?femaleId=f-001"),
+      fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
     ]);
     const mData = await mRes.json();
     const cData = await cRes.json();
@@ -48,10 +54,10 @@ export default function FemalePage() {
     e.stopPropagation();
     if (cart.has(maleId)) {
       setCart(prev => { const n = new Set(prev); n.delete(maleId); return n; });
-      fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: "f-001", maleProfileId: maleId }) });
+      fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: myId, maleProfileId: maleId }) });
     } else {
       setCart(prev => new Set(prev).add(maleId));
-      fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: "f-001", maleProfileId: maleId }) });
+      fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: myId, maleProfileId: maleId }) });
     }
   };
 

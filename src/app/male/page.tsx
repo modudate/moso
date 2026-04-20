@@ -33,8 +33,12 @@ export default function MalePage() {
 
   const fetchData = async () => {
     setLoading(true);
+    const meRes = await fetch("/api/me");
+    const { user } = await meRes.json();
+    const uid = user?.id ?? "m-001";
+
     const [matchRes, femalesRes] = await Promise.all([
-      fetch("/api/match?maleId=m-001"),
+      fetch(`/api/match?maleId=${encodeURIComponent(uid)}`),
       fetch("/api/profiles?role=female&status=active"),
     ]);
     const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();

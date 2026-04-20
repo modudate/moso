@@ -12,17 +12,21 @@ export default function MatchRequestListPage() {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
-
-  const femaleId = "f-001";
+  const [femaleId, setFemaleId] = useState<string>("f-001");
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
+    const meRes = await fetch("/api/me");
+    const { user } = await meRes.json();
+    const uid = user?.id ?? "f-001";
+    setFemaleId(uid);
+
     const [cartRes, malesRes, sentRes] = await Promise.all([
-      fetch(`/api/cart?femaleId=${femaleId}`),
+      fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
       fetch("/api/profiles?role=male&status=active"),
-      fetch(`/api/match?femaleId=${femaleId}`),
+      fetch(`/api/match?femaleId=${encodeURIComponent(uid)}`),
     ]);
     const cartData: { maleProfileId: string }[] = await cartRes.json();
     const males: User[] = await malesRes.json();
