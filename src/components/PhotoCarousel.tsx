@@ -10,6 +10,7 @@ type Props = {
 export default function PhotoCarousel({ photos, alt = "사진" }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
+  const drag = useRef({ active: false, startX: 0, startLeft: 0, moved: false });
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -25,16 +26,55 @@ export default function PhotoCarousel({ photos, alt = "사진" }: Props) {
   const goTo = (i: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    const clamped = Math.max(0, Math.min(photos.length - 1, i));
+    el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (e.pointerType === "touch") return;
+    drag.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft, moved: false };
+    el.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!drag.current.active) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const dx = e.clientX - drag.current.startX;
+    if (Math.abs(dx) > 3) drag.current.moved = true;
+    el.scrollLeft = drag.current.startLeft - dx;
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    const el = scrollRef.current;
+    if (!el || !drag.current.active) return;
+    drag.current.active = false;
+    try { el.releasePointerCapture(e.pointerId); } catch {}
+    const pageWidth = el.clientWidth;
+    const nearest = Math.round(el.scrollLeft / pageWidth);
+    const dx = el.scrollLeft - drag.current.startLeft;
+    let target = nearest;
+    if (Math.abs(dx) > pageWidth * 0.15) {
+      target = dx > 0 ? Math.ceil(drag.current.startLeft / pageWidth) + 0 : Math.floor(drag.current.startLeft / pageWidth);
+      if (dx > 0) target = Math.round(drag.current.startLeft / pageWidth) + 1;
+      else target = Math.round(drag.current.startLeft / pageWidth) - 1;
+    }
+    goTo(target);
   };
 
   if (photos.length === 0) return null;
 
   return (
-    <div className="relative">
+    <div className="relative select-none">
       <div
         ref={scrollRef}
-        className="flex w-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="flex w-full overflow-x-auto snap-x snap-mandatory no-scrollbar cursor-grab active:cursor-grabbing"
         style={{ scrollSnapType: "x mandatory" }}
       >
         {photos.map((url, i) => (
@@ -45,7 +85,7 @@ export default function PhotoCarousel({ photos, alt = "사진" }: Props) {
             <img
               src={url}
               alt={`${alt} ${i + 1}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover pointer-events-none"
               draggable={false}
             />
           </div>
@@ -54,38 +94,37 @@ export default function PhotoCarousel({ photos, alt = "사진" }: Props) {
 
       {photos.length > 1 && (
         <>
-          {/* 상단 진행 바 (인스타 스토리 스타일) */}
-          <div className="absolute top-2 left-3 right-3 flex gap-1 pointer-events-none">
-            {photos.map((_, i) => (
-              <div
-                key={i}
-                className="flex-1 h-1 rounded-full bg-white/30 overflow-hidden"
-              >
-                <div
-                  className={`h-full bg-white transition-all ${i === index ? "w-full" : i < index ? "w-full opacity-70" : "w-0"}`}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* 좌우 터치 영역 (모바일에서도 탭 이동) */}
-          <button
-            onClick={() => goTo(Math.max(0, index - 1))}
-            className="absolute left-0 top-0 w-1/3 h-full"
-            aria-label="이전"
-          />
-          <button
-            onClick={() => goTo(Math.min(photos.length - 1, index + 1))}
-            className="absolute right-0 top-0 w-1/3 h-full"
-            aria-label="다음"
-          />
+          {/* 좌 화살표 */}
+          {index > 0 && (
+            <button
+              onClick={() => goTo(index - 1)}
+              aria-label="이전 사진"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          {/* 우 화살표 */}
+          {index < photos.length - 1 && (
+            <button
+              onClick={() => goTo(index + 1)}
+              aria-label="다음 사진"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
 
           {/* 하단 점 인디케이터 */}
           <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
             {photos.map((_, i) => (
               <span
                 key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${i === index ? "bg-white w-4" : "bg-white/50"}`}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "bg-white w-4" : "bg-white/50 w-1.5"}`}
               />
             ))}
           </div>
