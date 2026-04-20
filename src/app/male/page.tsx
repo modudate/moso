@@ -34,14 +34,17 @@ export default function MalePage() {
 
   const fetchData = async () => {
     setLoading(true);
+    const preview = isPreviewMode();
+
+    // 프로필 리스트는 내 ID 에 의존하지 않으므로 /api/me 와 동시에 바로 출발
+    const femalesPromise = fetch("/api/profiles?role=female&status=active");
     const meRes = await fetch("/api/me");
     const { user } = await meRes.json();
     const uid = user?.id ?? "m-001";
-    const preview = isPreviewMode();
 
     const [matchRes, femalesRes] = await Promise.all([
       fetch(`/api/match?maleId=${encodeURIComponent(uid)}`),
-      fetch("/api/profiles?role=female&status=active"),
+      femalesPromise,
     ]);
     const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();
     const females: User[] = await femalesRes.json();

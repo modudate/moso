@@ -20,7 +20,16 @@ export async function GET(req: NextRequest) {
   let result = await getAllUsers();
   if (role) result = result.filter((u: { role: string }) => u.role === role);
   if (status) result = result.filter((u: { status: string }) => u.status === status);
-  return NextResponse.json(result);
+
+  // 사용자쪽 공개 리스트(활성 남성/여성 목록)는 edge 에서 60초 캐시 + SWR.
+  // 관리자 승인/차단 직후 즉시 반영이 필요한 케이스는 role+status 가 없는
+  // 전체 조회이므로 이 캐시가 걸리지 않음.
+  const cacheable = !!role && status === "active";
+  return NextResponse.json(result, {
+    headers: cacheable
+      ? { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" }
+      : { "Cache-Control": "no-store" },
+  });
 }
 
 export async function PATCH(req: NextRequest) {

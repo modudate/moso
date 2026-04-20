@@ -34,13 +34,15 @@ export default function FemalePage() {
 
   const fetchData = async () => {
     setLoading(true);
+    // 남성 리스트는 내 ID 에 의존하지 않으므로 /api/me 와 동시에 바로 출발
+    const malesPromise = fetch("/api/profiles?role=male&status=active");
     const meRes = await fetch("/api/me");
     const { user } = await meRes.json();
     const uid = user?.id ?? "f-001";
     setMyId(uid);
 
     const [mRes, cRes] = await Promise.all([
-      fetch("/api/profiles?role=male&status=active"),
+      malesPromise,
       fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
     ]);
     const mData = await mRes.json();
