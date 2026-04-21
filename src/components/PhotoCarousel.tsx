@@ -80,7 +80,7 @@ export default function PhotoCarousel({ photos, alt = "사진" }: Props) {
         {photos.map((url, i) => (
           <div
             key={i}
-            className="flex-shrink-0 w-full aspect-[4/5] bg-muted snap-start"
+            className="flex-shrink-0 w-full aspect-[9/16] bg-muted snap-start"
           >
             <img
               src={url}

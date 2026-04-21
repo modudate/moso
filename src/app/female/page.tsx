@@ -7,6 +7,7 @@ import { User } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
+import GridToggle from "@/components/GridToggle";
 
 const PAGE_SIZE = 10;
 const SCROLL_KEY = "female_scroll";
@@ -20,6 +21,7 @@ export default function FemalePage() {
   const [tempFilters, setTempFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [gridCols, setGridCols] = useState<1 | 2>(2);
   const [myId, setMyId] = useState<string>("f-001");
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -161,12 +163,15 @@ export default function FemalePage() {
             필터 {activeFilterCount > 0 && <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "#ff8a3d" }}>{activeFilterCount}</span>}
           </button>
           {activeFilterCount > 0 && <button onClick={() => { setFilters({}); setVisible(PAGE_SIZE); }} className="text-xs text-danger hover:underline">초기화</button>}
+          <div className="ml-auto">
+            <GridToggle cols={gridCols} onChange={setGridCols} />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pb-6">
+        <div className={`grid ${gridCols === 1 ? "grid-cols-1" : "grid-cols-2"} gap-3 pb-6`}>
           {paged.map((m) => (
             <div key={m.id} onClick={() => handleCardClick(m.id)} className="group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative cursor-pointer">
-              <div className="relative aspect-[4/5] bg-muted overflow-hidden">
+              <div className="relative aspect-[9/16] bg-muted overflow-hidden">
                 {m.photoUrls[0] ? <img src={m.photoUrls[0]} alt={m.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                   <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{m.nickname?.[0]}</div>}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />

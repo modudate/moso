@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
+import ImageCropperModal from "./ImageCropperModal";
 
 interface ImageSlot {
   previewUrl: string;
@@ -8,6 +9,10 @@ interface ImageSlot {
   serverPath: string | null;
   uploading: boolean;
   failed: boolean;
+}
+
+function blobToFile(blob: Blob, name: string): File {
+  return new File([blob], name, { type: blob.type || "image/webp" });
 }
 
 export interface MultiImageUploaderHandle {
@@ -57,6 +62,9 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
     const pendingUploads = useRef<Map<number, Promise<{ path: string; url: string } | null>>>(new Map());
     const slotIdCounter = useRef(0);
     const inputRef = useRef<HTMLInputElement>(null);
+    // 크롭 대기열: 한 번에 한 파일씩 크롭 모달에서 처리
+    const [cropQueue, setCropQueue] = useState<File[]>([]);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
 
     useImperativeHandle(ref, () => ({
       hasPending: () => {
@@ -87,11 +95,13 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       );
     }, [onChanged]);
 
-    const uploadFile = useCallback(async (file: File, slotIndex: number, uploadId: number) => {
+    const uploadFile = useCallback(async (file: File, slotIndex: number, uploadId: number, skipResize = false) => {
       try {
-        const resized = await resizeImage(file, 1200, 1600, 0.85);
+        const blob = skipResize
+          ? file
+          : await resizeImage(file, 1200, 1600, 0.85);
         const formData = new FormData();
-        formData.append("file", new File([resized], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+        formData.append("file", new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
         formData.append("category", category);
 
         const res = await fetch("/api/upload", { method: "POST", body: formData });
@@ -123,30 +133,69 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       }
     }, [category, emitChange]);
 
+    const openCropFor = useCallback((file: File) => {
+      const url = URL.createObjectURL(file);
+      setCropSrc(url);
+    }, []);
+
     const handleFiles = useCallback((files: File[]) => {
       const remaining = maxCount - slots.length;
       if (remaining <= 0) return;
       const toAdd = files.slice(0, remaining);
+      if (toAdd.length === 0) return;
 
-      const newSlots: ImageSlot[] = toAdd.map(file => ({
-        previewUrl: URL.createObjectURL(file),
+      setCropQueue((prev) => {
+        const already = prev.length > 0 || cropSrc !== null;
+        const merged = [...prev, ...toAdd];
+        if (!already) {
+          // 대기열이 비어 있었으면 첫 파일로 크롭 모달 열기
+          openCropFor(toAdd[0]);
+        }
+        return merged;
+      });
+    }, [slots.length, maxCount, cropSrc, openCropFor]);
+
+    const handleCropConfirm = useCallback((blob: Blob) => {
+      const currentFile = cropQueue[0];
+      const fileName = (currentFile?.name || "photo").replace(/\.\w+$/, ".webp");
+      const croppedFile = blobToFile(blob, fileName);
+      const previewUrl = URL.createObjectURL(blob);
+
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+
+      const newSlot: ImageSlot = {
+        previewUrl,
         serverUrl: null,
         serverPath: null,
         uploading: true,
         failed: false,
-      }));
+      };
 
-      setSlots(prev => {
-        const updated = [...prev, ...newSlots];
-        toAdd.forEach((file, i) => {
-          const slotIndex = prev.length + i;
-          const uploadId = slotIdCounter.current++;
-          const promise = uploadFile(file, slotIndex, uploadId);
-          pendingUploads.current.set(uploadId, promise);
-        });
+      setSlots((prev) => {
+        const slotIndex = prev.length;
+        const updated = [...prev, newSlot];
+        const uploadId = slotIdCounter.current++;
+        // 이미 9:16 으로 크롭 + 1080x1920 해상도이므로 추가 리사이즈 생략
+        const promise = uploadFile(croppedFile, slotIndex, uploadId, true);
+        pendingUploads.current.set(uploadId, promise);
         return updated;
       });
-    }, [slots.length, maxCount, uploadFile]);
+
+      // 큐에서 처리한 파일 제거 후, 다음 파일 있으면 이어서 크롭
+      const next = cropQueue.slice(1);
+      setCropQueue(next);
+      if (next.length > 0) {
+        openCropFor(next[0]);
+      } else {
+        setCropSrc(null);
+      }
+    }, [cropSrc, cropQueue, uploadFile, openCropFor]);
+
+    const handleCropCancel = useCallback(() => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
+      setCropQueue([]);
+    }, [cropSrc]);
 
     const handleRemove = (index: number) => {
       const slot = slots[index];
@@ -184,7 +233,7 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
         <div className="flex gap-3 overflow-x-auto pb-1">
           {slots.map((slot, i) => (
             <div key={i} className="relative flex-shrink-0">
-              <div className={`w-28 h-28 rounded-xl overflow-hidden bg-gray-100 ${slot.failed ? "ring-2 ring-red-400" : ""}`}>
+              <div className={`w-20 aspect-[9/16] rounded-xl overflow-hidden bg-gray-100 ${slot.failed ? "ring-2 ring-red-400" : ""}`}>
                 <img src={slot.previewUrl} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
                 {slot.uploading && (
                   <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-xl">
@@ -215,7 +264,7 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
               onClick={() => inputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-[#ff8a3d] hover:text-[#ff8a3d] transition-colors flex-shrink-0"
+              className="w-20 aspect-[9/16] rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-[#ff8a3d] hover:text-[#ff8a3d] transition-colors flex-shrink-0"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -224,7 +273,7 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-1">{slots.length}/{maxCount}장 · 여러 장 동시 선택 가능</p>
+        <p className="text-xs text-gray-400 mt-1">{slots.length}/{maxCount}장 · 업로드 후 9:16 비율로 영역을 조정할 수 있어요</p>
         <input
           ref={inputRef}
           type="file"
@@ -233,6 +282,16 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
           className="hidden"
           onChange={handleChange}
         />
+
+        {cropSrc && (
+          <ImageCropperModal
+            src={cropSrc}
+            aspect={9 / 16}
+            onCancel={handleCropCancel}
+            onConfirm={handleCropConfirm}
+            title="대표 사진 영역 선택 (9:16)"
+          />
+        )}
       </div>
     );
   }

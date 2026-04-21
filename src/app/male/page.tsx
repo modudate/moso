@@ -7,6 +7,7 @@ import { regionLabel } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
 import { isPreviewMode } from "@/lib/preview";
 import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
+import GridToggle from "@/components/GridToggle";
 
 const SCROLL_KEY = "male_scroll";
 const PAGE_SIZE = 10;
@@ -24,6 +25,7 @@ export default function MalePage() {
   const [cards, setCards] = useState<FemaleCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [gridCols, setGridCols] = useState<1 | 2>(2);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchData(); }, []);
@@ -131,14 +133,22 @@ export default function MalePage() {
       </header>
 
       <div className="px-4">
+        {cards.length > 0 && (
+          <div className="py-3 flex items-center">
+            <span className="text-sm text-muted-fg">{cards.length}명</span>
+            <div className="ml-auto">
+              <GridToggle cols={gridCols} onChange={setGridCols} />
+            </div>
+          </div>
+        )}
         {cards.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-2 gap-3 py-6">
+          <div className={`grid ${gridCols === 1 ? "grid-cols-1" : "grid-cols-2"} gap-3 pb-6`}>
             {paged.map((c) => (
               <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
-                <div className="relative aspect-[4/5] bg-muted overflow-hidden">
+                <div className="relative aspect-[9/16] bg-muted overflow-hidden">
                   {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                     <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{c.user.nickname?.[0]}</div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
