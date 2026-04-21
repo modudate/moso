@@ -233,30 +233,43 @@ export default function FemalePage() {
               {FILTER_ITEMS.map(fo => (
                 <div key={fo.key}>
                   <label className="text-sm font-semibold text-foreground mb-2 block">{fo.label}</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setTempFilters(p => { const n = { ...p }; delete n[fo.key]; return n; })}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                        !tempFilters[fo.key]
-                          ? "text-white border-transparent"
-                          : "bg-white border-border text-muted-fg hover:border-gray-400"
-                      }`}
-                      style={!tempFilters[fo.key] ? { backgroundColor: "#ff8a3d" } : {}}>
-                      전체
-                    </button>
-                    {fo.options.map(o => (
-                      <button key={o}
-                        onClick={() => setTempFilters(p => ({ ...p, [fo.key]: o }))}
+                  {fo.type === "select" ? (
+                    <select
+                      value={tempFilters[fo.key] || ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setTempFilters(p => { if (!v) { const n = { ...p }; delete n[fo.key]; return n; } return { ...p, [fo.key]: v }; });
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#ff8a3d]/30">
+                      <option value="">전체</option>
+                      {fo.options.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setTempFilters(p => { const n = { ...p }; delete n[fo.key]; return n; })}
                         className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                          tempFilters[fo.key] === o
+                          !tempFilters[fo.key]
                             ? "text-white border-transparent"
-                            : "bg-white border-border text-foreground hover:border-gray-400"
+                            : "bg-white border-border text-muted-fg hover:border-gray-400"
                         }`}
-                        style={tempFilters[fo.key] === o ? { backgroundColor: "#ff8a3d" } : {}}>
-                        {o}
+                        style={!tempFilters[fo.key] ? { backgroundColor: "#ff8a3d" } : {}}>
+                        전체
                       </button>
-                    ))}
-                  </div>
+                      {fo.options.map(o => (
+                        <button key={o}
+                          onClick={() => setTempFilters(p => ({ ...p, [fo.key]: o }))}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                            tempFilters[fo.key] === o
+                              ? "text-white border-transparent"
+                              : "bg-white border-border text-foreground hover:border-gray-400"
+                          }`}
+                          style={tempFilters[fo.key] === o ? { backgroundColor: "#ff8a3d" } : {}}>
+                          {o}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

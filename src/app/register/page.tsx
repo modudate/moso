@@ -106,7 +106,7 @@ export default function RegisterPage() {
     if (!height || isNaN(Number(height)) || Number(height) < 130 || Number(height) > 230) return { msg: "키를 정확히 입력해주세요 (130~230)", key: "height" };
     if (!/^010-\d{4}-\d{4}$/.test(phone)) return { msg: "전화번호를 올바르게 입력해주세요 (010-0000-0000)", key: "phone" };
     if (!city) return { msg: "거주지(시/도)를 선택해주세요", key: "city" };
-    if (districtOptions.length > 0 && !district) return { msg: "거주지(구역)를 선택해주세요", key: "city" };
+    if (districtOptions.length > 0 && !district) return { msg: "거주지(구/군/시)를 선택해주세요", key: "city" };
     if (!workplace) return { msg: "직장을 선택해주세요", key: "workplace" };
     if (jobOptions.length > 0 && !job) return { msg: "직업을 선택해주세요", key: "job" };
     if (!workPattern) return { msg: "근무패턴을 선택해주세요", key: "workPattern" };
@@ -329,12 +329,12 @@ export default function RegisterPage() {
             <Field label="거주지" id="city">
               <div className="flex gap-3">
                 <select value={city} onChange={(e) => { setCity(e.target.value); setDistrict(""); }} className="input-field flex-1">
-                  <option value="">시/도</option>
+                  <option value="">시/도 선택</option>
                   {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 {districtOptions.length > 0 && (
                   <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field flex-1">
-                    <option value="">구역</option>
+                    <option value="">구/군/시 선택</option>
                     {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 )}

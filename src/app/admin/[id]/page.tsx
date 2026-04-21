@@ -170,8 +170,10 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
             <EditableField label="닉네임" value={user.nickname} fieldKey="nickname" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={saveField} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} />
             <SelectField label="출생년도" value={String(user.birthYear) + "년"} options={BIRTH_YEARS} onSelect={(v) => saveField("birthYear", parseInt(v))} />
             <EditableField label="키" value={String(user.height)} fieldKey="height" editing={editing} editValue={editValue} onDoubleClick={handleDoubleClick} onSave={(k, v) => saveField(k, parseInt(v as string))} onChange={setEditValue} onKeyDown={handleKeyDown} onCancel={() => setEditing(null)} suffix="cm" />
-            <SelectField label="거주지 (시/도)" value={user.city} options={CITIES} onSelect={(v) => saveField("city", v)} />
-            <SelectField label="거주지 (구역)" value={user.district} options={DISTRICTS[user.city] || []} onSelect={(v) => saveField("district", v)} />
+            <SelectField label="거주지 (시/도)" value={user.city} options={CITIES} onSelect={(v) => { saveField("city", v); saveField("district", ""); }} />
+            {(DISTRICTS[user.city] || []).length > 0 && (
+              <SelectField label="거주지 (구/군/시)" value={user.district} options={DISTRICTS[user.city] || []} onSelect={(v) => saveField("district", v)} />
+            )}
             <SelectField label="직장" value={user.workplace} options={WORKPLACES} onSelect={(v) => { saveField("workplace", v); const jobs = JOBS[v]; if (jobs && !jobs.includes(user.job)) saveField("job", jobs[0]); }} />
             <SelectField label="직업" value={user.job} options={JOBS[user.workplace] || ["기타"]} onSelect={(v) => saveField("job", v)} />
             <SelectField label="근무패턴" value={user.workPattern} options={WORK_PATTERNS} onSelect={(v) => saveField("workPattern", v)} />
