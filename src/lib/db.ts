@@ -68,6 +68,23 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
 
 // ── Ideal Types ────────────────────────────────────────────────────
 
+function mapIdealType(data: Record<string, unknown>) {
+  return {
+    userId: data.user_id as string,
+    idealAge: data.ideal_age_range as string,
+    idealMinHeight: data.min_height as number,
+    idealMaxHeight: data.max_height as number,
+    idealCities: (data.cities as string[]) || [],
+    idealWorkplaces: (data.workplaces as string[]) || [],
+    idealJobs: (data.jobs as string[]) || [],
+    idealSalaries: (data.salaries as string[]) || [],
+    idealEducation: (data.education as string[]) || [],
+    idealSmoking: data.ideal_smoking as boolean | null,
+    idealMbti: (data.ideal_mbti as string[]) || [],
+    topPriorities: (data.top_priorities as string[]) || [],
+  };
+}
+
 export async function getIdealType(userId: string) {
   const db = await getDb();
   const { data } = await db
@@ -76,20 +93,13 @@ export async function getIdealType(userId: string) {
     .eq("user_id", userId)
     .single();
   if (!data) return null;
-  return {
-    userId: data.user_id,
-    idealAge: data.ideal_age_range,
-    idealMinHeight: data.min_height,
-    idealMaxHeight: data.max_height,
-    idealCities: data.cities || [],
-    idealWorkplaces: data.workplaces || [],
-    idealJobs: data.jobs || [],
-    idealSalaries: data.salaries || [],
-    idealEducation: data.education || [],
-    idealSmoking: data.ideal_smoking,
-    idealMbti: data.ideal_mbti || [],
-    topPriorities: data.top_priorities || [],
-  };
+  return mapIdealType(data);
+}
+
+export async function getAllIdealTypes() {
+  const db = await getDb();
+  const { data } = await db.from("ideal_types").select("*");
+  return (data || []).map(mapIdealType);
 }
 
 // ── Match Requests ─────────────────────────────────────────────────
@@ -173,6 +183,24 @@ export async function addAdminNote(userId: string, content: string) {
     .select()
     .single();
   return data;
+}
+
+export async function updateAdminNote(noteId: string, content: string) {
+  const db = await getDb();
+  const { data, error } = await db
+    .from("admin_notes")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", noteId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteAdminNote(noteId: string) {
+  const db = await getDb();
+  const { error } = await db.from("admin_notes").delete().eq("id", noteId);
+  if (error) throw error;
 }
 
 // ── Cart Items ─────────────────────────────────────────────────────

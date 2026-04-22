@@ -22,6 +22,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteValue, setEditingNoteValue] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [mdTarget, setMdTarget] = useState("");
   const [showMdForm, setShowMdForm] = useState(false);
@@ -58,6 +60,51 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
 
   const handleDoubleClick = (key: string, currentValue: string) => { setEditing(key); setEditValue(String(currentValue)); };
   const handleKeyDown = (e: React.KeyboardEvent, key: string) => { if (e.key === "Enter") saveField(key, editValue); if (e.key === "Escape") setEditing(null); };
+
+  const addNote = async () => {
+    if (!newNote.trim()) return;
+    const res = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, content: newNote }),
+    });
+    const data = await res.json();
+    if (data.note) setNotes(prev => [data.note, ...prev]);
+    setNewNote("");
+  };
+
+  const startEditNote = (id: string, content: string) => {
+    setEditingNoteId(id);
+    setEditingNoteValue(content);
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteValue("");
+  };
+
+  const saveEditNote = async () => {
+    if (!editingNoteId || !editingNoteValue.trim()) return;
+    const res = await fetch("/api/notes", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editingNoteId, content: editingNoteValue }),
+    });
+    const data = await res.json();
+    if (data.note) {
+      setNotes(prev => prev.map(n => (n.id === data.note.id ? data.note : n)));
+    }
+    cancelEditNote();
+  };
+
+  const deleteNote = async (id: string) => {
+    if (!confirm("이 메모를 삭제할까요?")) return;
+    const res = await fetch(`/api/notes?id=${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) {
+      setNotes(prev => prev.filter(n => n.id !== id));
+    }
+  };
 
   const sendMdRecommendation = async () => {
     if (!mdTarget) return;
@@ -364,19 +411,92 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         <section className="bg-card rounded-2xl border border-border p-6">
           <h2 className="font-bold text-lg mb-4">관리자 메모</h2>
           <div className="space-y-3 mb-4">
-            {notes.map(n => (
-              <div key={n.id} className="p-4 bg-muted/40 rounded-xl">
-                <p className="text-base">{n.content}</p>
-                <p className="text-xs text-muted-fg mt-1">{new Date(n.createdAt).toLocaleString("ko-KR")}</p>
-              </div>
-            ))}
+            {notes.length === 0 && (
+              <p className="text-sm text-muted-fg">등록된 메모가 없습니다.</p>
+            )}
+            {notes.map(n => {
+              const isEditing = editingNoteId === n.id;
+              const updated = n.updatedAt && n.updatedAt !== n.createdAt;
+              return (
+                <div key={n.id} className="p-4 bg-muted/40 rounded-xl">
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingNoteValue}
+                        onChange={(e) => setEditingNoteValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveEditNote();
+                          if (e.key === "Escape") cancelEditNote();
+                        }}
+                        autoFocus
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={cancelEditNote}
+                          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-white border border-border text-muted-fg hover:bg-muted transition-colors"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={saveEditNote}
+                          disabled={!editingNoteValue.trim()}
+                          className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          저장
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base whitespace-pre-wrap break-words">{n.content}</p>
+                        <p className="text-xs text-muted-fg mt-1">
+                          {new Date(n.createdAt).toLocaleString("ko-KR")}
+                          {updated && (
+                            <span className="ml-2 text-muted-fg/70">
+                              (수정됨 · {new Date(n.updatedAt).toLocaleString("ko-KR")})
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => startEditNote(n.id, n.content)}
+                          className="px-2.5 py-1 text-xs font-medium rounded-md bg-white border border-border text-muted-fg hover:text-foreground hover:border-primary/30 transition-colors"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => deleteNote(n.id)}
+                          className="px-2.5 py-1 text-xs font-medium rounded-md bg-white border border-border text-muted-fg hover:text-danger hover:border-danger/30 transition-colors"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="flex gap-2">
-            <input type="text" value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="메모 작성..."
-              onKeyDown={async (e) => { if (e.key === "Enter" && newNote.trim()) { const res = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, content: newNote }) }); const data = await res.json(); if (data.note) setNotes(prev => [data.note, ...prev]); setNewNote(""); } }}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            <button onClick={async () => { if (newNote.trim()) { const res = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, content: newNote }) }); const data = await res.json(); if (data.note) setNotes(prev => [data.note, ...prev]); setNewNote(""); } }}
-              className="px-5 py-2.5 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors">추가</button>
+            <input
+              type="text"
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="메모 작성..."
+              onKeyDown={(e) => { if (e.key === "Enter") addNote(); }}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              onClick={addNote}
+              disabled={!newNote.trim()}
+              className="px-5 py-2.5 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              추가
+            </button>
           </div>
         </section>
 
