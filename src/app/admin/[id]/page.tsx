@@ -153,7 +153,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   const getUserName = (id: string) => { const u = getUser(id); return u ? `${u.realName} (${u.nickname})` : id; };
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background overflow-x-hidden">
       {lightbox && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
           <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setLightbox(null)}>
@@ -420,7 +420,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               return (
                 <div key={n.id} className="p-4 bg-muted/40 rounded-xl">
                   {isEditing ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <textarea
                         value={editingNoteValue}
                         onChange={(e) => setEditingNoteValue(e.target.value)}
@@ -430,7 +430,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
                         }}
                         autoFocus
                         rows={3}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                        cols={1}
+                        className="block w-full min-w-0 px-3 py-2 rounded-lg border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                       />
                       <div className="flex justify-end gap-2">
                         <button
@@ -481,19 +482,20 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               );
             })}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 min-w-0">
             <input
               type="text"
+              size={1}
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="메모 작성..."
               onKeyDown={(e) => { if (e.key === "Enter") addNote(); }}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <button
               onClick={addNote}
               disabled={!newNote.trim()}
-              className="px-5 py-2.5 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-shrink-0 px-5 py-2.5 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               추가
             </button>
