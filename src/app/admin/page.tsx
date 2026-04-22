@@ -56,6 +56,24 @@ export default function AdminPage() {
   };
   const resetTempInfoFilters = () => setTempInfoFilters({});
 
+  // "~2007년" / "1980년~" / "2006년~1997년" 형태를 [min, max] 로 파싱
+  const parseAgeRange = (s: string): [number, number] => {
+    const nums = s.match(/\d+/g)?.map(Number) ?? [];
+    if (s.startsWith("~") && nums.length === 1) return [nums[0], 9999];
+    if (s.endsWith("~") && nums.length === 1) return [0, nums[0]];
+    if (nums.length === 2) {
+      const [a, b] = nums;
+      return [Math.min(a, b), Math.max(a, b)];
+    }
+    return [0, 9999];
+  };
+  // "171~175" / "185~230" 형태를 [min, max] 로 파싱
+  const parseHeightRange = (s: string): [number, number] => {
+    const nums = s.split(/[~\-]/).map((x) => Number(x.trim())).filter((x) => !isNaN(x));
+    if (nums.length === 2) return [Math.min(nums[0], nums[1]), Math.max(nums[0], nums[1])];
+    return [0, 9999];
+  };
+
   const matchInfoFilter = (u: User) => {
     for (const key of Object.keys(infoFilters)) {
       const want = infoFilters[key];
@@ -63,8 +81,12 @@ export default function AdminPage() {
       if (key === "smoking") {
         const b = want === "유";
         if (u.smoking !== b) return false;
-      } else if (key === "birthYear" || key === "height") {
-        continue;
+      } else if (key === "birthYear") {
+        const [min, max] = parseAgeRange(want);
+        if (typeof u.birthYear !== "number" || u.birthYear < min || u.birthYear > max) return false;
+      } else if (key === "height") {
+        const [min, max] = parseHeightRange(want);
+        if (typeof u.height !== "number" || u.height < min || u.height > max) return false;
       } else {
         const val = (u as unknown as Record<string, unknown>)[key];
         if (String(val) !== want) return false;
