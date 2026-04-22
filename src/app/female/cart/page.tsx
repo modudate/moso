@@ -82,7 +82,7 @@ export default function MatchRequestListPage() {
           <button onClick={() => router.push("/female")} className="text-white/80 hover:text-white">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h1 className="text-lg font-bold flex-1 text-white">매칭 요청 목록 ({cartUsers.length}명)</h1>
+          <h1 className="text-lg font-bold flex-1 text-white">매칭 후보 ({cartUsers.length}명)</h1>
         </div>
       </header>
 
@@ -90,7 +90,7 @@ export default function MatchRequestListPage() {
         {/* 상단 영역 - 매칭 요청 보내기 */}
         {cartUsers.length === 0 ? (
           <div className="text-center py-12 text-muted-fg">
-            <p className="text-lg">매칭 요청 목록이 비어있습니다</p>
+            <p className="text-lg">매칭 후보가 비어있습니다</p>
             <p className="text-sm mt-2">마음에 드는 프로필에 하트를 눌러 추가해주세요</p>
           </div>
         ) : (

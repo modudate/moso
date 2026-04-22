@@ -154,7 +154,7 @@ export default function FemalePage() {
           <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
           <div className="flex items-center gap-3">
             <Link href="/female/cart" className="relative px-3 py-1.5 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors">
-              매칭 요청 목록 {cart.size > 0 && <span className="ml-1 bg-white text-[#ff8a3d] text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{cart.size}</span>}
+              매칭 후보 {cart.size > 0 && <span className="ml-1 bg-white text-[#ff8a3d] text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{cart.size}</span>}
             </Link>
             <LogoutButton />
           </div>

@@ -45,9 +45,9 @@ flowchart TD
     ClickCard --> MaleDetail["남성 상세 페이지<br>/female/maleId"]
 
     BrowseCards --> HeartIcon[하트 아이콘 클릭]
-    MaleDetail --> HeartBtn[매칭 요청 목록 담기 버튼]
+    MaleDetail --> HeartBtn[매칭 후보 담기 버튼]
 
-    HeartIcon --> Cart["매칭 요청 목록<br>/female/cart"]
+    HeartIcon --> Cart["매칭 후보<br>/female/cart"]
     HeartBtn --> Cart
 
     Cart --> RemoveItem[개별 제거]
@@ -178,7 +178,7 @@ flowchart TD
 |------|------|
 | 경로 | /female |
 | 접근 권한 | active 상태 여성 회원 |
-| 목적 | 승인된 남성 프로필 갤러리 열람 및 매칭 요청 목록 담기 |
+| 목적 | 승인된 남성 프로필 갤러리 열람 및 매칭 후보 담기 |
 
 **레이아웃:**
 - PC: 1줄 4개 카드 (그리드)
@@ -198,10 +198,10 @@ flowchart TD
 - 이상형 필터 (토글로 펼치기/접기)
     - 필터 항목: 출생년도, 키, 거주지, 흡연여부, MBTI, 학력, 직장 (직업은 필터 제외)
     - 필터 적용 시 실시간 목록 갱신
-- 하트 아이콘: 매칭 요청 목록에 담기/빼기 (토글)
+- 하트 아이콘: 매칭 후보에 담기/빼기 (토글)
 - 카드 클릭: /female/[maleId] 상세 페이지로 이동
 - 상세 페이지에서 뒤로가기 시 이전 스크롤 위치 복원 (맨 위로 이동하지 않음)
-- 매칭 요청 목록 페이지 이동 링크 (/female/cart)
+- 매칭 후보 페이지 이동 링크 (/female/cart)
 - 7일 쿨타임 중인 남성은 목록에서 제외
 
 **데이터 조건:**
@@ -225,12 +225,12 @@ flowchart TD
 - 제외: 본명, 전화번호, 이메일, 이상형 정보
 
 **기능:**
-- '매칭 요청 목록에 담기' / '매칭 요청 목록에서 빼기' 버튼 (토글)
+- '매칭 후보에 담기' / '매칭 후보에서 빼기' 버튼 (토글)
 - 뒤로가기 (갤러리로 복귀)
 
 ---
 
-### 2-5. 매칭 요청 목록 페이지 (/female/cart)
+### 2-5. 매칭 후보 페이지 (/female/cart)
 
 | 구분 | 설명 |
 |------|------|
@@ -411,7 +411,7 @@ flowchart TD
 - 만료일 초과 시 자동으로 회원 상태가 blocked로 변경 (크론잡)
 
 **매칭 내역:**
-- 해당 회원과 관련된 모든 매칭 요청 목록
+- 해당 회원과 관련된 모든 매칭 후보
 - 표시: 상대방 이름, 요청일, 상태 (대기중/확정/거절), 응답일
 
 **MD 추천 (남성 상세 페이지에서만):**
@@ -614,7 +614,7 @@ stateDiagram-v2
 | /login | 로그인 | 비회원 |
 | /female | 여성 메인 (남성 갤러리) | active 여성 |
 | /female/[maleId] | 남성 프로필 상세 | active 여성 |
-| /female/cart | 매칭 요청 목록 | active 여성 |
+| /female/cart | 매칭 후보 | active 여성 |
 | /male | 남성 메인 (매칭 요청 갤러리) | active 남성 |
 | /male/[femaleId] | 여성 프로필 상세 | active 남성 |
 | /admin | 관리자 메인 (회원 목록) | 관리자 |

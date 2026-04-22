@@ -109,7 +109,7 @@ export default function MaleDetailPage() {
               : "text-white"
           }`}
           style={inCart ? {} : { backgroundColor: "#ff8a3d" }}>
-          {inCart ? "매칭 요청 목록에서 빼기" : "매칭 요청 목록에 담기"}
+          {inCart ? "매칭 후보에서 빼기" : "매칭 후보에 담기"}
         </button>
       </div>
     </main>
