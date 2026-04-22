@@ -95,17 +95,42 @@ export default function FemalePage() {
     setTempFilters({});
   };
 
+  const parseAgeRange = (s: string): [number, number] => {
+    const nums = s.match(/\d+/g)?.map(Number) ?? [];
+    if (s.startsWith("~") && nums.length === 1) return [nums[0], 9999];
+    if (s.endsWith("~") && nums.length === 1) return [0, nums[0]];
+    if (nums.length === 2) {
+      const [a, b] = nums;
+      return [Math.min(a, b), Math.max(a, b)];
+    }
+    return [0, 9999];
+  };
+
+  const parseHeightRange = (s: string): [number, number] => {
+    const nums = s
+      .split(/[~\-]/)
+      .map((x) => Number(x.trim()))
+      .filter((x) => !isNaN(x));
+    if (nums.length === 2) return [Math.min(nums[0], nums[1]), Math.max(nums[0], nums[1])];
+    return [0, 9999];
+  };
+
   const matchFilter = (m: User) => {
     for (const key of Object.keys(filters)) {
-      if (!filters[key]) continue;
+      const want = filters[key];
+      if (!want) continue;
       if (key === "smoking") {
-        const want = filters[key] === "유";
-        if (m.smoking !== want) return false;
-      } else if (key === "birthYear" || key === "height") {
-        continue;
+        const b = want === "유";
+        if (m.smoking !== b) return false;
+      } else if (key === "birthYear") {
+        const [min, max] = parseAgeRange(want);
+        if (typeof m.birthYear !== "number" || m.birthYear < min || m.birthYear > max) return false;
+      } else if (key === "height") {
+        const [min, max] = parseHeightRange(want);
+        if (typeof m.height !== "number" || m.height < min || m.height > max) return false;
       } else {
         const val = (m as unknown as Record<string, unknown>)[key];
-        if (String(val) !== filters[key]) return false;
+        if (String(val) !== want) return false;
       }
     }
     return true;
