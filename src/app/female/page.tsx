@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS, JOBS } from "@/lib/options";
-import LogoutButton from "@/components/LogoutButton";
+import Sidebar from "@/components/Sidebar";
 import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
 import GridToggle from "@/components/GridToggle";
 
@@ -23,6 +23,7 @@ export default function FemalePage() {
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [gridCols, setGridCols] = useState<1 | 2>(2);
   const [myId, setMyId] = useState<string>("f-001");
+  const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const filterJobRef = useRef<HTMLDivElement | null>(null);
@@ -136,7 +137,7 @@ export default function FemalePage() {
             <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
             <div className="flex items-center gap-3">
               <div className="w-28 h-8 rounded-lg bg-white/20" />
-              <LogoutButton />
+              <div className="w-9 h-9 rounded-lg bg-white/20" />
             </div>
           </div>
         </header>
@@ -156,10 +157,20 @@ export default function FemalePage() {
             <Link href="/female/cart" className="relative px-3 py-1.5 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors">
               매칭 후보 {cart.size > 0 && <span className="ml-1 bg-white text-[#ff8a3d] text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{cart.size}</span>}
             </Link>
-            <LogoutButton />
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-white hover:bg-white/15 transition-colors"
+              aria-label="메뉴 열기"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
+
+      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} gender="female" />
 
       <div className="px-4">
         <div className="py-3 flex items-center gap-3">

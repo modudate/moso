@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
-import LogoutButton from "@/components/LogoutButton";
+import Sidebar from "@/components/Sidebar";
 import { isPreviewMode } from "@/lib/preview";
 import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
 import GridToggle from "@/components/GridToggle";
@@ -26,6 +26,7 @@ export default function MalePage() {
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [gridCols, setGridCols] = useState<1 | 2>(2);
+  const [menuOpen, setMenuOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchData(); }, []);
@@ -111,7 +112,7 @@ export default function MalePage() {
         <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
           <div className="px-4 py-4 flex items-center justify-between">
             <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
-            <LogoutButton />
+            <div className="w-9 h-9 rounded-lg bg-white/20" />
           </div>
         </header>
         <div className="px-4">
@@ -128,9 +129,19 @@ export default function MalePage() {
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="px-4 py-4 flex items-center justify-between">
           <img src="/header_logo.png" alt="모두의 소개팅 MOSO" className="h-8 w-auto" />
-          <LogoutButton />
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-white hover:bg-white/15 transition-colors"
+            aria-label="메뉴 열기"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} gender="male" />
 
       <div className="px-4">
         {cards.length > 0 && (
