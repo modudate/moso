@@ -156,31 +156,36 @@ export default function MalePage() {
           <EmptyState />
         ) : (
           <div className={`grid ${gridCols === 1 ? "grid-cols-1" : "grid-cols-2"} gap-3 pb-6`}>
-            {paged.map((c) => (
+            {paged.map((c) => {
+              const big = gridCols === 1;
+              const badgeCls = `${big ? "text-xs px-2.5 py-1.5" : "text-[10px] px-2 py-1"} font-bold text-white rounded-lg shadow-md`;
+              const chipCls = `${big ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]"} bg-white/20 backdrop-blur-sm text-white font-medium rounded-full`;
+              return (
               <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
                 <div className="relative aspect-[9/16] bg-muted overflow-hidden">
                   {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                     <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{c.user.nickname?.[0]}</div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute top-3 left-3 flex gap-1.5">
-                    {c.source === "md" && <span className="text-[10px] font-bold text-white bg-accent px-2 py-1 rounded-lg shadow-md">MD 추천</span>}
-                    {c.status === "pending" && <span className="text-[10px] font-bold text-white bg-warning px-2 py-1 rounded-lg shadow-md">대기중</span>}
-                    {c.status === "approved" && <span className="text-[10px] font-bold text-white bg-success px-2 py-1 rounded-lg shadow-md">매칭 확정</span>}
-                    {c.status === "rejected" && <span className="text-[10px] font-bold text-white bg-muted-fg px-2 py-1 rounded-lg shadow-md">거절됨</span>}
+                  <div className={`absolute ${big ? "top-4 left-4 gap-2" : "top-3 left-3 gap-1.5"} flex`}>
+                    {c.source === "md" && <span className={`${badgeCls} bg-accent`}>MD 추천</span>}
+                    {c.status === "pending" && <span className={`${badgeCls} bg-warning`}>대기중</span>}
+                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭 확정</span>}
+                    {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
-                    <h3 className="text-white font-bold text-base drop-shadow-lg">{c.user.nickname}</h3>
-                    <p className="text-white/90 text-xs drop-shadow-md">{c.user.birthYear}년생 · {c.user.height}cm</p>
-                    <div className="flex flex-wrap gap-1">
-                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{regionLabel(c.user.city, c.user.district)}</span>
-                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{c.user.workplace}</span>
-                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{c.user.mbti}</span>
+                  <div className={`absolute bottom-0 left-0 right-0 ${big ? "p-5 space-y-2.5" : "p-3 space-y-1.5"}`}>
+                    <h3 className={`text-white font-bold drop-shadow-lg ${big ? "text-2xl" : "text-base"}`}>{c.user.nickname}</h3>
+                    <p className={`text-white/90 drop-shadow-md ${big ? "text-base" : "text-xs"}`}>{c.user.birthYear}년생 · {c.user.height}cm</p>
+                    <div className={`flex flex-wrap ${big ? "gap-1.5" : "gap-1"}`}>
+                      <span className={chipCls}>{regionLabel(c.user.city, c.user.district)}</span>
+                      <span className={chipCls}>{c.user.workplace}</span>
+                      <span className={chipCls}>{c.user.mbti}</span>
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

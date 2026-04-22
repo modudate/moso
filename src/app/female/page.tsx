@@ -212,32 +212,36 @@ export default function FemalePage() {
         </div>
 
         <div className={`grid ${gridCols === 1 ? "grid-cols-1" : "grid-cols-2"} gap-3 pb-6`}>
-          {paged.map((m) => (
+          {paged.map((m) => {
+            const big = gridCols === 1;
+            const chipCls = `${big ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]"} bg-white/20 backdrop-blur-sm text-white font-medium rounded-full`;
+            return (
             <div key={m.id} onClick={() => handleCardClick(m.id)} className="group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative cursor-pointer">
               <div className="relative aspect-[9/16] bg-muted overflow-hidden">
                 {m.photoUrls[0] ? <img src={m.photoUrls[0]} alt={m.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                   <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{m.nickname?.[0]}</div>}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
-                  <h3 className="text-white font-bold text-base drop-shadow-lg">{m.nickname}</h3>
-                  <p className="text-white/90 text-xs drop-shadow-md">{m.birthYear}년생 · {m.height}cm</p>
-                  <div className="flex flex-wrap gap-1">
-                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{regionLabel(m.city, m.district)}</span>
-                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{m.workplace}</span>
-                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded-full">{m.mbti}</span>
+                <div className={`absolute bottom-0 left-0 right-0 ${big ? "p-5 space-y-2.5" : "p-3 space-y-1.5"}`}>
+                  <h3 className={`text-white font-bold drop-shadow-lg ${big ? "text-2xl" : "text-base"}`}>{m.nickname}</h3>
+                  <p className={`text-white/90 drop-shadow-md ${big ? "text-base" : "text-xs"}`}>{m.birthYear}년생 · {m.height}cm</p>
+                  <div className={`flex flex-wrap ${big ? "gap-1.5" : "gap-1"}`}>
+                    <span className={chipCls}>{regionLabel(m.city, m.district)}</span>
+                    <span className={chipCls}>{m.workplace}</span>
+                    <span className={chipCls}>{m.mbti}</span>
                   </div>
                 </div>
                 <button onClick={(e) => toggleCart(e, m.id)}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-md z-10">
+                  className={`absolute ${big ? "top-4 right-4 w-12 h-12" : "top-3 right-3 w-9 h-9"} rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-md z-10`}>
                   {cart.has(m.id) ? (
-                    <svg className="w-5 h-5 text-[#ff8a3d]" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
+                    <svg className={`${big ? "w-6 h-6" : "w-5 h-5"} text-[#ff8a3d]`} fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
                   ) : (
-                    <svg className="w-5 h-5 text-muted-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                    <svg className={`${big ? "w-6 h-6" : "w-5 h-5"} text-muted-fg`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
                   )}
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {paged.length === 0 && (
