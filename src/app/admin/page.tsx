@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation, IdealType } from "@/lib/types";
-import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES } from "@/lib/options";
+import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES, JOBS } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
 
 const PER_PAGE = 20;
@@ -443,6 +443,7 @@ export default function AdminPage() {
                               setTempInfoFilters((p) => {
                                 const n = { ...p };
                                 delete n[fo.key];
+                                if (fo.key === "workplace") delete n.job;
                                 return n;
                               })
                             }
@@ -458,7 +459,13 @@ export default function AdminPage() {
                           {fo.options.map((o) => (
                             <button
                               key={o}
-                              onClick={() => setTempInfoFilters((p) => ({ ...p, [fo.key]: o }))}
+                              onClick={() =>
+                                setTempInfoFilters((p) => {
+                                  const n = { ...p, [fo.key]: o };
+                                  if (fo.key === "workplace" && p.workplace !== o) delete n.job;
+                                  return n;
+                                })
+                              }
                               className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
                                 tempInfoFilters[fo.key] === o
                                   ? "text-white border-transparent"
@@ -469,6 +476,44 @@ export default function AdminPage() {
                               {o}
                             </button>
                           ))}
+                        </div>
+                      )}
+                      {fo.key === "workplace" && tempInfoFilters.workplace && JOBS[tempInfoFilters.workplace]?.length > 0 && (
+                        <div className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30">
+                          <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업</label>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() =>
+                                setTempInfoFilters((p) => {
+                                  const n = { ...p };
+                                  delete n.job;
+                                  return n;
+                                })
+                              }
+                              className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                                !tempInfoFilters.job
+                                  ? "text-white border-transparent"
+                                  : "bg-white border-border text-muted-fg hover:border-gray-400"
+                              }`}
+                              style={!tempInfoFilters.job ? { backgroundColor: "#ff8a3d" } : {}}
+                            >
+                              전체
+                            </button>
+                            {JOBS[tempInfoFilters.workplace].map((j) => (
+                              <button
+                                key={j}
+                                onClick={() => setTempInfoFilters((p) => ({ ...p, job: j }))}
+                                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                                  tempInfoFilters.job === j
+                                    ? "text-white border-transparent"
+                                    : "bg-white border-border text-foreground hover:border-gray-400"
+                                }`}
+                                style={tempInfoFilters.job === j ? { backgroundColor: "#ff8a3d" } : {}}
+                              >
+                                {j}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
