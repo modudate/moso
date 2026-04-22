@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation, IdealType } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES, JOBS } from "@/lib/options";
@@ -44,6 +44,13 @@ export default function AdminPage() {
   const [tempIdealFilters, setTempIdealFilters] = useState<Record<string, string>>({});
   const [showIdealFilters, setShowIdealFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const infoJobRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (showInfoFilters && tempInfoFilters.workplace && infoJobRef.current) {
+      infoJobRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [tempInfoFilters.workplace, showInfoFilters]);
 
   const openInfoFilters = () => {
     setTempInfoFilters({ ...infoFilters });
@@ -479,7 +486,7 @@ export default function AdminPage() {
                         </div>
                       )}
                       {fo.key === "workplace" && tempInfoFilters.workplace && JOBS[tempInfoFilters.workplace]?.length > 0 && (
-                        <div className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30">
+                        <div ref={infoJobRef} className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30 scroll-mt-4">
                           <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업</label>
                           <div className="flex flex-wrap gap-2">
                             <button

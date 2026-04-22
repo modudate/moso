@@ -25,6 +25,13 @@ export default function FemalePage() {
   const [myId, setMyId] = useState<string>("f-001");
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const filterJobRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (showFilters && tempFilters.workplace && filterJobRef.current) {
+      filterJobRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [tempFilters.workplace, showFilters]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -285,7 +292,7 @@ export default function FemalePage() {
                     </div>
                   )}
                   {fo.key === "workplace" && tempFilters.workplace && JOBS[tempFilters.workplace]?.length > 0 && (
-                    <div className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30">
+                    <div ref={filterJobRef} className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30 scroll-mt-4">
                       <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업</label>
                       <div className="flex flex-wrap gap-2">
                         <button
