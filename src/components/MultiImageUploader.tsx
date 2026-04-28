@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useState, useRef, useCallback, useImperativeHandle, forwardRef, useEffect } from "react";
 import ImageCropperModal from "./ImageCropperModal";
 
 interface ImageSlot {
@@ -208,6 +208,101 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       emitChange(updated);
     };
 
+    // ── 드래그앤드롭 순서 변경 ────────────────────────────
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+    const slotRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const longPressTimer = useRef<number | null>(null);
+    const pointerStart = useRef<{ x: number; y: number } | null>(null);
+    const activePointerId = useRef<number | null>(null);
+
+    const cleanupDrag = useCallback(() => {
+      if (longPressTimer.current) {
+        window.clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      pointerStart.current = null;
+      activePointerId.current = null;
+      setDragIndex(null);
+      setHoverIndex(null);
+      document.body.style.userSelect = "";
+    }, []);
+
+    useEffect(() => () => cleanupDrag(), [cleanupDrag]);
+
+    const findSlotAt = (clientX: number, clientY: number): number | null => {
+      for (let i = 0; i < slotRefs.current.length; i++) {
+        const el = slotRefs.current[i];
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+          return i;
+        }
+      }
+      return null;
+    };
+
+    const handlePointerDown = (e: React.PointerEvent, index: number) => {
+      const slot = slotsRef.current[index];
+      if (!slot || slot.uploading || slot.failed) return;
+      activePointerId.current = e.pointerId;
+      pointerStart.current = { x: e.clientX, y: e.clientY };
+      longPressTimer.current = window.setTimeout(() => {
+        if (activePointerId.current === null) return;
+        setDragIndex(index);
+        setHoverIndex(index);
+        document.body.style.userSelect = "none";
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          try { navigator.vibrate(10); } catch { /* ignore */ }
+        }
+      }, 250);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+      if (activePointerId.current === null || activePointerId.current !== e.pointerId) return;
+      if (dragIndex === null) {
+        // 드래그 활성화 전에 일정 거리 이상 움직이면 스크롤 의도로 간주 → 취소
+        if (pointerStart.current) {
+          const dx = e.clientX - pointerStart.current.x;
+          const dy = e.clientY - pointerStart.current.y;
+          if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+            if (longPressTimer.current) {
+              window.clearTimeout(longPressTimer.current);
+              longPressTimer.current = null;
+            }
+            activePointerId.current = null;
+            pointerStart.current = null;
+          }
+        }
+        return;
+      }
+      // 드래그 중: 호버 인덱스 갱신
+      e.preventDefault();
+      const idx = findSlotAt(e.clientX, e.clientY);
+      if (idx !== null && idx !== hoverIndex) setHoverIndex(idx);
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+      if (activePointerId.current !== e.pointerId) return;
+      if (dragIndex !== null && hoverIndex !== null && dragIndex !== hoverIndex) {
+        let updated: ImageSlot[] = [];
+        setSlots(prev => {
+          const arr = [...prev];
+          const [moved] = arr.splice(dragIndex, 1);
+          arr.splice(hoverIndex, 0, moved);
+          updated = arr;
+          return arr;
+        });
+        emitChange(updated);
+      }
+      cleanupDrag();
+    };
+
+    const handlePointerCancel = (e: React.PointerEvent) => {
+      if (activePointerId.current !== e.pointerId) return;
+      cleanupDrag();
+    };
+
     const handleRetry = (index: number) => {
       // Can't retry without original file — just remove the failed slot
       handleRemove(index);
@@ -231,34 +326,63 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       <div>
         {label && <p className="text-sm font-semibold mb-2">{label}</p>}
         <div className="flex gap-3 overflow-x-auto pb-1">
-          {slots.map((slot, i) => (
-            <div key={i} className="relative flex-shrink-0">
-              <div className={`w-20 aspect-[9/16] rounded-xl overflow-hidden bg-gray-100 ${slot.failed ? "ring-2 ring-red-400" : ""}`}>
-                <img src={slot.previewUrl} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
-                {slot.uploading && (
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-xl">
-                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-                {slot.failed && (
-                  <div className="absolute inset-0 bg-red-500/40 flex items-center justify-center rounded-xl cursor-pointer" onClick={() => handleRetry(i)}>
-                    <span className="text-white text-xs font-medium">실패 · 탭하여 제거</span>
-                  </div>
+          {slots.map((slot, i) => {
+            const isDragging = dragIndex === i;
+            const isHover = dragIndex !== null && hoverIndex === i && dragIndex !== i;
+            const draggable = !slot.uploading && !slot.failed;
+            return (
+              <div
+                key={i}
+                ref={(el) => { slotRefs.current[i] = el; }}
+                onPointerDown={(e) => handlePointerDown(e, i)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
+                className={`relative flex-shrink-0 select-none transition-transform ${
+                  isDragging ? "opacity-40 scale-95" : isHover ? "scale-105" : ""
+                } ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+                style={{ touchAction: dragIndex !== null ? "none" : "auto" }}
+              >
+                <div className={`w-20 aspect-[9/16] rounded-xl overflow-hidden bg-gray-100 ${
+                  slot.failed
+                    ? "ring-2 ring-red-400"
+                    : isHover
+                    ? "ring-2 ring-[#ff8a3d]"
+                    : ""
+                }`}>
+                  <img
+                    src={slot.previewUrl}
+                    alt={`사진 ${i + 1}`}
+                    draggable={false}
+                    className="w-full h-full object-cover pointer-events-none"
+                  />
+                  {slot.uploading && (
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-xl">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  {slot.failed && (
+                    <div className="absolute inset-0 bg-red-500/40 flex items-center justify-center rounded-xl cursor-pointer" onClick={() => handleRetry(i)}>
+                      <span className="text-white text-xs font-medium">실패 · 탭하여 제거</span>
+                    </div>
+                  )}
+                </div>
+                <span className="absolute top-1 left-1 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded">{i + 1}</span>
+                {!slot.uploading && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => handleRemove(i)}
+                    className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
-              <span className="absolute top-1 left-1 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded">{i + 1}</span>
-              {!slot.uploading && (
-                <button
-                  onClick={() => handleRemove(i)}
-                  className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs shadow hover:bg-red-600 transition-colors"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
           {slotsLeft > 0 && (
             <button
               onClick={() => inputRef.current?.click()}
@@ -273,7 +397,7 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-1">{slots.length}/{maxCount}장 · 업로드 후 9:16 비율로 영역을 조정할 수 있어요</p>
+        <p className="text-xs text-gray-400 mt-1">{slots.length}/{maxCount}장 · 9:16 비율로 영역 조정 가능 · 길게 눌러 드래그하면 순서 변경</p>
         <input
           ref={inputRef}
           type="file"

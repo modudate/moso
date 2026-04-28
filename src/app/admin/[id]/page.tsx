@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use, useMemo } from "react";
+import { useState, useEffect, use, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, IdealType, AdminNote, MdRecommendation, MatchRequest } from "@/lib/types";
 import { regionLabel, smokingLabel, EDUCATIONS, WORKPLACES, JOBS, WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, BIRTH_YEARS, CITIES, DISTRICTS } from "@/lib/options";
@@ -52,11 +52,70 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
     setLoading(false);
   };
 
+  // 필드별 PATCH 큐: 같은 필드의 빠른 연속 호출은 마지막 값만 보내고, 항상 직전 요청 종료 후 다음을 보냄.
+  // (특히 사진 일괄 업로드 시 photoUrls 가 race condition 으로 유실되던 문제를 막음)
+  const fieldQueue = useRef<Map<string, { latest: unknown; running: boolean }>>(new Map());
+  const inflight = useRef(0);
+  const [savingField, setSavingField] = useState<Set<string>>(new Set());
+
+  const flushField = async (key: string) => {
+    const q = fieldQueue.current.get(key);
+    if (!q || q.running) return;
+    q.running = true;
+    inflight.current += 1;
+    setSavingField(prev => new Set(prev).add(key));
+    try {
+      while (fieldQueue.current.has(key)) {
+        const entry = fieldQueue.current.get(key)!;
+        const value = entry.latest;
+        fieldQueue.current.delete(key);
+        const res = await fetch("/api/profiles", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId, [key]: value }),
+          // 페이지 이탈/탭 닫기 후에도 요청이 완료되도록 보장 (브라우저가 background로 마무리)
+          keepalive: true,
+        });
+        if (!res.ok) {
+          const msg = await res.text().catch(() => "");
+          alert(`저장 실패 (${key}): ${msg || res.status}`);
+          break;
+        }
+      }
+    } catch (err) {
+      alert(`저장 중 오류 (${key}): ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      const q2 = fieldQueue.current.get(key);
+      if (q2) q2.running = false;
+      inflight.current -= 1;
+      setSavingField(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
   const saveField = (key: string, value: unknown) => {
     setUser(prev => prev ? { ...prev, [key]: value } : prev);
     setEditing(null);
-    fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: userId, [key]: value }) });
+    const existing = fieldQueue.current.get(key);
+    if (existing) existing.latest = value;
+    else fieldQueue.current.set(key, { latest: value, running: false });
+    void flushField(key);
   };
+
+  // 페이지 이탈 시 미저장 작업 경고
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (inflight.current > 0 || fieldQueue.current.size > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   const handleDoubleClick = (key: string, currentValue: string) => { setEditing(key); setEditValue(String(currentValue)); };
   const handleKeyDown = (e: React.KeyboardEvent, key: string) => { if (e.key === "Enter") saveField(key, editValue); if (e.key === "Escape") setEditing(null); };
@@ -178,7 +237,15 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* 사진 관리 */}
         <section className="bg-card rounded-2xl border border-border p-6 space-y-5">
-          <h2 className="font-bold text-lg">사진 관리</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-lg">사진 관리</h2>
+            {(savingField.has("photoUrls") || savingField.has("charmPhoto") || savingField.has("datePhoto")) && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-fg">
+                <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                저장 중...
+              </span>
+            )}
+          </div>
 
           <MultiImageUploader
             key={`multi-${userId}`}
