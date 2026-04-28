@@ -285,6 +285,7 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
 
         {cropSrc && (
           <ImageCropperModal
+            key={cropSrc}
             src={cropSrc}
             aspect={9 / 16}
             onCancel={handleCropCancel}

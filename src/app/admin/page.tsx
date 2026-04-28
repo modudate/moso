@@ -367,7 +367,7 @@ export default function AdminPage() {
                         </span>
                       )}
                       <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-muted text-muted-fg">{u.role === "male" ? "남성" : "여성"}</span>
+                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>{u.role === "male" ? "남성" : "여성"}</span>
                       {ms && ms.total > 0 && (
                         <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
                           매칭 {ms.total}
