@@ -81,6 +81,17 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           alert(`저장 실패 (${key}): ${msg || res.status}`);
           break;
         }
+        // 서버가 돌려준 최신 user 로 동기화 → DB 가 실제로 받은 값을 화면에 반영
+        try {
+          const data = await res.json();
+          if (data?.user) {
+            setUser(prev => {
+              // 큐가 아직 차 있으면 (사용자가 후속 변경을 했음) 덮어쓰지 않음
+              if (fieldQueue.current.has(key)) return prev;
+              return data.user;
+            });
+          }
+        } catch { /* ignore JSON parse errors */ }
       }
     } catch (err) {
       alert(`저장 중 오류 (${key}): ${err instanceof Error ? err.message : String(err)}`);
