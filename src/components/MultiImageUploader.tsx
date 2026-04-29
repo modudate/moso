@@ -91,17 +91,24 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       const clean = next.filter(s => !s.failed && s.serverUrl && !s.serverUrl.startsWith("blob:"));
       const urls = clean.map(s => s.serverUrl as string);
       const paths = clean.map(s => s.serverPath).filter((p): p is string => p !== null);
-      // [DEBUG] 대표 사진 저장 추적용 - 문제 해결되면 제거
+      // [DEBUG] photo_urls 유실 추적: 빈 배열 emit 시 어디서 호출됐는지 stack 출력
       console.log("[MultiImageUploader] emitChange", {
         nextSlots: next.length,
         cleanSlots: clean.length,
         urls,
-        slotDetails: next.map(s => ({
-          serverUrl: s.serverUrl?.substring(0, 60),
-          uploading: s.uploading,
-          failed: s.failed,
-        })),
       });
+      if (urls.length === 0 && next.length > 0) {
+        console.warn("[MultiImageUploader] ⚠️ 빈 배열 emit (slots 있음)", {
+          slotDetails: next.map(s => ({
+            serverUrl: s.serverUrl,
+            uploading: s.uploading,
+            failed: s.failed,
+          })),
+        });
+      }
+      if (urls.length === 0) {
+        console.trace("[MultiImageUploader] emitChange 빈 배열 stack");
+      }
       onChanged?.(paths, urls);
     }, [onChanged]);
 

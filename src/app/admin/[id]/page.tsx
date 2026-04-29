@@ -33,10 +33,11 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
 
   const fetchData = async () => {
     setLoading(true);
+    // cache: "no-store" 로 항상 신선한 데이터 가져오기 (방금 저장한 사진이 즉시 반영되도록)
     const [detailRes, matchRes, usersRes] = await Promise.all([
-      fetch(`/api/profiles?id=${userId}`),
-      fetch(`/api/match?all=true`),
-      fetch("/api/profiles"),
+      fetch(`/api/profiles?id=${userId}`, { cache: "no-store" }),
+      fetch(`/api/match?all=true`, { cache: "no-store" }),
+      fetch("/api/profiles", { cache: "no-store" }),
     ]);
     const detail = await detailRes.json();
     const allMatches: MatchRequest[] = await matchRes.json();
@@ -69,8 +70,6 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         const entry = fieldQueue.current.get(key)!;
         const value = entry.latest;
         fieldQueue.current.delete(key);
-        // [DEBUG]
-        console.log("[admin saveField] PATCH 발사", { key, value });
         const res = await fetch("/api/profiles", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -80,19 +79,12 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         });
         if (!res.ok) {
           const msg = await res.text().catch(() => "");
-          console.error("[admin saveField] PATCH 실패", { key, status: res.status, msg });
           alert(`저장 실패 (${key}): ${msg || res.status}`);
           break;
         }
         // 서버가 돌려준 최신 user 로 동기화 → DB 가 실제로 받은 값을 화면에 반영
         try {
           const data = await res.json();
-          // [DEBUG]
-          console.log("[admin saveField] PATCH 응답", {
-            key,
-            sentValue: value,
-            serverValue: data?.user?.[key],
-          });
           if (data?.user) {
             setUser(prev => {
               // 큐가 아직 차 있으면 (사용자가 후속 변경을 했음) 덮어쓰지 않음
@@ -103,7 +95,6 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         } catch { /* ignore JSON parse errors */ }
       }
     } catch (err) {
-      console.error("[admin saveField] 예외", { key, err });
       alert(`저장 중 오류 (${key}): ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       const q2 = fieldQueue.current.get(key);
@@ -118,8 +109,12 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const saveField = (key: string, value: unknown) => {
-    // [DEBUG]
-    console.log("[admin saveField] 호출됨", { key, value });
+    // [DEBUG] photo_urls 유실 추적
+    console.log("[admin saveField] 호출", { key, value });
+    if (key === "photoUrls" && Array.isArray(value) && value.length === 0) {
+      console.warn("[admin saveField] ⚠️ photoUrls 빈 배열로 저장 시도");
+      console.trace("[admin saveField] photoUrls=[] stack");
+    }
     setUser(prev => prev ? { ...prev, [key]: value } : prev);
     setEditing(null);
     const existing = fieldQueue.current.get(key);
