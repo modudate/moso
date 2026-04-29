@@ -89,10 +89,20 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
     const emitChange = useCallback((next: ImageSlot[]) => {
       // blob: URL(아직 업로드 중 또는 실패)은 절대 DB 로 흘리지 않는다
       const clean = next.filter(s => !s.failed && s.serverUrl && !s.serverUrl.startsWith("blob:"));
-      onChanged?.(
-        clean.map(s => s.serverPath).filter((p): p is string => p !== null),
-        clean.map(s => s.serverUrl as string),
-      );
+      const urls = clean.map(s => s.serverUrl as string);
+      const paths = clean.map(s => s.serverPath).filter((p): p is string => p !== null);
+      // [DEBUG] 대표 사진 저장 추적용 - 문제 해결되면 제거
+      console.log("[MultiImageUploader] emitChange", {
+        nextSlots: next.length,
+        cleanSlots: clean.length,
+        urls,
+        slotDetails: next.map(s => ({
+          serverUrl: s.serverUrl?.substring(0, 60),
+          uploading: s.uploading,
+          failed: s.failed,
+        })),
+      });
+      onChanged?.(paths, urls);
     }, [onChanged]);
 
     const uploadFile = useCallback(async (file: File, slotIndex: number, uploadId: number, skipResize = false) => {
@@ -108,25 +118,33 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
         const data = await res.json();
 
         if (res.ok) {
-          let updated: ImageSlot[] = [];
-          setSlots(prev => {
-            updated = prev.map((s, i) =>
-              i === slotIndex ? { ...s, serverUrl: data.signedUrl, serverPath: data.path, uploading: false } : s
-            );
-            return updated;
-          });
+          // 컴포넌트 unmount 시 setState 콜백이 호출되지 않아 updated 가
+          // 초기값(빈 배열)으로 남아 DB 가 [] 로 덮여쓰는 버그를 막기 위해
+          // slotsRef 기반으로 직접 계산한다.
+          const base = slotsRef.current;
+          const updated = base.map((s, i) =>
+            i === slotIndex ? { ...s, serverUrl: data.signedUrl, serverPath: data.path, uploading: false } : s
+          );
+          slotsRef.current = updated;
+          setSlots(updated);
           emitChange(updated);
           return { path: data.path, url: data.signedUrl };
         } else {
-          setSlots(prev => prev.map((s, i) =>
+          const base = slotsRef.current;
+          const updated = base.map((s, i) =>
             i === slotIndex ? { ...s, uploading: false, failed: true } : s
-          ));
+          );
+          slotsRef.current = updated;
+          setSlots(updated);
           return null;
         }
       } catch {
-        setSlots(prev => prev.map((s, i) =>
+        const base = slotsRef.current;
+        const updated = base.map((s, i) =>
           i === slotIndex ? { ...s, uploading: false, failed: true } : s
-        ));
+        );
+        slotsRef.current = updated;
+        setSlots(updated);
         return null;
       } finally {
         pendingUploads.current.delete(uploadId);
@@ -198,13 +216,13 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
     }, [cropSrc]);
 
     const handleRemove = (index: number) => {
-      const slot = slots[index];
+      const base = slotsRef.current;
+      const slot = base[index];
+      if (!slot) return;
       if (slot.previewUrl.startsWith("blob:")) URL.revokeObjectURL(slot.previewUrl);
-      let updated: ImageSlot[] = [];
-      setSlots(prev => {
-        updated = prev.filter((_, i) => i !== index);
-        return updated;
-      });
+      const updated = base.filter((_, i) => i !== index);
+      slotsRef.current = updated;
+      setSlots(updated);
       emitChange(updated);
     };
 

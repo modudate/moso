@@ -69,6 +69,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         const entry = fieldQueue.current.get(key)!;
         const value = entry.latest;
         fieldQueue.current.delete(key);
+        // [DEBUG]
+        console.log("[admin saveField] PATCH 발사", { key, value });
         const res = await fetch("/api/profiles", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -78,12 +80,19 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         });
         if (!res.ok) {
           const msg = await res.text().catch(() => "");
+          console.error("[admin saveField] PATCH 실패", { key, status: res.status, msg });
           alert(`저장 실패 (${key}): ${msg || res.status}`);
           break;
         }
         // 서버가 돌려준 최신 user 로 동기화 → DB 가 실제로 받은 값을 화면에 반영
         try {
           const data = await res.json();
+          // [DEBUG]
+          console.log("[admin saveField] PATCH 응답", {
+            key,
+            sentValue: value,
+            serverValue: data?.user?.[key],
+          });
           if (data?.user) {
             setUser(prev => {
               // 큐가 아직 차 있으면 (사용자가 후속 변경을 했음) 덮어쓰지 않음
@@ -94,6 +103,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         } catch { /* ignore JSON parse errors */ }
       }
     } catch (err) {
+      console.error("[admin saveField] 예외", { key, err });
       alert(`저장 중 오류 (${key}): ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       const q2 = fieldQueue.current.get(key);
@@ -108,6 +118,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const saveField = (key: string, value: unknown) => {
+    // [DEBUG]
+    console.log("[admin saveField] 호출됨", { key, value });
     setUser(prev => prev ? { ...prev, [key]: value } : prev);
     setEditing(null);
     const existing = fieldQueue.current.get(key);
