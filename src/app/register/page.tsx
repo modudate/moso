@@ -116,6 +116,12 @@ export default function RegisterPage() {
     if (!mbti) return { msg: "MBTI를 선택해주세요", key: "mbti" };
     if (!charm.trim()) return { msg: "매력을 입력해주세요", key: "charm" };
     if (!datingStyle.trim()) return { msg: "연애스타일을 입력해주세요", key: "datingStyle" };
+
+    // 사진 필수 검증 (업로드 중인 blob: URL 은 제외하고 실제 저장된 URL 만 카운트)
+    const validPhotos = photoUrls.filter((u) => typeof u === "string" && u && !u.startsWith("blob:"));
+    if (validPhotos.length < 2) return { msg: "대표 사진을 최소 2장 등록해주세요", key: "photoUrls" };
+    if (!charmPhotoUrl || charmPhotoUrl.startsWith("blob:")) return { msg: "'저의 매력은' 사진을 등록해주세요", key: "charmPhotoUrl" };
+    if (!datePhotoUrl || datePhotoUrl.startsWith("blob:")) return { msg: "'연인이 생기면' 사진을 등록해주세요", key: "datePhotoUrl" };
     return null;
   };
 
@@ -416,33 +422,72 @@ export default function RegisterPage() {
               <span className="text-xs text-muted-fg">{datingStyle.length}/200자</span>
             </Field>
 
-            <div className="pt-2 space-y-5 border-t border-gray-200">
-              <MultiImageUploader
-                ref={multiRef}
-                values={photoUrls}
-                maxCount={4}
-                category="photo"
-                onChanged={(_paths, urls) => setPhotoUrls(urls)}
-                label="대표 사진 (최대 4장)"
-              />
+            <div className="pt-4 space-y-6 border-t border-gray-200">
+              <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-2.5 text-[12px] text-orange-900 leading-relaxed">
+                <b>📸 사진 안내</b><br />
+                아래 3종의 사진은 모두 <b>필수 항목</b>입니다. 사진은 매칭 성사율에 가장 큰 영향을 주므로, 각 사진의 의도에 맞춰 정성껏 등록해주세요.
+              </div>
 
-              <ImageUploader
-                ref={charmRef}
-                value={charmPhotoUrl}
-                category="charm"
-                onUploaded={(_path, url) => setCharmPhotoUrl(url)}
-                onRemove={() => setCharmPhotoUrl(null)}
-                label="저의 매력은 사진 (1장)"
-              />
+              <div id="field-photoUrls" className="rounded-2xl p-1 -m-1 transition-shadow space-y-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    1. 대표 사진 <span className="text-[#ff8a3d]">(필수 · 최소 2장, 최대 4장)</span>
+                  </p>
+                  <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">
+                    이성에게 가장 먼저 보여지는 <b>프로필 메인 사진</b>입니다.<br />
+                    얼굴이 또렷하게 잘 보이는 사진을 골라주세요.<br />
+                    <span className="text-gray-400">예) 셀카, 지인이 찍어준 인물 사진</span><br />
+                    <span className="text-rose-500">⚠️ 단체사진 · 얼굴이 가려진 사진은 피해주세요</span>
+                  </p>
+                </div>
+                <MultiImageUploader
+                  ref={multiRef}
+                  values={photoUrls}
+                  maxCount={4}
+                  category="photo"
+                  onChanged={(_paths, urls) => setPhotoUrls(urls)}
+                />
+              </div>
 
-              <ImageUploader
-                ref={dateRef}
-                value={datePhotoUrl}
-                category="date"
-                onUploaded={(_path, url) => setDatePhotoUrl(url)}
-                onRemove={() => setDatePhotoUrl(null)}
-                label="연인이 생기면 사진 (1장)"
-              />
+              <div id="field-charmPhotoUrl" className="rounded-2xl p-1 -m-1 transition-shadow space-y-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    2. 저의 매력 사진 <span className="text-[#ff8a3d]">(필수 · 1장)</span>
+                  </p>
+                  <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">
+                    위에 적으신 <b>‘저의 매력은’</b> 내용을 가장 잘 보여주는 사진을 등록해주세요.<br />
+                    본인을 가장 매력적으로 표현할 수 있는 한 장이면 됩니다.<br />
+                    <span className="text-gray-400">예) 운동하는 모습, 좋아하는 취미를 즐기는 모습, 일하는 모습 등</span>
+                  </p>
+                </div>
+                <ImageUploader
+                  ref={charmRef}
+                  value={charmPhotoUrl}
+                  category="charm"
+                  onUploaded={(_path, url) => setCharmPhotoUrl(url)}
+                  onRemove={() => setCharmPhotoUrl(null)}
+                />
+              </div>
+
+              <div id="field-datePhotoUrl" className="rounded-2xl p-1 -m-1 transition-shadow space-y-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    3. 연인이 생기면 하고 싶은 일 사진 <span className="text-[#ff8a3d]">(필수 · 1장)</span>
+                  </p>
+                  <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">
+                    위에 적으신 <b>‘연인이 생기면 하고 싶은 일’</b>을 시각적으로 보여주는 사진이에요.<br />
+                    꼭 본인이 찍은 사진이 아니어도 괜찮아요. 분위기를 잘 전달할 수 있는 사진이면 OK!<br />
+                    <span className="text-gray-400">예) 가고 싶은 여행지, 좋아하는 데이트 코스, 함께 즐기고 싶은 활동 사진 등</span>
+                  </p>
+                </div>
+                <ImageUploader
+                  ref={dateRef}
+                  value={datePhotoUrl}
+                  category="date"
+                  onUploaded={(_path, url) => setDatePhotoUrl(url)}
+                  onRemove={() => setDatePhotoUrl(null)}
+                />
+              </div>
             </div>
 
             <button onClick={handleNext}

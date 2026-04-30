@@ -21,6 +21,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 가입된 계정입니다" }, { status: 409 });
   }
 
+  // 사진 필수 검증 (클라이언트 우회 방지용 서버측 가드)
+  const validPhotoUrls = Array.isArray(body.photoUrls)
+    ? body.photoUrls.filter((u: unknown): u is string => typeof u === "string" && !!u && !u.startsWith("blob:"))
+    : [];
+  if (validPhotoUrls.length < 2) {
+    return NextResponse.json({ error: "대표 사진을 최소 2장 등록해주세요" }, { status: 400 });
+  }
+  const validCharm =
+    typeof body.charmPhotoUrl === "string" && !!body.charmPhotoUrl && !body.charmPhotoUrl.startsWith("blob:");
+  if (!validCharm) {
+    return NextResponse.json({ error: "'저의 매력은' 사진을 등록해주세요" }, { status: 400 });
+  }
+  const validDate =
+    typeof body.datePhotoUrl === "string" && !!body.datePhotoUrl && !body.datePhotoUrl.startsWith("blob:");
+  if (!validDate) {
+    return NextResponse.json({ error: "'연인이 생기면' 사진을 등록해주세요" }, { status: 400 });
+  }
+
   const role = body.gender === "남" ? "male" : "female";
 
   const { error: userError } = await service.from("users").insert({
