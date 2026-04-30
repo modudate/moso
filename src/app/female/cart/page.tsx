@@ -40,6 +40,10 @@ export default function MatchRequestListPage() {
   };
 
   const removeFromList = async (maleId: string) => {
+    if (femaleId === "f-001") {
+      alert("정식 로그인 후 이용 가능한 기능입니다.");
+      return;
+    }
     const prevUsers = cartUsers;
     setCartUsers(prev => prev.filter(u => u.id !== maleId)); // 낙관적
     try {
@@ -61,14 +65,29 @@ export default function MatchRequestListPage() {
 
   const handleConfirm = async () => {
     if (cartUsers.length === 0) return;
+    if (femaleId === "f-001") {
+      alert(
+        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
+      );
+      return;
+    }
     setConfirming(true);
-    await fetch("/api/match", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ femaleProfileId: femaleId, maleProfileIds: cartUsers.map(u => u.id) }),
-    });
-    setDone(true);
-    setConfirming(false);
+    try {
+      const res = await fetch("/api/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ femaleProfileId: femaleId, maleProfileIds: cartUsers.map(u => u.id) }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `요청 실패 (${res.status})`);
+      }
+      setDone(true);
+    } catch (err) {
+      alert(`매칭 요청 전송에 실패했습니다.\n${err instanceof Error ? err.message : ""}`);
+    } finally {
+      setConfirming(false);
+    }
   };
 
   if (done) {

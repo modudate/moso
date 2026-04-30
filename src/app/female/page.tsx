@@ -66,6 +66,13 @@ export default function FemalePage() {
 
   const toggleCart = async (e: React.MouseEvent, maleId: string) => {
     e.stopPropagation();
+    // 미리보기/비로그인 상태에서는 cart 기능 차단 (UUID FK 에러 방지)
+    if (myId === "f-001") {
+      alert(
+        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
+      );
+      return;
+    }
     const wasInCart = cart.has(maleId);
     // 낙관적 업데이트
     setCart(prev => {

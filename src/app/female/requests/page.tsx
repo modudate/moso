@@ -1,20 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { MatchRequest, User } from "@/lib/types";
 
 // ─────────────────────────────────────────────────────────────────────
-// 임시(Mock) 데이터: 실제 API 연동 전, 화면 구성 확인용
-// 실제 운영 시 /api/match 결과 + 남성 프로필 정보를 합쳐 동일한 형태로 매핑하면 됨
-//   → 카드 클릭 시 router.push(`/female/${maleProfileId}`) 로 상세페이지 이동.
-//   → 샘플 5건은 seed 의 실제 남성 user_id 와 매핑되어 있어 클릭 시 정상 동작합니다.
+// 매칭 요청 결과 페이지
+//   - /api/match?femaleId={내ID}  → 내가 보낸 매칭 요청 목록
+//   - /api/profiles?role=male      → 상대 남성 프로필 정보 (JOIN 용)
+//   - 카드 클릭 시 /female/{maleProfileId} 상세페이지로 이동
 // ─────────────────────────────────────────────────────────────────────
+
 type RequestStatus = "pending" | "approved" | "rejected";
 
-type MockRequest = {
+type RequestCardData = {
   id: string;
-  // 실제 남성 프로필 user_id. null 이면 데모 전용(상세페이지 없음)
-  maleProfileId: string | null;
+  maleProfileId: string;
   nickname: string;
   birthYear: number;
   height: number;
@@ -24,133 +25,9 @@ type MockRequest = {
   mbti: string;
   photo: string;
   status: RequestStatus;
-  requestedAt: string; // ISO
+  requestedAt: string;
   respondedAt: string | null;
-  // 수락된 경우 연락처 전달 예정 시간
-  contactSharedAt?: string | null;
 };
-
-const NOW = Date.now();
-const daysAgo = (n: number) => new Date(NOW - n * 24 * 60 * 60 * 1000).toISOString();
-
-const MOCK_REQUESTS: MockRequest[] = [
-  {
-    id: "req-1",
-    maleProfileId: "11111111-0000-0000-0000-000000000004",
-    nickname: "도윤",
-    birthYear: 1991,
-    height: 178,
-    workplace: "전문직",
-    job: "변호사",
-    region: "서울 마포구",
-    mbti: "ENTJ",
-    photo:
-      "https://images.unsplash.com/photo-1616326431985-b9f89ebc6ab7?w=400&h=500&fit=crop",
-    status: "approved",
-    requestedAt: daysAgo(3),
-    respondedAt: daysAgo(1),
-    contactSharedAt: daysAgo(0),
-  },
-  {
-    id: "req-2",
-    maleProfileId: "11111111-0000-0000-0000-000000000001",
-    nickname: "준혁",
-    birthYear: 1995,
-    height: 180,
-    workplace: "대기업",
-    job: "개발자",
-    region: "서울 강남구",
-    mbti: "INTJ",
-    photo:
-      "https://images.unsplash.com/photo-1624979215572-1230abc53d7c?w=400&h=500&fit=crop",
-    status: "pending",
-    requestedAt: daysAgo(2),
-    respondedAt: null,
-  },
-  {
-    id: "req-3",
-    maleProfileId: "11111111-0000-0000-0000-000000000002",
-    nickname: "민수",
-    birthYear: 1993,
-    height: 176,
-    workplace: "스타트업",
-    job: "기획/전략",
-    region: "서울 광진구",
-    mbti: "ENFP",
-    photo:
-      "https://images.unsplash.com/photo-1633177188754-980c2a6b6266?w=400&h=500&fit=crop",
-    status: "pending",
-    requestedAt: daysAgo(1),
-    respondedAt: null,
-  },
-  {
-    id: "req-4",
-    maleProfileId: "11111111-0000-0000-0000-000000000003",
-    nickname: "서준",
-    birthYear: 1997,
-    height: 182,
-    workplace: "공무원",
-    job: "행정직",
-    region: "경기 성남시",
-    mbti: "ISFJ",
-    photo:
-      "https://images.unsplash.com/photo-1628264045147-122484104d48?w=400&h=500&fit=crop",
-    status: "rejected",
-    requestedAt: daysAgo(5),
-    respondedAt: daysAgo(3),
-  },
-  {
-    id: "req-5",
-    maleProfileId: "11111111-0000-0000-0000-000000000005",
-    nickname: "우진",
-    birthYear: 1996,
-    height: 175,
-    workplace: "중견기업",
-    job: "마케팅",
-    region: "인천 연수구",
-    mbti: "ESTP",
-    photo:
-      "https://images.unsplash.com/photo-1718986017030-b6ba6f96827b?w=400&h=500&fit=crop",
-    status: "approved",
-    requestedAt: daysAgo(7),
-    respondedAt: daysAgo(5),
-    contactSharedAt: daysAgo(4),
-  },
-  {
-    id: "req-6",
-    maleProfileId: null,
-    nickname: "지훈",
-    birthYear: 1992,
-    height: 184,
-    workplace: "전문직",
-    job: "의사",
-    region: "서울 송파구",
-    mbti: "INFJ",
-    photo:
-      "https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400&h=500&fit=crop",
-    status: "pending",
-    requestedAt: daysAgo(0),
-    respondedAt: null,
-  },
-  {
-    id: "req-7",
-    maleProfileId: null,
-    nickname: "현우",
-    birthYear: 1994,
-    height: 179,
-    workplace: "공기업",
-    job: "기술직",
-    region: "서울 영등포구",
-    mbti: "ISTJ",
-    photo:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop",
-    status: "rejected",
-    requestedAt: daysAgo(10),
-    respondedAt: daysAgo(8),
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────
 
 type Tab = "all" | RequestStatus;
 
@@ -181,21 +58,86 @@ const formatDate = (iso: string) =>
 export default function MatchRequestResultPage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("all");
+  const [requests, setRequests] = useState<RequestCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [previewBlocked, setPreviewBlocked] = useState(false);
+
+  useEffect(() => {
+    void fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const meRes = await fetch("/api/me", { cache: "no-store" });
+      const { user: me } = await meRes.json();
+      const uid = me?.id;
+
+      // 미리보기/비로그인 → 안내 화면 (실제 데이터 없음)
+      if (!uid) {
+        setPreviewBlocked(true);
+        setRequests([]);
+        return;
+      }
+
+      const [matchRes, malesRes] = await Promise.all([
+        fetch(`/api/match?femaleId=${encodeURIComponent(uid)}`, { cache: "no-store" }),
+        fetch("/api/profiles?role=male", { cache: "no-store" }),
+      ]);
+      const matches: MatchRequest[] = await matchRes.json();
+      const males: User[] = await malesRes.json();
+      const maleMap = new Map(males.map((m) => [m.id, m]));
+
+      const cards: RequestCardData[] = matches
+        .map((m): RequestCardData | null => {
+          const u = maleMap.get(m.maleProfileId);
+          if (!u) return null;
+          return {
+            id: m.id,
+            maleProfileId: m.maleProfileId,
+            nickname: u.nickname,
+            birthYear: u.birthYear,
+            height: u.height,
+            workplace: u.workplace,
+            job: u.job,
+            region: `${u.city ?? ""} ${u.district ?? ""}`.trim(),
+            mbti: u.mbti,
+            photo: u.photoUrls?.[0] ?? "",
+            status: (m.status as RequestStatus) ?? "pending",
+            requestedAt: m.requestedAt,
+            respondedAt: m.respondedAt ?? null,
+          };
+        })
+        .filter((x): x is RequestCardData => x !== null)
+        .sort(
+          (a, b) =>
+            new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+        );
+
+      setRequests(cards);
+      setPreviewBlocked(false);
+    } catch (err) {
+      console.error("매칭 요청 결과 조회 실패", err);
+      alert(`매칭 요청 결과를 불러오지 못했습니다.\n${err instanceof Error ? err.message : ""}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = {
-      all: MOCK_REQUESTS.length,
+      all: requests.length,
       pending: 0,
       approved: 0,
       rejected: 0,
     };
-    for (const r of MOCK_REQUESTS) c[r.status]++;
+    for (const r of requests) c[r.status]++;
     return c;
-  }, []);
+  }, [requests]);
 
   const filtered = useMemo(
-    () => (tab === "all" ? MOCK_REQUESTS : MOCK_REQUESTS.filter((r) => r.status === tab)),
-    [tab]
+    () => (tab === "all" ? requests : requests.filter((r) => r.status === tab)),
+    [tab, requests],
   );
 
   return (
@@ -212,78 +154,111 @@ export default function MatchRequestResultPage() {
             </svg>
           </button>
           <h1 className="text-lg font-bold flex-1 text-white">
-            매칭 요청 결과 ({MOCK_REQUESTS.length})
+            매칭 요청 결과 {!loading && !previewBlocked && `(${requests.length})`}
           </h1>
         </div>
       </header>
 
-      {/* 안내 배너 (임시 데이터 구분용) */}
-      <div className="px-4 pt-4">
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-700 leading-relaxed">
-          ⚠️ 표시되는 데이터는 화면 확인용 샘플입니다.
-          <br />
-          (seed 의 5명은 실제 프로필이라 카드 클릭 시 상세페이지로 이동됩니다)
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      </div>
-
-      {/* 상태 탭 */}
-      <div className="px-4 mt-4">
-        <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-          {(Object.keys(TAB_LABEL) as Tab[]).map((t) => {
-            const active = tab === t;
-            return (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-shrink-0 px-3.5 py-2 rounded-full text-sm font-semibold border transition-all ${
-                  active
-                    ? "text-white border-transparent shadow-sm"
-                    : "bg-white border-border text-muted-fg hover:border-gray-400"
-                }`}
-                style={active ? { backgroundColor: "#ff8a3d" } : {}}
-              >
-                {TAB_LABEL[t]}
-                <span
-                  className={`ml-1.5 text-[11px] inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full ${
-                    active ? "bg-white/25 text-white" : "bg-muted text-muted-fg"
-                  }`}
-                >
-                  {counts[t]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 카드 리스트 */}
-      <div className="px-4 mt-4 space-y-3">
-        {filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-fg">
-            <p className="text-base">해당 상태의 매칭 요청이 없습니다</p>
+      ) : previewBlocked ? (
+        <div className="px-6 pt-16 text-center space-y-3">
+          <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
+            <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
           </div>
-        ) : (
-          filtered.map((r) => (
-            <RequestCard
-              key={r.id}
-              req={r}
-              onOpen={() => {
-                if (r.maleProfileId) {
-                  router.push(`/female/${r.maleProfileId}`);
-                } else {
-                  alert("샘플(데모용) 프로필이라 상세페이지가 없습니다.\n실제 데이터 연동 시 자동으로 상세페이지가 열려요.");
-                }
-              }}
-            />
-          ))
-        )}
-      </div>
+          <h2 className="text-lg font-bold">로그인이 필요한 기능입니다</h2>
+          <p className="text-sm text-muted-fg leading-relaxed">
+            매칭 요청 결과는 정식 로그인 후 이용할 수 있어요.<br />
+            홈 화면에서 <b>‘Google 계정으로 계속하기’</b> 로<br />
+            로그인 후 다시 시도해주세요.
+          </p>
+          <button
+            onClick={() => router.push("/")}
+            className="mt-2 px-6 py-3 rounded-xl text-white font-semibold shadow-md"
+            style={{ backgroundColor: "#ff8a3d" }}
+          >
+            로그인 하러 가기
+          </button>
+        </div>
+      ) : requests.length === 0 ? (
+        <div className="px-6 pt-16 text-center space-y-3">
+          <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+            </svg>
+          </div>
+          <h2 className="text-base font-semibold text-foreground">아직 보낸 매칭 요청이 없어요</h2>
+          <p className="text-sm text-muted-fg leading-relaxed">
+            마음에 드는 분의 프로필에서 하트를 눌러<br />
+            매칭 후보에 담은 뒤, 매칭 요청을 보내보세요!
+          </p>
+          <button
+            onClick={() => router.push("/female")}
+            className="mt-2 px-6 py-3 rounded-xl text-white font-semibold shadow-md"
+            style={{ backgroundColor: "#ff8a3d" }}
+          >
+            프로필 둘러보기
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* 상태 탭 */}
+          <div className="px-4 mt-4">
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
+              {(Object.keys(TAB_LABEL) as Tab[]).map((t) => {
+                const active = tab === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`flex-shrink-0 px-3.5 py-2 rounded-full text-sm font-semibold border transition-all ${
+                      active
+                        ? "text-white border-transparent shadow-sm"
+                        : "bg-white border-border text-muted-fg hover:border-gray-400"
+                    }`}
+                    style={active ? { backgroundColor: "#ff8a3d" } : {}}
+                  >
+                    {TAB_LABEL[t]}
+                    <span
+                      className={`ml-1.5 text-[11px] inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full ${
+                        active ? "bg-white/25 text-white" : "bg-muted text-muted-fg"
+                      }`}
+                    >
+                      {counts[t]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 카드 리스트 */}
+          <div className="px-4 mt-4 space-y-3">
+            {filtered.length === 0 ? (
+              <div className="text-center py-16 text-muted-fg">
+                <p className="text-base">해당 상태의 매칭 요청이 없습니다</p>
+              </div>
+            ) : (
+              filtered.map((r) => (
+                <RequestCard
+                  key={r.id}
+                  req={r}
+                  onOpen={() => router.push(`/female/${r.maleProfileId}`)}
+                />
+              ))
+            )}
+          </div>
+        </>
+      )}
     </main>
   );
 }
 
-function RequestCard({ req, onOpen }: { req: MockRequest; onOpen: () => void }) {
-  const clickable = true;
+function RequestCard({ req, onOpen }: { req: RequestCardData; onOpen: () => void }) {
   return (
     <div
       onClick={onOpen}
@@ -295,14 +270,18 @@ function RequestCard({ req, onOpen }: { req: MockRequest; onOpen: () => void }) 
           onOpen();
         }
       }}
-      className={`bg-card rounded-2xl border border-border overflow-hidden shadow-sm transition-all ${
-        clickable ? "cursor-pointer hover:shadow-md hover:border-[#ff8a3d]/30 active:scale-[0.99]" : ""
-      }`}
+      className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm transition-all cursor-pointer hover:shadow-md hover:border-[#ff8a3d]/30 active:scale-[0.99]"
     >
       {/* 상단 - 프로필 정보 */}
       <div className="flex gap-3 p-4">
         <div className="w-20 h-24 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-          <img src={req.photo} alt={req.nickname} className="w-full h-full object-cover" />
+          {req.photo ? (
+            <img src={req.photo} alt={req.nickname} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary/20">
+              {req.nickname?.[0]}
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
@@ -316,8 +295,8 @@ function RequestCard({ req, onOpen }: { req: MockRequest; onOpen: () => void }) 
             {req.workplace} · {req.job}
           </p>
           <div className="flex flex-wrap gap-1 mt-2">
-            <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{req.region}</span>
-            <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{req.mbti}</span>
+            {req.region && <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{req.region}</span>}
+            {req.mbti && <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{req.mbti}</span>}
           </div>
         </div>
         <svg
@@ -351,7 +330,7 @@ function StatusBadge({ status }: { status: RequestStatus }) {
   );
 }
 
-function StatusMessage({ req }: { req: MockRequest }) {
+function StatusMessage({ req }: { req: RequestCardData }) {
   if (req.status === "pending") {
     return (
       <div className="border-t border-border bg-amber-50/40 px-4 py-3 flex items-center gap-3">
@@ -362,9 +341,7 @@ function StatusMessage({ req }: { req: MockRequest }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-amber-800">상대방의 응답을 기다리고 있어요</p>
-          <p className="text-[11px] text-amber-700/80 mt-0.5">
-            {formatRelative(req.requestedAt)} 요청
-          </p>
+          <p className="text-[11px] text-amber-700/80 mt-0.5">{formatRelative(req.requestedAt)} 요청</p>
         </div>
       </div>
     );
@@ -378,9 +355,7 @@ function StatusMessage({ req }: { req: MockRequest }) {
           <p className="text-sm font-bold text-emerald-800">매칭이 성사되었어요!</p>
         </div>
         <p className="text-[12px] text-emerald-700/90 leading-relaxed">
-          {req.contactSharedAt
-            ? "운영진을 통해 카카오톡으로 연락처가 전달되었어요. 좋은 인연 되세요!"
-            : "곧 운영진을 통해 카카오톡으로 연락처를 전달드릴게요."}
+          곧 운영진을 통해 카카오톡으로 연락처를 전달드릴게요.
         </p>
         <div className="flex items-center justify-between pt-1 text-[11px] text-emerald-700/80">
           <span>요청 {formatRelative(req.requestedAt)}</span>

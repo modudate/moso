@@ -14,15 +14,20 @@ export default function MaleDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const maleId = params.id as string;
-  const femaleId = "f-001";
+  const [femaleId, setFemaleId] = useState<string>("f-001");
 
   useEffect(() => { fetchData(); }, [maleId]);
 
   const fetchData = async () => {
     setLoading(true);
+    const meRes = await fetch("/api/me");
+    const { user: me } = await meRes.json();
+    const uid = me?.id ?? "f-001";
+    setFemaleId(uid);
+
     const [profileRes, cartRes] = await Promise.all([
       fetch(`/api/profiles?role=male&status=active`),
-      fetch(`/api/cart?femaleId=${femaleId}`),
+      fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
     ]);
     const males: User[] = await profileRes.json();
     setUser(males.find(m => m.id === maleId) || null);
@@ -32,6 +37,13 @@ export default function MaleDetailPage() {
   };
 
   const toggleCart = async () => {
+    // 미리보기/비로그인 상태에서는 cart 기능 차단
+    if (femaleId === "f-001") {
+      alert(
+        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
+      );
+      return;
+    }
     const wasInCart = inCart;
     setInCart(!wasInCart); // 낙관적 업데이트
     try {
