@@ -601,14 +601,43 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           {user.status === "pending" && (
             <>
               <button onClick={() => saveField("status", "active")} className="flex-1 py-3 bg-success text-white rounded-xl font-semibold">승인</button>
-              <button onClick={() => saveField("status", "rejected")} className="flex-1 py-3 bg-danger text-white rounded-xl font-semibold">반려</button>
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "이 회원을 반려하시겠습니까?\n\n반려 후에도 관리자 페이지에서 다시 '승인 대기'로 되돌릴 수 있습니다.",
+                    )
+                  ) {
+                    saveField("status", "rejected");
+                  }
+                }}
+                className="flex-1 py-3 bg-danger text-white rounded-xl font-semibold"
+              >
+                반려
+              </button>
             </>
           )}
           {user.status === "active" && (
             <button onClick={() => saveField("status", "blocked")} className="flex-1 py-3 bg-muted text-muted-fg rounded-xl font-semibold hover:bg-danger/10 hover:text-danger transition-colors">차단</button>
           )}
           {user.status === "blocked" && (
-            <button onClick={() => saveField("status", "active")} className="flex-1 py-3 bg-muted text-muted-fg rounded-xl font-semibold hover:bg-success/10 hover:text-success transition-colors">해제</button>
+            <button onClick={() => saveField("status", "active")} className="flex-1 py-3 bg-muted text-muted-fg rounded-xl font-semibold hover:bg-success/10 hover:text-success transition-colors">차단 해제 (활성화)</button>
+          )}
+          {user.status === "rejected" && (
+            <button
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "이 회원의 반려를 취소하고 '승인 대기' 상태로 되돌리시겠습니까?\n\n다시 로그인하면 정상적으로 가입 절차를 진행할 수 있게 됩니다.",
+                  )
+                ) {
+                  saveField("status", "pending");
+                }
+              }}
+              className="flex-1 py-3 bg-warning/10 text-warning rounded-xl font-semibold border border-warning/30 hover:bg-warning/20 transition-colors"
+            >
+              반려 취소 (승인 대기로 되돌리기)
+            </button>
           )}
         </section>
       </div>

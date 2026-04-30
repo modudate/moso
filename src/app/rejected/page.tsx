@@ -13,10 +13,6 @@ export default function RejectedPage() {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-900">가입이 반려되었습니다</h2>
-        <p className="text-gray-500 leading-relaxed">
-          가입 신청이 반려되었습니다.<br />
-          자세한 내용은 관리자에게 문의해주세요.
-        </p>
         <button onClick={() => router.push("/")}
           className="w-full py-3.5 rounded-2xl text-white font-bold text-base shadow-md"
           style={{ backgroundColor: "#ff8a3d" }}>

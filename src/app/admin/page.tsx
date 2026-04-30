@@ -199,7 +199,24 @@ export default function AdminPage() {
     patchStatus(id, { status: "active", expiresAt: expires.toISOString() });
   };
 
-  const handleReject = (id: string) => patchStatus(id, { status: "rejected" });
+  const handleReject = (id: string) => {
+    if (
+      window.confirm(
+        "이 회원을 반려하시겠습니까?\n\n반려 후에도 관리자 페이지에서 다시 '승인 대기'로 되돌릴 수 있습니다.",
+      )
+    ) {
+      patchStatus(id, { status: "rejected" });
+    }
+  };
+  const handleUnreject = (id: string) => {
+    if (
+      window.confirm(
+        "이 회원의 반려를 취소하고 '승인 대기' 상태로 되돌리시겠습니까?\n\n다시 로그인하면 정상적으로 가입 절차를 진행할 수 있게 됩니다.",
+      )
+    ) {
+      patchStatus(id, { status: "pending" });
+    }
+  };
   const handleBlock = (id: string) => patchStatus(id, { status: "blocked" });
   const handleUnblock = (id: string) => patchStatus(id, { status: "active" });
 
@@ -400,6 +417,9 @@ export default function AdminPage() {
                     )}
                     {u.status === "blocked" && (
                       <button onClick={() => handleUnblock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-success/10 hover:text-success transition-colors">해제</button>
+                    )}
+                    {u.status === "rejected" && (
+                      <button onClick={() => handleUnreject(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors">반려 취소</button>
                     )}
                   </div>
                 </div>
