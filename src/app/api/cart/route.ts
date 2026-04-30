@@ -50,11 +50,17 @@ async function resolveFemaleId(): Promise<
 }
 
 export async function GET(req: NextRequest) {
-  // 조회는 클라가 보낸 femaleId 를 그대로 사용해도 안전 (RLS/권한 분리는 추후)
   const femaleId = req.nextUrl.searchParams.get("femaleId");
   if (!femaleId) return NextResponse.json({ error: "femaleId 필요" }, { status: 400 });
   const items = await getCartItems(femaleId);
-  return NextResponse.json(items);
+  // snake_case → camelCase 변환 (클라이언트 호환)
+  const mapped = (items ?? []).map((item: Record<string, unknown>) => ({
+    id: item.id,
+    femaleProfileId: item.female_profile_id,
+    maleProfileId: item.male_profile_id,
+    addedAt: item.added_at,
+  }));
+  return NextResponse.json(mapped);
 }
 
 export async function POST(req: NextRequest) {
