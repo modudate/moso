@@ -217,18 +217,20 @@ export async function getCartItems(femaleProfileId: string) {
 
 export async function addCartItem(femaleProfileId: string, maleProfileId: string) {
   const db = await getDb();
-  await db.from("cart_items").upsert(
+  const { error } = await db.from("cart_items").upsert(
     { female_profile_id: femaleProfileId, male_profile_id: maleProfileId },
     { onConflict: "female_profile_id,male_profile_id" },
   );
+  if (error) throw new Error(error.message);
 }
 
 export async function removeCartItem(femaleProfileId: string, maleProfileId: string) {
   const db = await getDb();
-  await db.from("cart_items")
+  const { error } = await db.from("cart_items")
     .delete()
     .eq("female_profile_id", femaleProfileId)
     .eq("male_profile_id", maleProfileId);
+  if (error) throw new Error(error.message);
 }
 
 // ── Rejection Logs (쿨타임) ────────────────────────────────────────

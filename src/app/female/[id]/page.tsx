@@ -32,12 +32,22 @@ export default function MaleDetailPage() {
   };
 
   const toggleCart = async () => {
-    if (inCart) {
-      await fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }) });
-      setInCart(false);
-    } else {
-      await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }) });
-      setInCart(true);
+    const wasInCart = inCart;
+    setInCart(!wasInCart); // 낙관적 업데이트
+    try {
+      const res = await fetch("/api/cart", {
+        method: wasInCart ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }),
+        keepalive: true,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `요청 실패 (${res.status})`);
+      }
+    } catch (err) {
+      setInCart(wasInCart); // 실패 시 롤백
+      alert(`매칭 후보 ${wasInCart ? "제거" : "추가"}에 실패했습니다.\n${err instanceof Error ? err.message : ""}`);
     }
   };
 

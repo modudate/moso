@@ -39,9 +39,24 @@ export default function MatchRequestListPage() {
     setLoading(false);
   };
 
-  const removeFromList = (maleId: string) => {
-    setCartUsers(prev => prev.filter(u => u.id !== maleId));
-    fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }) });
+  const removeFromList = async (maleId: string) => {
+    const prevUsers = cartUsers;
+    setCartUsers(prev => prev.filter(u => u.id !== maleId)); // 낙관적
+    try {
+      const res = await fetch("/api/cart", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ femaleProfileId: femaleId, maleProfileId: maleId }),
+        keepalive: true,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `요청 실패 (${res.status})`);
+      }
+    } catch (err) {
+      setCartUsers(prevUsers); // 롤백
+      alert(`매칭 후보 제거에 실패했습니다.\n${err instanceof Error ? err.message : ""}`);
+    }
   };
 
   const handleConfirm = async () => {

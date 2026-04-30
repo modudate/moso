@@ -64,14 +64,34 @@ export default function FemalePage() {
     setLoading(false);
   };
 
-  const toggleCart = (e: React.MouseEvent, maleId: string) => {
+  const toggleCart = async (e: React.MouseEvent, maleId: string) => {
     e.stopPropagation();
-    if (cart.has(maleId)) {
-      setCart(prev => { const n = new Set(prev); n.delete(maleId); return n; });
-      fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: myId, maleProfileId: maleId }) });
-    } else {
-      setCart(prev => new Set(prev).add(maleId));
-      fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ femaleProfileId: myId, maleProfileId: maleId }) });
+    const wasInCart = cart.has(maleId);
+    // 낙관적 업데이트
+    setCart(prev => {
+      const n = new Set(prev);
+      if (wasInCart) n.delete(maleId); else n.add(maleId);
+      return n;
+    });
+    try {
+      const res = await fetch("/api/cart", {
+        method: wasInCart ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ femaleProfileId: myId, maleProfileId: maleId }),
+        keepalive: true,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `요청 실패 (${res.status})`);
+      }
+    } catch (err) {
+      // 실패 시 롤백
+      setCart(prev => {
+        const n = new Set(prev);
+        if (wasInCart) n.add(maleId); else n.delete(maleId);
+        return n;
+      });
+      alert(`매칭 후보 ${wasInCart ? "제거" : "추가"}에 실패했습니다.\n${err instanceof Error ? err.message : ""}`);
     }
   };
 
