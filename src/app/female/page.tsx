@@ -22,7 +22,8 @@ export default function FemalePage() {
   const [showFilters, setShowFilters] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [gridCols, setGridCols] = useState<1 | 2>(2);
-  const [myId, setMyId] = useState<string>("f-001");
+  const [myId, setMyId] = useState<string | null>(null);
+  const [myStatus, setMyStatus] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -48,29 +49,49 @@ export default function FemalePage() {
     setLoading(true);
     // 남성 리스트는 내 ID 에 의존하지 않으므로 /api/me 와 동시에 바로 출발
     const malesPromise = fetch("/api/profiles?role=male&status=active");
-    const meRes = await fetch("/api/me");
+    const meRes = await fetch("/api/me", { cache: "no-store" });
     const { user } = await meRes.json();
-    const uid = user?.id ?? "f-001";
+    const uid: string | null = user?.id ?? null;
+    const status: string | null = user?.status ?? null;
     setMyId(uid);
+    setMyStatus(status);
 
-    const [mRes, cRes] = await Promise.all([
+    // active 회원만 cart 조회 (그 외엔 빈 cart)
+    const fetches: [Promise<Response>, Promise<Response> | null] = [
       malesPromise,
-      fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
-    ]);
+      uid && status === "active"
+        ? fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`)
+        : null,
+    ];
+    const [mRes, cRes] = await Promise.all(fetches);
     const mData = await mRes.json();
-    const cData = await cRes.json();
     setMales(mData);
-    setCart(new Set(cData.map((c: { maleProfileId: string }) => c.maleProfileId)));
+    if (cRes) {
+      const cData = await cRes.json();
+      setCart(new Set(cData.map((c: { maleProfileId: string }) => c.maleProfileId)));
+    } else {
+      setCart(new Set());
+    }
     setLoading(false);
   };
 
   const toggleCart = async (e: React.MouseEvent, maleId: string) => {
     e.stopPropagation();
-    // 미리보기/비로그인 상태에서는 cart 기능 차단 (UUID FK 에러 방지)
-    if (myId === "f-001") {
-      alert(
-        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
-      );
+    // 미리보기/비로그인/가입 미완료 상태에서는 cart 기능 차단 (UUID FK 에러 방지)
+    if (!myId || myStatus !== "active") {
+      if (!myId) {
+        alert(
+          "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
+        );
+      } else if (myStatus === "pending") {
+        alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
+      } else if (myStatus === "rejected") {
+        alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
+      } else if (myStatus === "blocked") {
+        alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
+      } else {
+        alert("회원가입이 완료되지 않았습니다.\n홈 화면에서 가입을 먼저 진행해주세요.");
+      }
       return;
     }
     const wasInCart = cart.has(maleId);

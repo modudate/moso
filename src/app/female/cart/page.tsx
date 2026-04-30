@@ -12,38 +12,64 @@ export default function MatchRequestListPage() {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
-  const [femaleId, setFemaleId] = useState<string>("f-001");
+  const [femaleId, setFemaleId] = useState<string | null>(null);
+  const [myStatus, setMyStatus] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
-    const meRes = await fetch("/api/me");
+    const meRes = await fetch("/api/me", { cache: "no-store" });
     const { user } = await meRes.json();
-    const uid = user?.id ?? "f-001";
+    const uid: string | null = user?.id ?? null;
+    const status: string | null = user?.status ?? null;
     setFemaleId(uid);
+    setMyStatus(status);
 
-    const [cartRes, malesRes, sentRes] = await Promise.all([
-      fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
-      fetch("/api/profiles?role=male&status=active"),
-      fetch(`/api/match?femaleId=${encodeURIComponent(uid)}`),
-    ]);
-    const cartData: { maleProfileId: string }[] = await cartRes.json();
-    const males: User[] = await malesRes.json();
-    const maleMap = new Map(males.map(m => [m.id, m]));
-    const ids = new Set(cartData.map(c => c.maleProfileId));
-    setCartUsers(males.filter(m => ids.has(m.id)));
+    const malesPromise = fetch("/api/profiles?role=male&status=active");
 
-    const sentData: MatchRequest[] = await sentRes.json();
-    setSentRequests(sentData.map(s => ({ ...s, user: maleMap.get(s.maleProfileId) })));
+    if (uid && status === "active") {
+      const [cartRes, malesRes, sentRes] = await Promise.all([
+        fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
+        malesPromise,
+        fetch(`/api/match?femaleId=${encodeURIComponent(uid)}`),
+      ]);
+      const cartData: { maleProfileId: string }[] = await cartRes.json();
+      const males: User[] = await malesRes.json();
+      const maleMap = new Map(males.map(m => [m.id, m]));
+      const ids = new Set(cartData.map(c => c.maleProfileId));
+      setCartUsers(males.filter(m => ids.has(m.id)));
+
+      const sentData: MatchRequest[] = await sentRes.json();
+      setSentRequests(sentData.map(s => ({ ...s, user: maleMap.get(s.maleProfileId) })));
+    } else {
+      // 미리보기/비로그인/가입 미완료 → 빈 화면
+      setCartUsers([]);
+      setSentRequests([]);
+    }
     setLoading(false);
   };
 
-  const removeFromList = async (maleId: string) => {
-    if (femaleId === "f-001") {
-      alert("정식 로그인 후 이용 가능한 기능입니다.");
-      return;
+  const guardActive = (): boolean => {
+    if (femaleId && myStatus === "active") return true;
+    if (!femaleId) {
+      alert(
+        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
+      );
+    } else if (myStatus === "pending") {
+      alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
+    } else if (myStatus === "rejected") {
+      alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
+    } else if (myStatus === "blocked") {
+      alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
+    } else {
+      alert("회원가입이 완료되지 않았습니다.\n홈 화면에서 가입을 먼저 진행해주세요.");
     }
+    return false;
+  };
+
+  const removeFromList = async (maleId: string) => {
+    if (!guardActive()) return;
     const prevUsers = cartUsers;
     setCartUsers(prev => prev.filter(u => u.id !== maleId)); // 낙관적
     try {
@@ -65,12 +91,7 @@ export default function MatchRequestListPage() {
 
   const handleConfirm = async () => {
     if (cartUsers.length === 0) return;
-    if (femaleId === "f-001") {
-      alert(
-        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
-      );
-      return;
-    }
+    if (!guardActive()) return;
     setConfirming(true);
     try {
       const res = await fetch("/api/match", {

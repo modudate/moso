@@ -14,34 +14,53 @@ export default function MaleDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const maleId = params.id as string;
-  const [femaleId, setFemaleId] = useState<string>("f-001");
+  const [femaleId, setFemaleId] = useState<string | null>(null);
+  const [myStatus, setMyStatus] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, [maleId]);
 
   const fetchData = async () => {
     setLoading(true);
-    const meRes = await fetch("/api/me");
+    const meRes = await fetch("/api/me", { cache: "no-store" });
     const { user: me } = await meRes.json();
-    const uid = me?.id ?? "f-001";
+    const uid: string | null = me?.id ?? null;
+    const status: string | null = me?.status ?? null;
     setFemaleId(uid);
+    setMyStatus(status);
 
-    const [profileRes, cartRes] = await Promise.all([
+    const tasks: [Promise<Response>, Promise<Response> | null] = [
       fetch(`/api/profiles?role=male&status=active`),
-      fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`),
-    ]);
+      uid && status === "active"
+        ? fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`)
+        : null,
+    ];
+    const [profileRes, cartRes] = await Promise.all(tasks);
     const males: User[] = await profileRes.json();
     setUser(males.find(m => m.id === maleId) || null);
-    const cartData: { maleProfileId: string }[] = await cartRes.json();
-    setInCart(cartData.some(c => c.maleProfileId === maleId));
+    if (cartRes) {
+      const cartData: { maleProfileId: string }[] = await cartRes.json();
+      setInCart(cartData.some(c => c.maleProfileId === maleId));
+    } else {
+      setInCart(false);
+    }
     setLoading(false);
   };
 
   const toggleCart = async () => {
-    // 미리보기/비로그인 상태에서는 cart 기능 차단
-    if (femaleId === "f-001") {
-      alert(
-        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
-      );
+    if (!femaleId || myStatus !== "active") {
+      if (!femaleId) {
+        alert(
+          "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
+        );
+      } else if (myStatus === "pending") {
+        alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
+      } else if (myStatus === "rejected") {
+        alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
+      } else if (myStatus === "blocked") {
+        alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
+      } else {
+        alert("회원가입이 완료되지 않았습니다.\n홈 화면에서 가입을 먼저 진행해주세요.");
+      }
       return;
     }
     const wasInCart = inCart;
