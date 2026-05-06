@@ -301,6 +301,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               value={user.charmPhoto}
               category="charm"
               confirmRemove
+              cropAspect={1}
+              cropTitle="저의 매력 사진 영역 선택 (1:1)"
               onUploaded={(_path, url) => saveField("charmPhoto", url)}
               onRemove={() => saveField("charmPhoto", null)}
               label="저의 매력은 사진"
@@ -310,6 +312,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               value={user.datePhoto}
               category="date"
               confirmRemove
+              cropAspect={1}
+              cropTitle="연인이 생기면 사진 영역 선택 (1:1)"
               onUploaded={(_path, url) => saveField("datePhoto", url)}
               onRemove={() => saveField("datePhoto", null)}
               label="연인이 생기면 사진"

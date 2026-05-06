@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useImperativeHandle, forwardRef } from "react";
+import ImageCropperModal from "./ImageCropperModal";
 
 export interface ImageUploaderHandle {
   waitForUpload: () => Promise<{ path: string; url: string } | null>;
@@ -16,41 +17,41 @@ interface ImageUploaderProps {
   label?: string;
   // 사진 삭제 시 확인 대화상자 표시 (관리자 페이지처럼 자동저장 환경에서 사용)
   confirmRemove?: boolean;
+  // 크롭 모달 사용 여부 (default true). 가입 폼/관리자처럼 영역 직접 지정이 필요한 경우.
+  enableCrop?: boolean;
+  // 크롭 비율 (default 1 = 정사각형, 매력/연인 사진 표시 영역과 일치)
+  cropAspect?: number;
+  // 크롭 모달 제목
+  cropTitle?: string;
 }
 
-function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("리사이즈 실패"))),
-        "image/webp",
-        quality,
-      );
-    };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
+function blobToFile(blob: Blob, name: string): File {
+  return new File([blob], name, { type: blob.type || "image/webp" });
 }
 
 const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
-  function ImageUploader({ value, category, onUploaded, onRemove, size = "md", label, confirmRemove }, ref) {
+  function ImageUploader(
+    {
+      value,
+      category,
+      onUploaded,
+      onRemove,
+      size = "md",
+      label,
+      confirmRemove,
+      enableCrop = true,
+      cropAspect = 1,
+      cropTitle = "사진 영역 선택",
+    },
+    ref,
+  ) {
     const [preview, setPreview] = useState<string | null>(value);
     const [uploading, setUploading] = useState(false);
     const [failed, setFailed] = useState(false);
     const pendingUpload = useRef<Promise<{ path: string; url: string } | null> | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
+    const pendingFileName = useRef<string>("photo");
 
     const sizeClass = size === "sm" ? "w-24 h-24" : size === "lg" ? "w-40 h-40" : "w-32 h-32";
 
@@ -64,9 +65,8 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
 
     const doUpload = async (file: File): Promise<{ path: string; url: string } | null> => {
       try {
-        const resized = await resizeImage(file, 1200, 1600, 0.85);
         const formData = new FormData();
-        formData.append("file", new File([resized], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+        formData.append("file", file);
         formData.append("category", category);
 
         const res = await fetch("/api/upload", { method: "POST", body: formData });
@@ -79,11 +79,13 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
           onUploaded?.(data.path, data.signedUrl);
           return { path: data.path, url: data.signedUrl };
         } else {
+          console.error("[ImageUploader] upload failed", res.status, data);
           setUploading(false);
           setFailed(true);
           return null;
         }
-      } catch {
+      } catch (err) {
+        console.error("[ImageUploader] upload exception", err);
         setUploading(false);
         setFailed(true);
         return null;
@@ -92,12 +94,35 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
       }
     };
 
-    const handleFile = (file: File) => {
+    const startUpload = (file: File) => {
       const blobUrl = URL.createObjectURL(file);
       setPreview(blobUrl);
       setUploading(true);
       setFailed(false);
       pendingUpload.current = doUpload(file);
+    };
+
+    const handleFile = (file: File) => {
+      pendingFileName.current = file.name.replace(/\.\w+$/, ".webp");
+      if (enableCrop) {
+        // 크롭 모달 노출 → 확인 시 크롭된 blob 으로 업로드
+        const url = URL.createObjectURL(file);
+        setCropSrc(url);
+      } else {
+        startUpload(file);
+      }
+    };
+
+    const handleCropConfirm = (blob: Blob) => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
+      const croppedFile = blobToFile(blob, pendingFileName.current);
+      startUpload(croppedFile);
+    };
+
+    const handleCropCancel = () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,6 +207,17 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
             onChange={handleChange}
           />
         </div>
+
+        {cropSrc && (
+          <ImageCropperModal
+            key={cropSrc}
+            src={cropSrc}
+            aspect={cropAspect}
+            onCancel={handleCropCancel}
+            onConfirm={handleCropConfirm}
+            title={cropTitle}
+          />
+        )}
       </div>
     );
   }

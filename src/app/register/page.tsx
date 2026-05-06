@@ -522,6 +522,8 @@ export default function RegisterPage() {
                   ref={charmRef}
                   value={charmPhotoUrl}
                   category="charm"
+                  cropAspect={1}
+                  cropTitle="저의 매력 사진 영역 선택 (1:1)"
                   onUploaded={(_path, url) => setCharmPhotoUrl(url)}
                   onRemove={() => setCharmPhotoUrl(null)}
                 />
@@ -542,6 +544,8 @@ export default function RegisterPage() {
                   ref={dateRef}
                   value={datePhotoUrl}
                   category="date"
+                  cropAspect={1}
+                  cropTitle="연인이 생기면 사진 영역 선택 (1:1)"
                   onUploaded={(_path, url) => setDatePhotoUrl(url)}
                   onRemove={() => setDatePhotoUrl(null)}
                 />
