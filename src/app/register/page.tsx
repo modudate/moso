@@ -11,6 +11,10 @@ import {
 import MultiImageUploader, { type MultiImageUploaderHandle } from "@/components/MultiImageUploader";
 import ImageUploader, { type ImageUploaderHandle } from "@/components/ImageUploader";
 import { isPreviewMode } from "@/lib/preview";
+import {
+  validateNickname, sanitizeNicknameInput, NICKNAME_MAX,
+  validateIntroText, INTRO_MIN, INTRO_MAX,
+} from "@/lib/validation";
 
 type Step = 1 | 2;
 
@@ -39,7 +43,7 @@ export default function RegisterPage() {
   const [charmPhotoUrl, setCharmPhotoUrl] = useState<string | null>(null);
   const [datePhotoUrl, setDatePhotoUrl] = useState<string | null>(null);
 
-  const [idealAge, setIdealAge] = useState("");
+  const [idealAgeRanges, setIdealAgeRanges] = useState<string[]>([]);
   const [idealMinHeight, setIdealMinHeight] = useState("");
   const [idealMaxHeight, setIdealMaxHeight] = useState("");
   const [idealCities, setIdealCities] = useState<string[]>([]);
@@ -59,6 +63,14 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [preview, setPreview] = useState(false);
 
+  // 닉네임 중복체크 상태 (디바운스)
+  const [nickStatus, setNickStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "checking" }
+    | { kind: "ok" }
+    | { kind: "error"; msg: string }
+  >({ kind: "idle" });
+
   useEffect(() => { setPreview(isPreviewMode()); }, []);
 
   useEffect(() => {
@@ -66,6 +78,29 @@ export default function RegisterPage() {
     const t = setTimeout(() => setError(""), 4000);
     return () => clearTimeout(t);
   }, [error]);
+
+  useEffect(() => {
+    const v = validateNickname(nickname);
+    if (!v.ok) {
+      // 입력 자체가 비었거나 너무 짧으면 idle, 형식 에러는 즉시 표시
+      if (!nickname) setNickStatus({ kind: "idle" });
+      else setNickStatus({ kind: "error", msg: v.reason });
+      return;
+    }
+    setNickStatus({ kind: "checking" });
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/check-nickname?nickname=${encodeURIComponent(nickname.trim())}`, { cache: "no-store" });
+        const data = await res.json();
+        if (data.ok) setNickStatus({ kind: "ok" });
+        else setNickStatus({ kind: "error", msg: data.reason || "사용할 수 없는 닉네임입니다" });
+      } catch {
+        // 네트워크 실패 시는 통과시켜도 서버에서 다시 검증함
+        setNickStatus({ kind: "ok" });
+      }
+    }, 350);
+    return () => clearTimeout(id);
+  }, [nickname]);
 
   const allRequiredAgreed = agreeTerms && agreePrivacy && agreeAge;
   const allAgreed = allRequiredAgreed && agreeMarketing;
@@ -100,7 +135,9 @@ export default function RegisterPage() {
 
   const validateStep1 = (): VErr => {
     if (!realName.trim()) return { msg: "본명을 입력해주세요", key: "realName" };
-    if (!nickname.trim()) return { msg: "닉네임을 입력해주세요", key: "nickname" };
+    const nv = validateNickname(nickname);
+    if (!nv.ok) return { msg: nv.reason, key: "nickname" };
+    if (nickStatus.kind === "error") return { msg: nickStatus.msg, key: "nickname" };
     if (!gender) return { msg: "성별을 선택해주세요", key: "gender" };
     if (!birthYear) return { msg: "출생년도를 선택해주세요", key: "birthYear" };
     if (!height || isNaN(Number(height)) || Number(height) < 130 || Number(height) > 230) return { msg: "키를 정확히 입력해주세요 (130~230)", key: "height" };
@@ -114,8 +151,10 @@ export default function RegisterPage() {
     if (!education) return { msg: "학력을 선택해주세요", key: "education" };
     if (!smoking) return { msg: "흡연 여부를 선택해주세요", key: "smoking" };
     if (!mbti) return { msg: "MBTI를 선택해주세요", key: "mbti" };
-    if (!charm.trim()) return { msg: "매력을 입력해주세요", key: "charm" };
-    if (!datingStyle.trim()) return { msg: "연애스타일을 입력해주세요", key: "datingStyle" };
+    const cv = validateIntroText(charm, "저의 매력은");
+    if (!cv.ok) return { msg: cv.reason, key: "charm" };
+    const dv = validateIntroText(datingStyle, "연인이 생기면 하고 싶은 일은");
+    if (!dv.ok) return { msg: dv.reason, key: "datingStyle" };
 
     // 사진 필수 검증 (업로드 중인 blob: URL 은 제외하고 실제 저장된 URL 만 카운트)
     const validPhotos = photoUrls.filter((u) => typeof u === "string" && u && !u.startsWith("blob:"));
@@ -126,7 +165,7 @@ export default function RegisterPage() {
   };
 
   const validateStep2 = (): VErr => {
-    if (!idealAge) return { msg: "선호 나이를 선택해주세요", key: "idealAge" };
+    if (idealAgeRanges.length === 0) return { msg: "선호 나이를 1개 이상 선택해주세요", key: "idealAge" };
     if (!idealMinHeight || !idealMaxHeight) return { msg: "선호 키 범위를 입력해주세요", key: "idealHeight" };
     if (Number(idealMinHeight) > Number(idealMaxHeight)) return { msg: "선호 키: 최소가 최대보다 클 수 없습니다", key: "idealHeight" };
     if (idealCities.length === 0) return { msg: "선호 거주지를 1개 이상 선택해주세요", key: "idealCities" };
@@ -200,7 +239,8 @@ export default function RegisterPage() {
         charmPhotoUrl: charmResult?.url ?? charmPhotoUrl,
         datePhotoUrl: dateResult?.url ?? datePhotoUrl,
         idealType: {
-          idealAge,
+          idealAge: idealAgeRanges[0] ?? "",
+          idealAgeRanges,
           idealMinHeight: parseInt(idealMinHeight),
           idealMaxHeight: parseInt(idealMaxHeight),
           idealCities,
@@ -298,8 +338,22 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="닉네임" id="nickname">
-              <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="이성에게 보여질 닉네임"
-                className="input-field" />
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(sanitizeNicknameInput(e.target.value))}
+                placeholder={`이성에게 보여질 닉네임 (최대 ${NICKNAME_MAX}자, 특수문자/이모티콘 불가)`}
+                maxLength={NICKNAME_MAX}
+                className="input-field"
+              />
+              <div className="flex items-center justify-between mt-1 text-xs">
+                <span>
+                  {nickStatus.kind === "checking" && <span className="text-muted-fg">중복 확인 중...</span>}
+                  {nickStatus.kind === "ok" && <span className="text-emerald-600 font-medium">사용 가능한 닉네임이에요</span>}
+                  {nickStatus.kind === "error" && <span className="text-red-500 font-medium">{nickStatus.msg}</span>}
+                </span>
+                <span className="text-muted-fg">{nickname.length}/{NICKNAME_MAX}자</span>
+              </div>
             </Field>
 
             <Field label="성별" id="gender">
@@ -409,17 +463,21 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="저의 매력은" id="charm">
-              <textarea value={charm} onChange={(e) => { if (e.target.value.length <= 200) setCharm(e.target.value); }}
-                placeholder="저의 매력을 자유롭게 적어주세요" rows={3} maxLength={200}
+              <textarea value={charm} onChange={(e) => { if (e.target.value.length <= INTRO_MAX) setCharm(e.target.value); }}
+                placeholder={`저의 매력을 자유롭게 적어주세요 (최소 ${INTRO_MIN}자)`} rows={5} maxLength={INTRO_MAX}
                 className="input-field resize-none" />
-              <span className="text-xs text-muted-fg">{charm.length}/200자</span>
+              <span className={`text-xs ${charm.trim().length < INTRO_MIN ? "text-red-500" : "text-muted-fg"}`}>
+                {charm.length}/{INTRO_MAX}자 {charm.trim().length < INTRO_MIN && `(최소 ${INTRO_MIN}자)`}
+              </span>
             </Field>
 
             <Field label="연인이 생기면 하고 싶은 일은" id="datingStyle">
-              <textarea value={datingStyle} onChange={(e) => { if (e.target.value.length <= 200) setDatingStyle(e.target.value); }}
-                placeholder="연인이 생기면 함께 하고 싶은 일을 적어주세요" rows={3} maxLength={200}
+              <textarea value={datingStyle} onChange={(e) => { if (e.target.value.length <= INTRO_MAX) setDatingStyle(e.target.value); }}
+                placeholder={`연인이 생기면 함께 하고 싶은 일을 적어주세요 (최소 ${INTRO_MIN}자)`} rows={5} maxLength={INTRO_MAX}
                 className="input-field resize-none" />
-              <span className="text-xs text-muted-fg">{datingStyle.length}/200자</span>
+              <span className={`text-xs ${datingStyle.trim().length < INTRO_MIN ? "text-red-500" : "text-muted-fg"}`}>
+                {datingStyle.length}/{INTRO_MAX}자 {datingStyle.trim().length < INTRO_MIN && `(최소 ${INTRO_MIN}자)`}
+              </span>
             </Field>
 
             <div className="pt-4 space-y-6 border-t border-gray-200">
@@ -503,11 +561,21 @@ export default function RegisterPage() {
             <h2 className="text-xl font-bold">이상형 정보</h2>
             <p className="text-sm text-muted-fg -mt-3">모든 항목 필수 입력</p>
 
-            <Field label="선호 나이" id="idealAge">
-              <select value={idealAge} onChange={(e) => setIdealAge(e.target.value)} className="input-field">
-                <option value="">선택해주세요</option>
-                {AGE_RANGES.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
+            <Field label={`선호 나이 (복수 선택 가능, ${idealAgeRanges.length}개 선택)`} id="idealAge">
+              <SelectAllRow
+                allSelected={idealAgeRanges.length === AGE_RANGES.length}
+                onAll={() => setIdealAgeRanges([...AGE_RANGES])}
+                onClear={() => setIdealAgeRanges([])}
+              />
+              <div className="flex flex-wrap gap-2">
+                {AGE_RANGES.map(a => (
+                  <button key={a} onClick={() => toggleMulti(idealAgeRanges, a, setIdealAgeRanges)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${idealAgeRanges.includes(a) ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                    style={idealAgeRanges.includes(a) ? { backgroundColor: "#ff8a3d" } : {}}>
+                    {a}
+                  </button>
+                ))}
+              </div>
             </Field>
 
             <Field label="선호 키 (cm)" id="idealHeight">
@@ -533,6 +601,11 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="선호 직장 (복수 선택)" id="idealWorkplaces">
+              <SelectAllRow
+                allSelected={idealWorkplaces.length === WORKPLACES.length}
+                onAll={() => setIdealWorkplaces([...WORKPLACES])}
+                onClear={() => setIdealWorkplaces([])}
+              />
               <div className="flex flex-wrap gap-2">
                 {WORKPLACES.map(w => (
                   <button key={w} onClick={() => toggleMulti(idealWorkplaces, w, setIdealWorkplaces)}
@@ -545,6 +618,11 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="선호 연봉 (복수 선택)" id="idealSalaries">
+              <SelectAllRow
+                allSelected={idealSalaries.length === SALARIES.length}
+                onAll={() => setIdealSalaries([...SALARIES])}
+                onClear={() => setIdealSalaries([])}
+              />
               <div className="flex flex-wrap gap-2">
                 {SALARIES.map(s => (
                   <button key={s} onClick={() => toggleMulti(idealSalaries, s, setIdealSalaries)}
@@ -667,6 +745,31 @@ function Field({ label, children, id }: { label: string; children: React.ReactNo
     <div id={id ? `field-${id}` : undefined} className="transition-shadow p-1 -m-1">
       <label className="block text-sm font-semibold text-foreground mb-2">{label}</label>
       {children}
+    </div>
+  );
+}
+
+// 다중 선택 항목에서 "전체 선택 / 무관" 단축 버튼 한 줄
+function SelectAllRow({ allSelected, onAll, onClear }: { allSelected: boolean; onAll: () => void; onClear: () => void }) {
+  return (
+    <div className="flex gap-2 mb-2">
+      <button
+        type="button"
+        onClick={onAll}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+          allSelected ? "text-white border-transparent" : "bg-white text-foreground border-border hover:border-[#ff8a3d]/30"
+        }`}
+        style={allSelected ? { backgroundColor: "#ff8a3d" } : {}}
+      >
+        전체 선택
+      </button>
+      <button
+        type="button"
+        onClick={onClear}
+        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-muted-fg border border-border hover:border-gray-400 transition-colors"
+      >
+        무관 (선택 해제)
+      </button>
     </div>
   );
 }

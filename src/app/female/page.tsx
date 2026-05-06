@@ -8,6 +8,10 @@ import { regionLabel, FILTER_ITEMS, JOBS } from "@/lib/options";
 import Sidebar from "@/components/Sidebar";
 import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
 import GridToggle from "@/components/GridToggle";
+import {
+  type MultiFilters, activeCount, toggleFilterValue, setFilterAll, clearFilterKey,
+  matchInfoFilters,
+} from "@/lib/filter";
 
 const PAGE_SIZE = 10;
 const SCROLL_KEY = "female_scroll";
@@ -17,8 +21,8 @@ export default function FemalePage() {
   const [males, setMales] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState<Record<string, string>>({});
-  const [tempFilters, setTempFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<MultiFilters>({});
+  const [tempFilters, setTempFilters] = useState<MultiFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [gridCols, setGridCols] = useState<1 | 2>(2);
@@ -29,11 +33,16 @@ export default function FemalePage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const filterJobRef = useRef<HTMLDivElement | null>(null);
 
+  // 직장이 정확히 1개 선택되었을 때만 직업 하위 필터를 노출 (다중 선택과 호환되는 보수적 정책)
+  const singleSelectedWorkplace = (tempFilters.workplace && tempFilters.workplace.length === 1)
+    ? tempFilters.workplace[0]
+    : null;
+
   useEffect(() => {
-    if (showFilters && tempFilters.workplace && filterJobRef.current) {
+    if (showFilters && singleSelectedWorkplace && filterJobRef.current) {
       filterJobRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [tempFilters.workplace, showFilters]);
+  }, [singleSelectedWorkplace, showFilters]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -143,49 +152,10 @@ export default function FemalePage() {
     setTempFilters({});
   };
 
-  const parseAgeRange = (s: string): [number, number] => {
-    const nums = s.match(/\d+/g)?.map(Number) ?? [];
-    if (s.startsWith("~") && nums.length === 1) return [nums[0], 9999];
-    if (s.endsWith("~") && nums.length === 1) return [0, nums[0]];
-    if (nums.length === 2) {
-      const [a, b] = nums;
-      return [Math.min(a, b), Math.max(a, b)];
-    }
-    return [0, 9999];
-  };
+  const matchFilter = (m: User) => matchInfoFilters(m, filters);
 
-  const parseHeightRange = (s: string): [number, number] => {
-    const nums = s
-      .split(/[~\-]/)
-      .map((x) => Number(x.trim()))
-      .filter((x) => !isNaN(x));
-    if (nums.length === 2) return [Math.min(nums[0], nums[1]), Math.max(nums[0], nums[1])];
-    return [0, 9999];
-  };
-
-  const matchFilter = (m: User) => {
-    for (const key of Object.keys(filters)) {
-      const want = filters[key];
-      if (!want) continue;
-      if (key === "smoking") {
-        const b = want === "유";
-        if (m.smoking !== b) return false;
-      } else if (key === "birthYear") {
-        const [min, max] = parseAgeRange(want);
-        if (typeof m.birthYear !== "number" || m.birthYear < min || m.birthYear > max) return false;
-      } else if (key === "height") {
-        const [min, max] = parseHeightRange(want);
-        if (typeof m.height !== "number" || m.height < min || m.height > max) return false;
-      } else {
-        const val = (m as unknown as Record<string, unknown>)[key];
-        if (String(val) !== want) return false;
-      }
-    }
-    return true;
-  };
-
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
-  const tempActiveCount = Object.values(tempFilters).filter(Boolean).length;
+  const activeFilterCount = activeCount(filters);
+  const tempActiveCount = activeCount(tempFilters);
   const filtered = males.filter(matchFilter);
   const paged = filtered.slice(0, visible);
 
@@ -330,86 +300,93 @@ export default function FemalePage() {
 
             {/* 필터 항목들 */}
             <div className="px-5 py-4 space-y-5 max-h-[60vh] overflow-y-auto">
-              {FILTER_ITEMS.map(fo => (
-                <div key={fo.key}>
-                  <label className="text-sm font-semibold text-foreground mb-2 block">{fo.label}</label>
-                  {fo.type === "select" ? (
-                    <select
-                      value={tempFilters[fo.key] || ""}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setTempFilters(p => { if (!v) { const n = { ...p }; delete n[fo.key]; return n; } return { ...p, [fo.key]: v }; });
-                      }}
-                      className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#ff8a3d]/30">
-                      <option value="">전체</option>
-                      {fo.options.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
+              {FILTER_ITEMS.map(fo => {
+                const selected = tempFilters[fo.key] ?? [];
+                const allSelected = selected.length === fo.options.length && fo.options.length > 0;
+                return (
+                  <div key={fo.key}>
+                    <label className="text-sm font-semibold text-foreground mb-2 block">
+                      {fo.label} {selected.length > 0 && <span className="text-xs text-[#ff8a3d]">· {selected.length}개</span>}
+                    </label>
+                    <div className="flex gap-2 mb-2">
                       <button
-                        onClick={() => setTempFilters(p => {
-                          const n = { ...p };
-                          delete n[fo.key];
-                          if (fo.key === "workplace") delete n.job;
+                        type="button"
+                        onClick={() => setTempFilters((p) => setFilterAll(p, fo.key, fo.options))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                          allSelected ? "text-white border-transparent" : "bg-white text-foreground border-border"
+                        }`}
+                        style={allSelected ? { backgroundColor: "#ff8a3d" } : {}}
+                      >
+                        전체 선택
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTempFilters((p) => {
+                          const n = clearFilterKey(p, fo.key);
+                          if (fo.key === "workplace") return clearFilterKey(n, "job");
                           return n;
                         })}
-                        className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                          !tempFilters[fo.key]
-                            ? "text-white border-transparent"
-                            : "bg-white border-border text-muted-fg hover:border-gray-400"
-                        }`}
-                        style={!tempFilters[fo.key] ? { backgroundColor: "#ff8a3d" } : {}}>
-                        전체
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-muted-fg border border-border"
+                      >
+                        무관 (전체 보기)
                       </button>
-                      {fo.options.map(o => (
-                        <button key={o}
-                          onClick={() => setTempFilters(p => {
-                            const n = { ...p, [fo.key]: o };
-                            if (fo.key === "workplace" && p.workplace !== o) delete n.job;
-                            return n;
-                          })}
-                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                            tempFilters[fo.key] === o
-                              ? "text-white border-transparent"
-                              : "bg-white border-border text-foreground hover:border-gray-400"
-                          }`}
-                          style={tempFilters[fo.key] === o ? { backgroundColor: "#ff8a3d" } : {}}>
-                          {o}
-                        </button>
-                      ))}
                     </div>
-                  )}
-                  {fo.key === "workplace" && tempFilters.workplace && JOBS[tempFilters.workplace]?.length > 0 && (
-                    <div ref={filterJobRef} className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30 scroll-mt-4">
-                      <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업</label>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => setTempFilters(p => { const n = { ...p }; delete n.job; return n; })}
-                          className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                            !tempFilters.job
-                              ? "text-white border-transparent"
-                              : "bg-white border-border text-muted-fg hover:border-gray-400"
-                          }`}
-                          style={!tempFilters.job ? { backgroundColor: "#ff8a3d" } : {}}>
-                          전체
-                        </button>
-                        {JOBS[tempFilters.workplace].map(j => (
-                          <button key={j}
-                            onClick={() => setTempFilters(p => ({ ...p, job: j }))}
-                            className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                              tempFilters.job === j
-                                ? "text-white border-transparent"
-                                : "bg-white border-border text-foreground hover:border-gray-400"
+                    <div className="flex flex-wrap gap-2">
+                      {fo.options.map((o) => {
+                        const isOn = selected.includes(o);
+                        return (
+                          <button
+                            key={o}
+                            onClick={() => setTempFilters((p) => {
+                              const n = toggleFilterValue(p, fo.key, o);
+                              // 직장 다중선택이 바뀌면 직업 sub-filter 는 초기화 (단일 직장 선택 시에만 사용)
+                              if (fo.key === "workplace") return clearFilterKey(n, "job");
+                              return n;
+                            })}
+                            className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                              isOn ? "text-white border-transparent" : "bg-white border-border text-foreground hover:border-gray-400"
                             }`}
-                            style={tempFilters.job === j ? { backgroundColor: "#ff8a3d" } : {}}>
-                            {j}
+                            style={isOn ? { backgroundColor: "#ff8a3d" } : {}}
+                          >
+                            {o}
                           </button>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {fo.key === "workplace" && singleSelectedWorkplace && JOBS[singleSelectedWorkplace]?.length > 0 && (
+                      <div ref={filterJobRef} className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30 scroll-mt-4">
+                        <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업 (직장 1개 선택 시)</label>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setTempFilters((p) => clearFilterKey(p, "job"))}
+                            className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                              !tempFilters.job || tempFilters.job.length === 0 ? "text-white border-transparent" : "bg-white border-border text-muted-fg hover:border-gray-400"
+                            }`}
+                            style={!tempFilters.job || tempFilters.job.length === 0 ? { backgroundColor: "#ff8a3d" } : {}}
+                          >
+                            전체
+                          </button>
+                          {JOBS[singleSelectedWorkplace].map((j) => {
+                            const isOn = (tempFilters.job ?? []).includes(j);
+                            return (
+                              <button
+                                key={j}
+                                onClick={() => setTempFilters((p) => toggleFilterValue(p, "job", j))}
+                                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                                  isOn ? "text-white border-transparent" : "bg-white border-border text-foreground hover:border-gray-400"
+                                }`}
+                                style={isOn ? { backgroundColor: "#ff8a3d" } : {}}
+                              >
+                                {j}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* 하단 버튼 */}

@@ -29,11 +29,15 @@ export interface User {
   charmPhoto: string | null;
   datePhoto: string | null;
   expiresAt: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface IdealType {
   userId: string;
+  // 단일값(레거시) — 호환성을 위해 유지
   idealAge: string;
+  // 다중 선택 — 신규
+  idealAgeRanges: string[];
   idealMinHeight: number;
   idealMaxHeight: number;
   idealCities: string[];

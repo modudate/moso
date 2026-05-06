@@ -29,6 +29,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   const [showMdForm, setShowMdForm] = useState(false);
   const [mdSearch, setMdSearch] = useState("");
   const [mdPage, setMdPage] = useState(1);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   useEffect(() => { fetchData(); }, [userId]);
 
   const fetchData = async () => {
@@ -216,7 +218,21 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   const mdCandidates = useMemo(() => {
     let list = allUsers.filter(u => u.role === "female" && u.status === "active" && !alreadyRecommended.has(u.id));
     if (mdSearch.length >= 1) {
-      list = list.filter(u => u.realName.includes(mdSearch) || u.nickname.includes(mdSearch) || u.phone.includes(mdSearch));
+      const q = mdSearch.trim();
+      // 전화번호 검색은 하이픈/공백 제거 후 비교 (사용자가 0101234... 처럼 하이픈 없이 입력해도 매칭)
+      const qDigits = q.replace(/[^0-9]/g, "");
+      list = list.filter((u) => {
+        if (u.realName.includes(q)) return true;
+        if (u.nickname.includes(q)) return true;
+        // 1) 입력에 하이픈이 포함되어 있다면 그대로도 매치 시도
+        if (q && u.phone.includes(q)) return true;
+        // 2) 양쪽 다 숫자만 추출해서 비교
+        if (qDigits.length >= 2) {
+          const phoneDigits = u.phone.replace(/[^0-9]/g, "");
+          if (phoneDigits.includes(qDigits)) return true;
+        }
+        return false;
+      });
     }
     return list;
   }, [allUsers, alreadyRecommended, mdSearch]);
@@ -265,11 +281,16 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
 
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[12px] text-amber-900 leading-relaxed">
+            ⚠️ 사진의 <b>X 버튼을 누르면 즉시 삭제·저장</b>됩니다. 삭제 전 확인 창이 나타나며, 한 번 삭제된 사진은 복구할 수 없으니 주의해주세요.
+          </div>
+
           <MultiImageUploader
             key={`multi-${userId}`}
             values={user.photoUrls}
             maxCount={4}
             category="photo"
+            confirmRemove
             onChanged={(_paths, urls) => saveField("photoUrls", urls)}
             label="대표 사진 (최대 4장)"
           />
@@ -279,6 +300,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               key={`charm-${userId}-${user.charmPhoto || "empty"}`}
               value={user.charmPhoto}
               category="charm"
+              confirmRemove
               onUploaded={(_path, url) => saveField("charmPhoto", url)}
               onRemove={() => saveField("charmPhoto", null)}
               label="저의 매력은 사진"
@@ -287,6 +309,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               key={`date-${userId}-${user.datePhoto || "empty"}`}
               value={user.datePhoto}
               category="date"
+              confirmRemove
               onUploaded={(_path, url) => saveField("datePhoto", url)}
               onRemove={() => saveField("datePhoto", null)}
               label="연인이 생기면 사진"
@@ -596,6 +619,25 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           {user.expiresAt && <p className="text-sm text-muted-fg mt-2">현재 만료일: {new Date(user.expiresAt).toLocaleDateString("ko-KR")}</p>}
         </section>
 
+        {/* 반려 사유 (반려 상태일 때만) */}
+        {user.status === "rejected" && user.rejectionReason && (
+          <section className="bg-danger/5 border border-danger/30 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-base text-danger">반려 사유</h3>
+              <button
+                onClick={() => {
+                  setRejectReason(user.rejectionReason ?? "");
+                  setShowRejectModal(true);
+                }}
+                className="text-xs px-2.5 py-1 rounded-lg border border-danger/30 text-danger hover:bg-danger/10 transition-colors"
+              >
+                사유 수정
+              </button>
+            </div>
+            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{user.rejectionReason}</p>
+          </section>
+        )}
+
         {/* 상태 관리 */}
         <section className="flex gap-3 pb-6">
           {user.status === "pending" && (
@@ -603,13 +645,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               <button onClick={() => saveField("status", "active")} className="flex-1 py-3 bg-success text-white rounded-xl font-semibold">승인</button>
               <button
                 onClick={() => {
-                  if (
-                    window.confirm(
-                      "이 회원을 반려하시겠습니까?\n\n반려 후에도 관리자 페이지에서 다시 '승인 대기'로 되돌릴 수 있습니다.",
-                    )
-                  ) {
-                    saveField("status", "rejected");
-                  }
+                  setRejectReason(user.rejectionReason ?? "");
+                  setShowRejectModal(true);
                 }}
                 className="flex-1 py-3 bg-danger text-white rounded-xl font-semibold"
               >
@@ -631,6 +668,8 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
                     "이 회원의 반려를 취소하고 '승인 대기' 상태로 되돌리시겠습니까?\n\n다시 로그인하면 정상적으로 가입 절차를 진행할 수 있게 됩니다.",
                   )
                 ) {
+                  // 반려 취소 시 사유도 함께 비움
+                  saveField("rejectionReason", null);
                   saveField("status", "pending");
                 }
               }}
@@ -641,6 +680,73 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </section>
       </div>
+
+      {showRejectModal && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setShowRejectModal(false)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col pointer-events-auto">
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-danger">
+                  {user.status === "rejected" ? "반려 사유 수정" : "회원 반려"}
+                </h3>
+                <button onClick={() => setShowRejectModal(false)} className="text-muted-fg hover:text-foreground" aria-label="닫기">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <p className="text-sm text-muted-fg">
+                  <b className="text-foreground">{user.realName} ({user.nickname})</b> 회원의 반려 사유를 입력해주세요.
+                </p>
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">반려 사유 (필수)</label>
+                  <textarea
+                    autoFocus
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="예) 대표사진의 얼굴이 너무 작게 찍혀 있어 잘 보이지 않습니다. 다른 사진으로 교체 후 재신청 부탁드립니다."
+                    rows={5}
+                    maxLength={500}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-danger/30 resize-none"
+                  />
+                  <div className="flex items-center justify-between mt-1 text-xs text-muted-fg">
+                    <span>회원에게 안내되는 메시지입니다. 보완해야 할 부분을 구체적으로 작성해주세요.</span>
+                    <span>{rejectReason.length}/500</span>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-border flex gap-2">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="flex-1 py-3 rounded-xl bg-white border border-border text-muted-fg font-semibold hover:bg-muted/40 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    const r = rejectReason.trim();
+                    if (r.length < 5) {
+                      alert("반려 사유를 5자 이상 입력해주세요.");
+                      return;
+                    }
+                    saveField("rejectionReason", r);
+                    if (user.status !== "rejected") {
+                      saveField("status", "rejected");
+                    }
+                    setShowRejectModal(false);
+                  }}
+                  disabled={rejectReason.trim().length < 5}
+                  className="flex-1 py-3 rounded-xl bg-danger text-white font-bold hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {user.status === "rejected" ? "사유 저장" : "반려하기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

@@ -26,6 +26,8 @@ interface MultiImageUploaderProps {
   category: "photo";
   onChanged?: (paths: string[], urls: string[]) => void;
   label?: string;
+  // 사진 삭제 시 확인 대화상자 표시 (관리자 페이지처럼 자동저장 환경에서 사용)
+  confirmRemove?: boolean;
 }
 
 function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<Blob> {
@@ -55,7 +57,7 @@ function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: n
 }
 
 const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUploaderProps>(
-  function MultiImageUploader({ values, maxCount, category, onChanged, label }, ref) {
+  function MultiImageUploader({ values, maxCount, category, onChanged, label, confirmRemove }, ref) {
     const [slots, setSlots] = useState<ImageSlot[]>(
       values.map(url => ({ previewUrl: url, serverUrl: url, serverPath: null, uploading: false, failed: false }))
     );
@@ -226,6 +228,14 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       const base = slotsRef.current;
       const slot = base[index];
       if (!slot) return;
+      // 자동저장 환경에서는 즉시 DB 가 비워지므로 명시적 확인 필요.
+      // 단, 업로드 실패한 슬롯은 정리 목적이므로 확인 없이 제거.
+      if (confirmRemove && !slot.failed) {
+        const ok = window.confirm(
+          "이 사진을 삭제하시겠습니까?\n\n삭제 즉시 저장되며, 복구할 수 없습니다.",
+        );
+        if (!ok) return;
+      }
       if (slot.previewUrl.startsWith("blob:")) URL.revokeObjectURL(slot.previewUrl);
       const updated = base.filter((_, i) => i !== index);
       slotsRef.current = updated;

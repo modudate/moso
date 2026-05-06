@@ -16,6 +16,7 @@ export default function MaleDetailPage() {
   const maleId = params.id as string;
   const [femaleId, setFemaleId] = useState<string | null>(null);
   const [myStatus, setMyStatus] = useState<string | null>(null);
+  const [imageZoom, setImageZoom] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, [maleId]);
 
@@ -88,7 +89,7 @@ export default function MaleDetailPage() {
   const age = new Date().getFullYear() - user.birthYear + 1;
 
   return (
-    <main className="min-h-screen bg-white mx-auto max-w-[430px] relative pb-20">
+    <main className="min-h-screen bg-white mx-auto max-w-[430px] relative pb-32">
       {/* 헤더 (사진 위에 오버레이) */}
       <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "#ff8a3d" }}>
         <button onClick={() => router.back()} className="text-white">
@@ -125,9 +126,14 @@ export default function MaleDetailPage() {
         <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{user.charm}</p>
       </div>
       {user.charmPhoto && (
-        <div className="mt-3 w-full aspect-square bg-muted">
+        <button
+          type="button"
+          onClick={() => setImageZoom(user.charmPhoto)}
+          aria-label="저의 매력 사진 확대"
+          className="mt-3 w-full aspect-square bg-muted block cursor-zoom-in"
+        >
           <img src={user.charmPhoto} alt={`${user.nickname} 매력`} className="w-full h-full object-cover" />
-        </div>
+        </button>
       )}
 
       {/* 연인이 생기면 하고 싶은 일은 */}
@@ -136,13 +142,46 @@ export default function MaleDetailPage() {
         <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{user.datingStyle}</p>
       </div>
       {user.datePhoto && (
-        <div className="mt-3 w-full aspect-square bg-muted">
+        <button
+          type="button"
+          onClick={() => setImageZoom(user.datePhoto)}
+          aria-label="연인이 생기면 사진 확대"
+          className="mt-3 w-full aspect-square bg-muted block cursor-zoom-in"
+        >
           <img src={user.datePhoto} alt={`${user.nickname} 연인`} className="w-full h-full object-cover" />
+        </button>
+      )}
+
+      {imageZoom && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setImageZoom(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            onClick={() => setImageZoom(null)}
+            aria-label="닫기"
+          >
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={imageZoom}
+            alt="원본"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 p-4 bg-white border-t border-border">
+      <div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-4 pt-4 bg-white border-t border-border"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2.5rem)" }}
+      >
         <button onClick={toggleCart}
           className={`w-full py-4 rounded-2xl font-bold text-base transition-all ${
             inCart

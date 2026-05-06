@@ -184,7 +184,10 @@ export default function MatchRequestListPage() {
       {/* 하단 고정 영역 - 매칭 요청 보낸 남성 목록 */}
       {sentRequests.length > 0 && (
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t-2 border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40">
-          <div className="px-4 py-4">
+          <div
+            className="px-4 pt-4"
+            style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2rem)" }}
+          >
             <h3 className="text-sm font-bold text-muted-fg mb-3">매칭 요청 보낸 남성 ({sentRequests.length}명)</h3>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {sentRequests.map((s) => s.user && (

@@ -170,7 +170,7 @@ export default function MalePage() {
                   <div className={`absolute ${big ? "top-4 left-4 gap-2" : "top-3 left-3 gap-1.5"} flex`}>
                     {c.source === "md" && <span className={`${badgeCls} bg-accent`}>MD 추천</span>}
                     {c.status === "pending" && <span className={`${badgeCls} bg-warning`}>대기중</span>}
-                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭 확정</span>}
+                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭요청 보냄</span>}
                     {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
                   </div>
                   <div className={`absolute bottom-0 left-0 right-0 ${big ? "p-5 space-y-2.5" : "p-3 space-y-1.5"}`}>

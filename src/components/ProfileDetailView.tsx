@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { User } from "@/lib/types";
 import { regionLabel, smokingLabel } from "@/lib/options";
 import PhotoCarousel from "@/components/PhotoCarousel";
@@ -10,6 +11,7 @@ type Props = {
 
 export default function ProfileDetailView({ user }: Props) {
   const age = new Date().getFullYear() - user.birthYear + 1;
+  const [zoom, setZoom] = useState<string | null>(null);
 
   return (
     <>
@@ -92,13 +94,18 @@ export default function ProfileDetailView({ user }: Props) {
         </p>
       </div>
       {user.charmPhoto && (
-        <div className="mt-3 w-full aspect-square bg-muted">
+        <button
+          type="button"
+          onClick={() => setZoom(user.charmPhoto)}
+          aria-label="저의 매력 사진 확대"
+          className="mt-3 w-full aspect-square bg-muted block cursor-zoom-in"
+        >
           <img
             src={user.charmPhoto}
             alt={`${user.nickname} 매력`}
             className="w-full h-full object-cover"
           />
-        </div>
+        </button>
       )}
 
       <div className="px-5 pt-8 pb-2">
@@ -110,11 +117,41 @@ export default function ProfileDetailView({ user }: Props) {
         </p>
       </div>
       {user.datePhoto && (
-        <div className="mt-3 w-full aspect-square bg-muted">
+        <button
+          type="button"
+          onClick={() => setZoom(user.datePhoto)}
+          aria-label="연인이 생기면 사진 확대"
+          className="mt-3 w-full aspect-square bg-muted block cursor-zoom-in"
+        >
           <img
             src={user.datePhoto}
             alt={`${user.nickname} 연인`}
             className="w-full h-full object-cover"
+          />
+        </button>
+      )}
+
+      {zoom && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setZoom(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            onClick={() => setZoom(null)}
+            aria-label="닫기"
+          >
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={zoom}
+            alt="원본"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}

@@ -45,7 +45,17 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
 
   for (const [key, val] of Object.entries(updates)) {
     if (key === "status") {
-      await db.from("users").update({ status: val }).eq("id", userId);
+      // 반려 사유와 함께 상태 변경하는 경우는 별도 키(rejectionReason)로 들어옴
+      const userPatch: Record<string, unknown> = { status: val };
+      // 반려가 아닌 상태로 전환할 때는 사유 초기화
+      if (val !== "rejected" && updates.rejectionReason === undefined) {
+        userPatch.rejection_reason = null;
+      }
+      await db.from("users").update(userPatch).eq("id", userId);
+      continue;
+    }
+    if (key === "rejectionReason") {
+      await db.from("users").update({ rejection_reason: val }).eq("id", userId);
       continue;
     }
     const dbKey = fieldMap[key];
@@ -66,12 +76,36 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
   }
 }
 
+// ── Nickname 중복 체크 ─────────────────────────────────────────────
+// 대소문자/앞뒤 공백 무시. excludeUserId 가 주어지면 본인 닉네임은 제외하고 검사.
+export async function isNicknameTaken(nickname: string, excludeUserId?: string): Promise<boolean> {
+  const normalized = nickname.trim().toLowerCase();
+  if (!normalized) return false;
+  const db = await getDb();
+  let query = db
+    .from("profiles")
+    .select("user_id, nickname");
+  query = query.ilike("nickname", normalized);
+  const { data } = await query;
+  if (!data) return false;
+  return data.some((row: { user_id: string; nickname: string }) => {
+    if (row.nickname.trim().toLowerCase() !== normalized) return false;
+    if (excludeUserId && row.user_id === excludeUserId) return false;
+    return true;
+  });
+}
+
 // ── Ideal Types ────────────────────────────────────────────────────
 
 function mapIdealType(data: Record<string, unknown>) {
+  const rangesRaw = data.ideal_age_ranges as string[] | null | undefined;
+  const single = (data.ideal_age_range as string | null | undefined) ?? "";
+  // 다중값이 비어있으면 단일값을 배열로 fallback
+  const ranges = (rangesRaw && rangesRaw.length > 0) ? rangesRaw : (single ? [single] : []);
   return {
     userId: data.user_id as string,
-    idealAge: data.ideal_age_range as string,
+    idealAge: single,
+    idealAgeRanges: ranges,
     idealMinHeight: data.min_height as number,
     idealMaxHeight: data.max_height as number,
     idealCities: (data.cities as string[]) || [],
@@ -305,6 +339,7 @@ function mapUserWithProfile(row: any) {
     role: row.role,
     status: row.status,
     createdAt: row.created_at,
+    rejectionReason: row.rejection_reason ?? null,
     realName: p.real_name || "",
     nickname: p.nickname || "",
     birthYear: p.birth_year || 0,

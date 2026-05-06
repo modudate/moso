@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { User } from "@/lib/types";
+import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel, smokingLabel } from "@/lib/options";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { isPreviewMode } from "@/lib/preview";
@@ -15,6 +15,9 @@ export default function FemaleDetailPage() {
   const [matchStatus, setMatchStatus] = useState<string>("pending");
   const [loading, setLoading] = useState(true);
   const [preview, setPreview] = useState(false);
+  const [submitting, setSubmitting] = useState<"approved" | "rejected" | null>(null);
+  const [toast, setToast] = useState<{ kind: "success" | "info" | "error"; msg: string } | null>(null);
+  const [imageZoom, setImageZoom] = useState<string | null>(null);
 
   const femaleId = params.id as string;
   const matchId = searchParams.get("matchId") || "";
@@ -22,26 +25,91 @@ export default function FemaleDetailPage() {
   useEffect(() => { setPreview(isPreviewMode()); }, []);
   useEffect(() => { fetchData(); }, [femaleId]);
 
+  // 토스트 자동 사라짐
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   const fetchData = async () => {
     setLoading(true);
-    const res = await fetch(`/api/profiles?role=female&status=active`);
-    const females: User[] = await res.json();
+    // 프로필 + 내 매칭 상태를 함께 조회.
+    // 같은 여성 프로필을 다시 열었을 때도 이미 응답한 상태(approved/rejected)가 정확히 반영되도록.
+    const profilePromise = fetch(`/api/profiles?role=female&status=active`);
+    const mePromise = fetch(`/api/me`, { cache: "no-store" });
+    const [profileRes, meRes] = await Promise.all([profilePromise, mePromise]);
+    const females: User[] = await profileRes.json();
     setUser(females.find(f => f.id === femaleId) || null);
+
+    // 매칭 상태는 현재 로그인 남성 기준으로 조회 (버그 수정: 화면 재진입 시 pending 으로 초기화되는 문제)
+    try {
+      const { user: me } = await meRes.json();
+      const uid: string | undefined = me?.id;
+      if (uid) {
+        const matchRes = await fetch(`/api/match?maleId=${encodeURIComponent(uid)}`, { cache: "no-store" });
+        const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();
+        const m = matches.find((x) => x.femaleProfileId === femaleId);
+        const md = mdRecs.find((x) => x.femaleProfileId === femaleId);
+        // 우선순위: 매칭요청 > MD 추천. 응답된 상태가 있으면 그대로 반영.
+        const found = m ?? md;
+        if (found) setMatchStatus(found.status);
+        else setMatchStatus("pending");
+      }
+    } catch {
+      // 조회 실패 시 기본값
+    }
+
     setLoading(false);
   };
 
   const handleAction = async (status: "approved" | "rejected") => {
+    if (submitting) return;
+    if (status === "approved") {
+      const ok = window.confirm(
+        "이 여성 회원에게 매칭요청을 보내시겠습니까?\n\n여성분이 수락하면 매칭이 완료됩니다.\n한 번 보낸 매칭요청은 취소할 수 없습니다.",
+      );
+      if (!ok) return;
+    }
+
     // 피드백용 미리보기에서는 실제 반영하지 않고 UI 상태만 변경
     if (preview || !matchId) {
       setMatchStatus(status);
+      setToast({
+        kind: status === "approved" ? "success" : "info",
+        msg: status === "approved"
+          ? "매칭요청이 전달되었습니다 (미리보기)"
+          : "거절 처리되었습니다 (미리보기)",
+      });
       return;
     }
-    await fetch("/api/match", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, status }),
-    });
-    setMatchStatus(status);
+
+    setSubmitting(status);
+    try {
+      const res = await fetch("/api/match", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId, status }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `요청 실패 (${res.status})`);
+      }
+      setMatchStatus(status);
+      setToast({
+        kind: status === "approved" ? "success" : "info",
+        msg: status === "approved"
+          ? "여성분에게 매칭요청이 전달되었습니다. 여성분이 수락 시 매칭이 완료됩니다."
+          : "거절 처리되었습니다.",
+      });
+    } catch (err) {
+      setToast({
+        kind: "error",
+        msg: `처리 중 오류가 발생했습니다.${err instanceof Error ? `\n${err.message}` : ""}`,
+      });
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -50,7 +118,7 @@ export default function FemaleDetailPage() {
   const age = new Date().getFullYear() - user.birthYear + 1;
 
   return (
-    <main className="min-h-screen bg-white mx-auto max-w-[430px] relative pb-20">
+    <main className="min-h-screen bg-white mx-auto max-w-[430px] relative pb-32">
       {/* 헤더 */}
       <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "#ff8a3d" }}>
         <button onClick={() => router.back()} className="text-white">
@@ -87,9 +155,14 @@ export default function FemaleDetailPage() {
         <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{user.charm}</p>
       </div>
       {user.charmPhoto && (
-        <div className="mt-3 w-full aspect-square bg-muted">
+        <button
+          type="button"
+          onClick={() => setImageZoom(user.charmPhoto)}
+          aria-label="저의 매력 사진 확대"
+          className="mt-3 w-full aspect-square bg-muted block cursor-zoom-in"
+        >
           <img src={user.charmPhoto} alt={`${user.nickname} 매력`} className="w-full h-full object-cover" />
-        </div>
+        </button>
       )}
 
       {/* 연인이 생기면 하고 싶은 일은 */}
@@ -98,30 +171,88 @@ export default function FemaleDetailPage() {
         <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{user.datingStyle}</p>
       </div>
       {user.datePhoto && (
-        <div className="mt-3 w-full aspect-square bg-muted">
+        <button
+          type="button"
+          onClick={() => setImageZoom(user.datePhoto)}
+          aria-label="연인이 생기면 사진 확대"
+          className="mt-3 w-full aspect-square bg-muted block cursor-zoom-in"
+        >
           <img src={user.datePhoto} alt={`${user.nickname} 연인`} className="w-full h-full object-cover" />
+        </button>
+      )}
+
+      {/* 사진 확대 라이트박스 */}
+      {imageZoom && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setImageZoom(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            onClick={() => setImageZoom(null)}
+            aria-label="닫기"
+          >
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={imageZoom}
+            alt="원본"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {/* 토스트 */}
+      {toast && (
+        <div
+          className={`fixed left-1/2 -translate-x-1/2 bottom-36 z-[60] px-5 py-3 rounded-xl shadow-2xl text-sm font-medium max-w-[90%] whitespace-pre-line text-center ${
+            toast.kind === "success"
+              ? "bg-emerald-600 text-white"
+              : toast.kind === "error"
+              ? "bg-red-500 text-white"
+              : "bg-gray-800 text-white"
+          }`}
+        >
+          {toast.msg}
         </div>
       )}
 
       {/* 하단 고정 버튼 (미리보기 모드일 땐 matchId 없어도 노출) */}
       {(matchId || preview) && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 bg-white border-t border-border p-4">
+        <div
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 bg-white border-t border-border px-4 pt-4"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2.5rem)" }}
+        >
           {matchStatus === "pending" && (
             <div className="flex gap-3">
-              <button onClick={() => handleAction("approved")}
-                className="flex-1 py-4 rounded-2xl font-bold text-base text-white"
-                style={{ backgroundColor: "#ff8a3d" }}>
-                매칭 확정
+              <button
+                onClick={() => handleAction("approved")}
+                disabled={!!submitting}
+                className="flex-1 py-4 rounded-2xl font-bold text-base text-white disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ backgroundColor: "#ff8a3d" }}
+              >
+                {submitting === "approved" && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                매칭 요청
               </button>
-              <button onClick={() => handleAction("rejected")}
-                className="flex-1 py-4 rounded-2xl font-bold text-base bg-gray-100 text-gray-500">
+              <button
+                onClick={() => handleAction("rejected")}
+                disabled={!!submitting}
+                className="flex-1 py-4 rounded-2xl font-bold text-base bg-gray-100 text-gray-500 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {submitting === "rejected" && <span className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />}
                 거절
               </button>
             </div>
           )}
           {matchStatus === "approved" && (
             <div className="py-4 rounded-2xl text-center bg-green-50">
-              <p className="text-green-600 font-bold text-base">매칭이 확정되었습니다!</p>
+              <p className="text-green-600 font-bold text-base">매칭요청을 보냈습니다</p>
+              <p className="text-green-700/80 text-xs mt-1">여성분이 수락하면 매칭이 완료됩니다</p>
             </div>
           )}
           {matchStatus === "rejected" && (

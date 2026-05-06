@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { isNicknameTaken } from "@/lib/db";
+import { validateNickname, validateIntroText } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -19,6 +21,25 @@ export async function POST(req: NextRequest) {
 
   if (existingUser) {
     return NextResponse.json({ error: "이미 가입된 계정입니다" }, { status: 409 });
+  }
+
+  // 닉네임 검증 (특수문자/이모티콘 금지, 2~10자) + 중복체크
+  const nickCheck = validateNickname(typeof body.nickname === "string" ? body.nickname : "");
+  if (!nickCheck.ok) {
+    return NextResponse.json({ error: nickCheck.reason }, { status: 400 });
+  }
+  if (await isNicknameTaken(String(body.nickname).trim(), user.id)) {
+    return NextResponse.json({ error: "이미 사용 중인 닉네임입니다" }, { status: 409 });
+  }
+
+  // 소개글 글자수 검증 (100~200자)
+  const charmCheck = validateIntroText(typeof body.charm === "string" ? body.charm : "", "저의 매력은");
+  if (!charmCheck.ok) {
+    return NextResponse.json({ error: charmCheck.reason }, { status: 400 });
+  }
+  const dateCheck = validateIntroText(typeof body.datingStyle === "string" ? body.datingStyle : "", "연인이 생기면 하고 싶은 일은");
+  if (!dateCheck.ok) {
+    return NextResponse.json({ error: dateCheck.reason }, { status: 400 });
   }
 
   // 사진 필수 검증 (클라이언트 우회 방지용 서버측 가드)
@@ -84,9 +105,14 @@ export async function POST(req: NextRequest) {
 
   if (body.idealType) {
     const it = body.idealType;
+    // 다중 선택 우선, 단일값은 호환을 위해 첫 번째 값으로 채움
+    const ageRanges: string[] = Array.isArray(it.idealAgeRanges) && it.idealAgeRanges.length > 0
+      ? it.idealAgeRanges
+      : (it.idealAge ? [it.idealAge] : []);
     await service.from("ideal_types").insert({
       user_id: user.id,
-      ideal_age_range: it.idealAge,
+      ideal_age_range: ageRanges[0] ?? it.idealAge ?? null,
+      ideal_age_ranges: ageRanges,
       min_height: parseInt(it.idealMinHeight) || it.idealMinHeight,
       max_height: parseInt(it.idealMaxHeight) || it.idealMaxHeight,
       cities: it.idealCities || [],

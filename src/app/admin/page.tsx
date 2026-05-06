@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation, IdealType } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES, JOBS } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
+import {
+  type MultiFilters, activeCount, toggleFilterValue, setFilterAll, clearFilterKey,
+  matchInfoFilters,
+} from "@/lib/filter";
 
 const PER_PAGE = 20;
 
@@ -36,21 +40,28 @@ export default function AdminPage() {
   const [genderFilter, setGenderFilter] = useState("");
   const [matchFilter, setMatchFilter] = useState("");
   const [mdFilter, setMdFilter] = useState("");
-  const [infoFilters, setInfoFilters] = useState<Record<string, string>>({});
-  const [tempInfoFilters, setTempInfoFilters] = useState<Record<string, string>>({});
+  const [infoFilters, setInfoFilters] = useState<MultiFilters>({});
+  const [tempInfoFilters, setTempInfoFilters] = useState<MultiFilters>({});
   const [showInfoFilters, setShowInfoFilters] = useState(false);
   const [idealMap, setIdealMap] = useState<Map<string, IdealType>>(new Map());
-  const [idealFilters, setIdealFilters] = useState<Record<string, string>>({});
-  const [tempIdealFilters, setTempIdealFilters] = useState<Record<string, string>>({});
+  const [idealFilters, setIdealFilters] = useState<MultiFilters>({});
+  const [tempIdealFilters, setTempIdealFilters] = useState<MultiFilters>({});
   const [showIdealFilters, setShowIdealFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [rejectTarget, setRejectTarget] = useState<User | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const infoJobRef = useRef<HTMLDivElement | null>(null);
 
+  // 직장이 정확히 1개일 때만 직업 sub-filter 노출
+  const singleSelectedWorkplace = (tempInfoFilters.workplace && tempInfoFilters.workplace.length === 1)
+    ? tempInfoFilters.workplace[0]
+    : null;
+
   useEffect(() => {
-    if (showInfoFilters && tempInfoFilters.workplace && infoJobRef.current) {
+    if (showInfoFilters && singleSelectedWorkplace && infoJobRef.current) {
       infoJobRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [tempInfoFilters.workplace, showInfoFilters]);
+  }, [singleSelectedWorkplace, showInfoFilters]);
 
   const openInfoFilters = () => {
     setTempInfoFilters({ ...infoFilters });
@@ -63,44 +74,7 @@ export default function AdminPage() {
   };
   const resetTempInfoFilters = () => setTempInfoFilters({});
 
-  // "~2007년" / "1980년~" / "2006년~1997년" 형태를 [min, max] 로 파싱
-  const parseAgeRange = (s: string): [number, number] => {
-    const nums = s.match(/\d+/g)?.map(Number) ?? [];
-    if (s.startsWith("~") && nums.length === 1) return [nums[0], 9999];
-    if (s.endsWith("~") && nums.length === 1) return [0, nums[0]];
-    if (nums.length === 2) {
-      const [a, b] = nums;
-      return [Math.min(a, b), Math.max(a, b)];
-    }
-    return [0, 9999];
-  };
-  // "171~175" / "185~230" 형태를 [min, max] 로 파싱
-  const parseHeightRange = (s: string): [number, number] => {
-    const nums = s.split(/[~\-]/).map((x) => Number(x.trim())).filter((x) => !isNaN(x));
-    if (nums.length === 2) return [Math.min(nums[0], nums[1]), Math.max(nums[0], nums[1])];
-    return [0, 9999];
-  };
-
-  const matchInfoFilter = (u: User) => {
-    for (const key of Object.keys(infoFilters)) {
-      const want = infoFilters[key];
-      if (!want) continue;
-      if (key === "smoking") {
-        const b = want === "유";
-        if (u.smoking !== b) return false;
-      } else if (key === "birthYear") {
-        const [min, max] = parseAgeRange(want);
-        if (typeof u.birthYear !== "number" || u.birthYear < min || u.birthYear > max) return false;
-      } else if (key === "height") {
-        const [min, max] = parseHeightRange(want);
-        if (typeof u.height !== "number" || u.height < min || u.height > max) return false;
-      } else {
-        const val = (u as unknown as Record<string, unknown>)[key];
-        if (String(val) !== want) return false;
-      }
-    }
-    return true;
-  };
+  const matchInfoFilter = (u: User) => matchInfoFilters(u, infoFilters);
 
   const openIdealFilters = () => {
     setTempIdealFilters({ ...idealFilters });
@@ -114,30 +88,32 @@ export default function AdminPage() {
   const resetTempIdealFilters = () => setTempIdealFilters({});
 
   // 이상형 필터: 유저가 등록한 이상형 정보(idealCities 등 배열, idealSmoking)에 매칭
+  // 각 키별로 wants(배열) 중 하나라도 매칭되면 통과 (OR 매칭).
   const matchIdealFilter = (u: User) => {
     const keys = Object.keys(idealFilters);
     if (keys.length === 0) return true;
     const it = idealMap.get(u.id);
     if (!it) return false; // 이상형 미등록 유저는 필터 활성화 시 제외
     for (const key of keys) {
-      const want = idealFilters[key];
-      if (!want) continue;
+      const wants = idealFilters[key] ?? [];
+      if (wants.length === 0) continue;
       if (key === "idealSmoking") {
-        if (want === "상관없음") {
-          if (it.idealSmoking !== null) return false;
-        } else {
+        const ok = wants.some((want) => {
+          if (want === "상관없음") return it.idealSmoking === null;
           const b = want === "유";
-          if (it.idealSmoking !== b) return false;
-        }
+          return it.idealSmoking === b;
+        });
+        if (!ok) return false;
       } else {
         const arr = (it as unknown as Record<string, unknown>)[key];
-        if (!Array.isArray(arr) || !(arr as string[]).includes(want)) return false;
+        if (!Array.isArray(arr)) return false;
+        // 회원이 선호하는 항목에 wants 중 하나라도 포함되어야 함
+        const ok = wants.some((w) => (arr as string[]).includes(w));
+        if (!ok) return false;
       }
     }
     return true;
   };
-
-  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -188,6 +164,8 @@ export default function AdminPage() {
     setLoading(false);
   };
 
+  useEffect(() => { fetchData(); }, []);
+
   const patchStatus = (id: string, updates: Record<string, unknown>) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } as User : u));
     fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
@@ -199,14 +177,23 @@ export default function AdminPage() {
     patchStatus(id, { status: "active", expiresAt: expires.toISOString() });
   };
 
-  const handleReject = (id: string) => {
-    if (
-      window.confirm(
-        "이 회원을 반려하시겠습니까?\n\n반려 후에도 관리자 페이지에서 다시 '승인 대기'로 되돌릴 수 있습니다.",
-      )
-    ) {
-      patchStatus(id, { status: "rejected" });
+  const openRejectModal = (u: User) => {
+    setRejectTarget(u);
+    setRejectReason(u.rejectionReason ?? "");
+  };
+  const closeRejectModal = () => {
+    setRejectTarget(null);
+    setRejectReason("");
+  };
+  const submitReject = () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (reason.length < 5) {
+      alert("반려 사유를 5자 이상 입력해주세요.\n반려 사유는 회원에게 안내되며, 사진 / 내용 등 어떤 부분을 보완해야 하는지 알 수 있도록 구체적으로 작성해주세요.");
+      return;
     }
+    patchStatus(rejectTarget.id, { status: "rejected", rejectionReason: reason });
+    closeRejectModal();
   };
   const handleUnreject = (id: string) => {
     if (
@@ -221,7 +208,15 @@ export default function AdminPage() {
   const handleUnblock = (id: string) => patchStatus(id, { status: "active" });
 
   const filtered = users.filter((u) => {
-    if (search.length >= 2 && !u.realName.includes(search) && !u.phone.includes(search)) return false;
+    if (search.length >= 2) {
+      const q = search.trim();
+      const qDigits = q.replace(/[^0-9]/g, "");
+      const nameMatch = u.realName.includes(q);
+      const phoneMatch = u.phone.includes(q);
+      // 전화번호 검색은 하이픈 없이도 가능하도록 숫자만 추출해서 비교
+      const phoneDigitsMatch = qDigits.length >= 2 && u.phone.replace(/[^0-9]/g, "").includes(qDigits);
+      if (!nameMatch && !phoneMatch && !phoneDigitsMatch) return false;
+    }
     if (search.length === 1) return true;
     if (statusFilter && u.status !== statusFilter) return false;
     if (genderFilter && u.role !== genderFilter) return false;
@@ -239,10 +234,10 @@ export default function AdminPage() {
     if (!matchIdealFilter(u)) return false;
     return true;
   });
-  const infoActiveCount = Object.values(infoFilters).filter(Boolean).length;
-  const tempInfoActiveCount = Object.values(tempInfoFilters).filter(Boolean).length;
-  const idealActiveCount = Object.values(idealFilters).filter(Boolean).length;
-  const tempIdealActiveCount = Object.values(tempIdealFilters).filter(Boolean).length;
+  const infoActiveCount = activeCount(infoFilters);
+  const tempInfoActiveCount = activeCount(tempInfoFilters);
+  const idealActiveCount = activeCount(idealFilters);
+  const tempIdealActiveCount = activeCount(tempIdealFilters);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
@@ -409,7 +404,7 @@ export default function AdminPage() {
                     {u.status === "pending" && (
                       <>
                         <button onClick={() => handleApprove(u.id)} className="px-4 py-2 bg-success text-white text-sm font-semibold rounded-lg hover:bg-success/80 transition-colors">승인</button>
-                        <button onClick={() => handleReject(u.id)} className="px-4 py-2 bg-danger text-white text-sm font-semibold rounded-lg hover:bg-danger/80 transition-colors">반려</button>
+                        <button onClick={() => openRejectModal(u)} className="px-4 py-2 bg-danger text-white text-sm font-semibold rounded-lg hover:bg-danger/80 transition-colors">반려</button>
                       </>
                     )}
                     {u.status === "active" && (
@@ -449,102 +444,94 @@ export default function AdminPage() {
                 </div>
 
                 <div className="px-6 py-5 space-y-5 overflow-y-auto">
-                  {FILTER_ITEMS.map((fo) => (
-                    <div key={fo.key}>
-                      <label className="text-sm font-semibold text-foreground mb-2 block">{fo.label}</label>
-                      {fo.type === "select" ? (
-                        <select
-                          value={tempInfoFilters[fo.key] || ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setTempInfoFilters((p) => { if (!v) { const n = { ...p }; delete n[fo.key]; return n; } return { ...p, [fo.key]: v }; });
-                          }}
-                          className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#ff8a3d]/30">
-                          <option value="">전체</option>
-                          {fo.options.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
+                  {FILTER_ITEMS.map((fo) => {
+                    const selected = tempInfoFilters[fo.key] ?? [];
+                    const allSelected = selected.length === fo.options.length && fo.options.length > 0;
+                    return (
+                      <div key={fo.key}>
+                        <label className="text-sm font-semibold text-foreground mb-2 block">
+                          {fo.label} {selected.length > 0 && <span className="text-xs text-[#ff8a3d]">· {selected.length}개</span>}
+                        </label>
+                        <div className="flex gap-2 mb-2">
                           <button
-                            onClick={() =>
-                              setTempInfoFilters((p) => {
-                                const n = { ...p };
-                                delete n[fo.key];
-                                if (fo.key === "workplace") delete n.job;
-                                return n;
-                              })
-                            }
-                            className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                              !tempInfoFilters[fo.key]
-                                ? "text-white border-transparent"
-                                : "bg-white border-border text-muted-fg hover:border-gray-400"
+                            type="button"
+                            onClick={() => setTempInfoFilters((p) => setFilterAll(p, fo.key, fo.options))}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                              allSelected ? "text-white border-transparent" : "bg-white text-foreground border-border"
                             }`}
-                            style={!tempInfoFilters[fo.key] ? { backgroundColor: "#ff8a3d" } : {}}
+                            style={allSelected ? { backgroundColor: "#ff8a3d" } : {}}
                           >
-                            전체
+                            전체 선택
                           </button>
-                          {fo.options.map((o) => (
-                            <button
-                              key={o}
-                              onClick={() =>
-                                setTempInfoFilters((p) => {
-                                  const n = { ...p, [fo.key]: o };
-                                  if (fo.key === "workplace" && p.workplace !== o) delete n.job;
-                                  return n;
-                                })
-                              }
-                              className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                                tempInfoFilters[fo.key] === o
-                                  ? "text-white border-transparent"
-                                  : "bg-white border-border text-foreground hover:border-gray-400"
-                              }`}
-                              style={tempInfoFilters[fo.key] === o ? { backgroundColor: "#ff8a3d" } : {}}
-                            >
-                              {o}
-                            </button>
-                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setTempInfoFilters((p) => {
+                              const n = clearFilterKey(p, fo.key);
+                              if (fo.key === "workplace") return clearFilterKey(n, "job");
+                              return n;
+                            })}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-muted-fg border border-border"
+                          >
+                            무관 (전체)
+                          </button>
                         </div>
-                      )}
-                      {fo.key === "workplace" && tempInfoFilters.workplace && JOBS[tempInfoFilters.workplace]?.length > 0 && (
-                        <div ref={infoJobRef} className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30 scroll-mt-4">
-                          <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업</label>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() =>
-                                setTempInfoFilters((p) => {
-                                  const n = { ...p };
-                                  delete n.job;
-                                  return n;
-                                })
-                              }
-                              className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                                !tempInfoFilters.job
-                                  ? "text-white border-transparent"
-                                  : "bg-white border-border text-muted-fg hover:border-gray-400"
-                              }`}
-                              style={!tempInfoFilters.job ? { backgroundColor: "#ff8a3d" } : {}}
-                            >
-                              전체
-                            </button>
-                            {JOBS[tempInfoFilters.workplace].map((j) => (
+                        <div className="flex flex-wrap gap-2">
+                          {fo.options.map((o) => {
+                            const isOn = selected.includes(o);
+                            return (
                               <button
-                                key={j}
-                                onClick={() => setTempInfoFilters((p) => ({ ...p, job: j }))}
-                                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                                  tempInfoFilters.job === j
-                                    ? "text-white border-transparent"
-                                    : "bg-white border-border text-foreground hover:border-gray-400"
+                                key={o}
+                                onClick={() => setTempInfoFilters((p) => {
+                                  const n = toggleFilterValue(p, fo.key, o);
+                                  if (fo.key === "workplace") return clearFilterKey(n, "job");
+                                  return n;
+                                })}
+                                className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                                  isOn ? "text-white border-transparent" : "bg-white border-border text-foreground hover:border-gray-400"
                                 }`}
-                                style={tempInfoFilters.job === j ? { backgroundColor: "#ff8a3d" } : {}}
+                                style={isOn ? { backgroundColor: "#ff8a3d" } : {}}
                               >
-                                {j}
+                                {o}
                               </button>
-                            ))}
-                          </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {fo.key === "workplace" && singleSelectedWorkplace && JOBS[singleSelectedWorkplace]?.length > 0 && (
+                          <div ref={infoJobRef} className="mt-3 pl-3 border-l-2 border-[#ff8a3d]/30 scroll-mt-4">
+                            <label className="text-xs font-semibold text-muted-fg mb-2 block">└ 직업 (직장 1개 선택 시)</label>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => setTempInfoFilters((p) => clearFilterKey(p, "job"))}
+                                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                                  !tempInfoFilters.job || tempInfoFilters.job.length === 0
+                                    ? "text-white border-transparent"
+                                    : "bg-white border-border text-muted-fg hover:border-gray-400"
+                                }`}
+                                style={!tempInfoFilters.job || tempInfoFilters.job.length === 0 ? { backgroundColor: "#ff8a3d" } : {}}
+                              >
+                                전체
+                              </button>
+                              {JOBS[singleSelectedWorkplace].map((j) => {
+                                const isOn = (tempInfoFilters.job ?? []).includes(j);
+                                return (
+                                  <button
+                                    key={j}
+                                    onClick={() => setTempInfoFilters((p) => toggleFilterValue(p, "job", j))}
+                                    className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                                      isOn ? "text-white border-transparent" : "bg-white border-border text-foreground hover:border-gray-400"
+                                    }`}
+                                    style={isOn ? { backgroundColor: "#ff8a3d" } : {}}
+                                  >
+                                    {j}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="px-6 py-4 border-t border-border">
@@ -597,57 +584,53 @@ export default function AdminPage() {
                   </div>
 
                   <div className="px-6 py-5 space-y-5 overflow-y-auto">
-                    {idealItems.map((fo) => (
-                      <div key={fo.key}>
-                        <label className="text-sm font-semibold text-foreground mb-2 block">{fo.label}</label>
-                        {fo.key === "idealCities" ? (
-                          <select
-                            value={tempIdealFilters[fo.key] || ""}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setTempIdealFilters((p) => { if (!v) { const n = { ...p }; delete n[fo.key]; return n; } return { ...p, [fo.key]: v }; });
-                            }}
-                            className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#7c5cfc]/30">
-                            <option value="">전체</option>
-                            {fo.options.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
+                    {idealItems.map((fo) => {
+                      const selected = tempIdealFilters[fo.key] ?? [];
+                      const allSelected = selected.length === fo.options.length && fo.options.length > 0;
+                      return (
+                        <div key={fo.key}>
+                          <label className="text-sm font-semibold text-foreground mb-2 block">
+                            {fo.label} {selected.length > 0 && <span className="text-xs text-[#7c5cfc]">· {selected.length}개</span>}
+                          </label>
+                          <div className="flex gap-2 mb-2">
                             <button
-                              onClick={() =>
-                                setTempIdealFilters((p) => {
-                                  const n = { ...p };
-                                  delete n[fo.key];
-                                  return n;
-                                })
-                              }
-                              className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                                !tempIdealFilters[fo.key]
-                                  ? "text-white border-transparent"
-                                  : "bg-white border-border text-muted-fg hover:border-gray-400"
+                              type="button"
+                              onClick={() => setTempIdealFilters((p) => setFilterAll(p, fo.key, fo.options))}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                                allSelected ? "text-white border-transparent" : "bg-white text-foreground border-border"
                               }`}
-                              style={!tempIdealFilters[fo.key] ? { backgroundColor: "#7c5cfc" } : {}}
+                              style={allSelected ? { backgroundColor: "#7c5cfc" } : {}}
                             >
-                              전체
+                              전체 선택
                             </button>
-                            {fo.options.map((o) => (
-                              <button
-                                key={o}
-                                onClick={() => setTempIdealFilters((p) => ({ ...p, [fo.key]: o }))}
-                                className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                                  tempIdealFilters[fo.key] === o
-                                    ? "text-white border-transparent"
-                                    : "bg-white border-border text-foreground hover:border-gray-400"
-                                }`}
-                                style={tempIdealFilters[fo.key] === o ? { backgroundColor: "#7c5cfc" } : {}}
-                              >
-                                {o}
-                              </button>
-                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setTempIdealFilters((p) => clearFilterKey(p, fo.key))}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-muted-fg border border-border"
+                            >
+                              무관
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          <div className="flex flex-wrap gap-2">
+                            {fo.options.map((o) => {
+                              const isOn = selected.includes(o);
+                              return (
+                                <button
+                                  key={o}
+                                  onClick={() => setTempIdealFilters((p) => toggleFilterValue(p, fo.key, o))}
+                                  className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                                    isOn ? "text-white border-transparent" : "bg-white border-border text-foreground hover:border-gray-400"
+                                  }`}
+                                  style={isOn ? { backgroundColor: "#7c5cfc" } : {}}
+                                >
+                                  {o}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="px-6 py-4 border-t border-border">
@@ -674,6 +657,60 @@ export default function AdminPage() {
               </button>
             ))}
           </div>
+        )}
+
+        {rejectTarget && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-[60]" onClick={closeRejectModal} />
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col pointer-events-auto animate-scaleIn">
+                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-danger">회원 반려</h3>
+                  <button onClick={closeRejectModal} className="text-muted-fg hover:text-foreground" aria-label="닫기">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <p className="text-sm text-muted-fg">
+                    <b className="text-foreground">{rejectTarget.realName} ({rejectTarget.nickname})</b> 회원을 반려합니다.
+                  </p>
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-2">반려 사유 (필수)</label>
+                    <textarea
+                      autoFocus
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="예) 대표사진의 얼굴이 너무 작게 찍혀 있어 잘 보이지 않습니다. 다른 사진으로 교체 후 재신청 부탁드립니다."
+                      rows={5}
+                      maxLength={500}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-danger/30 resize-none"
+                    />
+                    <div className="flex items-center justify-between mt-1 text-xs text-muted-fg">
+                      <span>회원에게 안내되는 메시지입니다. 보완해야 할 부분을 구체적으로 작성해주세요.</span>
+                      <span>{rejectReason.length}/500</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t border-border flex gap-2">
+                  <button
+                    onClick={closeRejectModal}
+                    className="flex-1 py-3 rounded-xl bg-white border border-border text-muted-fg font-semibold hover:bg-muted/40 transition-colors"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={submitReject}
+                    disabled={rejectReason.trim().length < 5}
+                    className="flex-1 py-3 rounded-xl bg-danger text-white font-bold hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    반려하기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

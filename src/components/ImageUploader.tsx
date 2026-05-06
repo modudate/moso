@@ -14,6 +14,8 @@ interface ImageUploaderProps {
   onRemove?: () => void;
   size?: "sm" | "md" | "lg";
   label?: string;
+  // 사진 삭제 시 확인 대화상자 표시 (관리자 페이지처럼 자동저장 환경에서 사용)
+  confirmRemove?: boolean;
 }
 
 function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<Blob> {
@@ -43,7 +45,7 @@ function resizeImage(file: File, maxWidth: number, maxHeight: number, quality: n
 }
 
 const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
-  function ImageUploader({ value, category, onUploaded, onRemove, size = "md", label }, ref) {
+  function ImageUploader({ value, category, onUploaded, onRemove, size = "md", label, confirmRemove }, ref) {
     const [preview, setPreview] = useState<string | null>(value);
     const [uploading, setUploading] = useState(false);
     const [failed, setFailed] = useState(false);
@@ -111,6 +113,13 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
     };
 
     const handleRemoveClick = () => {
+      // 자동저장 환경에서는 즉시 DB 가 비워지므로 명시적 확인 필요.
+      if (confirmRemove && !failed) {
+        const ok = window.confirm(
+          "이 사진을 삭제하시겠습니까?\n\n삭제 즉시 저장되며, 복구할 수 없습니다.",
+        );
+        if (!ok) return;
+      }
       if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
       setPreview(null);
       setUploading(false);
