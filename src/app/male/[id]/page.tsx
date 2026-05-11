@@ -65,10 +65,13 @@ export default function FemaleDetailPage() {
 
   const handleAction = async (status: "approved" | "rejected") => {
     if (submitting) return;
+    // 매칭 확정(수락) 은 번복 불가이므로 동작 시점에 한번 더 안내
+    const isRevert = status === "approved" && matchStatus === "rejected";
     if (status === "approved") {
-      const ok = window.confirm(
-        "이 여성 회원에게 매칭요청을 보내시겠습니까?\n\n여성분이 수락하면 매칭이 완료됩니다.\n한 번 보낸 매칭요청은 취소할 수 없습니다.",
-      );
+      const message = isRevert
+        ? "거절했던 매칭을 수락으로 번복하시겠습니까?\n\n수락 후에는 다시 거절로 되돌릴 수 없습니다."
+        : "이 여성 회원에게 매칭요청을 보내시겠습니까?\n\n여성분이 수락하면 매칭이 완료됩니다.\n한 번 보낸 매칭요청은 취소할 수 없습니다.";
+      const ok = window.confirm(message);
       if (!ok) return;
     }
 
@@ -99,8 +102,10 @@ export default function FemaleDetailPage() {
       setToast({
         kind: status === "approved" ? "success" : "info",
         msg: status === "approved"
-          ? "여성분에게 매칭요청이 전달되었습니다. 여성분이 수락 시 매칭이 완료됩니다."
-          : "거절 처리되었습니다.",
+          ? (isRevert
+              ? "거절을 수락으로 번복했습니다. 매칭요청이 전달되었습니다."
+              : "여성분에게 매칭요청이 전달되었습니다. 여성분이 수락 시 매칭이 완료됩니다.")
+          : "거절 처리되었습니다. (7일 내 수락으로 번복할 수 있습니다)",
       });
     } catch (err) {
       setToast({
@@ -252,12 +257,23 @@ export default function FemaleDetailPage() {
           {matchStatus === "approved" && (
             <div className="py-4 rounded-2xl text-center bg-green-50">
               <p className="text-green-600 font-bold text-base">매칭요청을 보냈습니다</p>
-              <p className="text-green-700/80 text-xs mt-1">여성분이 수락하면 매칭이 완료됩니다</p>
+              <p className="text-green-700/80 text-xs mt-1">여성분이 수락하면 매칭이 완료됩니다 · 번복 불가</p>
             </div>
           )}
           {matchStatus === "rejected" && (
-            <div className="py-4 rounded-2xl text-center bg-gray-50">
-              <p className="text-gray-500 font-bold text-base">거절된 요청입니다</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleAction("approved")}
+                disabled={!!submitting}
+                className="w-full py-4 rounded-2xl font-bold text-base text-white disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ backgroundColor: "#ff8a3d" }}
+              >
+                {submitting === "approved" && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                수락으로 번복
+              </button>
+              <p className="text-center text-xs text-muted-fg">
+                거절 후 7일 내에는 수락으로 번복할 수 있습니다
+              </p>
             </div>
           )}
         </div>
