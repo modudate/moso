@@ -11,34 +11,52 @@ interface Props {
   title?: string;
 }
 
-async function getCroppedBlob(src: string, crop: Area, outW: number, outH: number): Promise<Blob> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
     const i = new Image();
-    i.crossOrigin = "anonymous";
+    // blob: / data: URL 은 같은 origin 이므로 crossOrigin 을 붙이지 않는다.
+    // 일부 안드로이드/삼성 브라우저는 blob URL 에 crossOrigin="anonymous" 가 붙으면
+    // onerror 로 빠지는 이슈가 있어 외부 http(s) URL 일 때만 명시.
+    if (/^https?:/i.test(src)) i.crossOrigin = "anonymous";
     i.onload = () => resolve(i);
-    i.onerror = reject;
+    i.onerror = () => reject(new Error("이미지 로드 실패"));
     i.src = src;
   });
+}
+
+async function canvasToBlobSafe(canvas: HTMLCanvasElement): Promise<Blob> {
+  // 출력 형식 우선순위: webp(품질↑/용량↓) → jpeg(호환성↑)
+  // 일부 안드로이드/삼성 기본 브라우저는 WebP 인코딩(toBlob) 을 지원하지 않아 null 반환.
+  // 이 경우 JPEG 로 폴백한다.
+  const tryEncode = (type: string, q: number) =>
+    new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), type, q));
+
+  const webp = await tryEncode("image/webp", 0.9);
+  if (webp) return webp;
+  const jpeg = await tryEncode("image/jpeg", 0.9);
+  if (jpeg) return jpeg;
+  throw new Error("브라우저가 이미지 인코딩을 지원하지 않습니다 (toBlob 실패)");
+}
+
+async function getCroppedBlob(src: string, crop: Area, outW: number, outH: number): Promise<Blob> {
+  const img = await loadImage(src);
 
   const canvas = document.createElement("canvas");
   canvas.width = outW;
   canvas.height = outH;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas context error");
+  if (!ctx) throw new Error("canvas 2d context 생성 실패");
 
-  ctx.drawImage(
-    img,
-    crop.x, crop.y, crop.width, crop.height,
-    0, 0, outW, outH,
-  );
+  // 안드로이드 일부 환경에서 크롭 영역이 자연 크기를 1~2px 초과하면 drawImage 가
+  // INVALID_STATE_ERR 를 던지는 경우가 있어 클램프 처리.
+  const sx = Math.max(0, Math.min(crop.x, img.naturalWidth));
+  const sy = Math.max(0, Math.min(crop.y, img.naturalHeight));
+  const sw = Math.max(1, Math.min(crop.width, img.naturalWidth - sx));
+  const sh = Math.max(1, Math.min(crop.height, img.naturalHeight - sy));
 
-  return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("toBlob 실패"))),
-      "image/webp",
-      0.9,
-    );
-  });
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+
+  return await canvasToBlobSafe(canvas);
 }
 
 export default function ImageCropperModal({ src, aspect = 9 / 16, onCancel, onConfirm, title = "사진 영역 선택" }: Props) {
@@ -61,8 +79,9 @@ export default function ImageCropperModal({ src, aspect = 9 / 16, onCancel, onCo
       const blob = await getCroppedBlob(src, area, targetW, targetH);
       onConfirm(blob);
     } catch (e) {
-      console.error(e);
-      alert("크롭 처리에 실패했습니다. 다시 시도해주세요.");
+      console.error("[ImageCropperModal] crop failed", e);
+      const detail = e instanceof Error ? e.message : "알 수 없는 오류";
+      alert(`크롭 처리에 실패했습니다.\n(${detail})\n\n다시 시도하거나, 사진 형식을 JPG/PNG 로 바꾸어 보세요.`);
       setSaving(false);
     }
   };
