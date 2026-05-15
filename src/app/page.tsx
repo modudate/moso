@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import InAppBrowserNotice from "@/components/InAppBrowserNotice";
+import { detectInAppBrowser, isAndroid, openInExternalAndroid, openInExternalKakao } from "@/lib/in-app-browser";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
@@ -32,7 +33,7 @@ function base64UrlAscii(str: string): string {
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [showInAppHelp, setShowInAppHelp] = useState(false);
 
   // Google 로그인 → 뒤로가기/취소로 돌아올 때 bfcache 로 복원되면 loading 이 true 인 채로 남아
   // "로그인 중..." 오버레이가 계속 떠 있는 버그를 방지
@@ -49,13 +50,29 @@ export default function Home() {
     };
   }, []);
 
-  const previewGo = (path: string) => {
-    document.cookie = "preview_bypass=1; path=/; max-age=86400; SameSite=Lax";
-    router.push(path);
-  };
-
   const handleGoogleLogin = async () => {
     if (loading) return;
+
+    // 인앱 브라우저(카카오톡/페북/인스타/라인 등) 가드
+    //   Google OAuth 가 disallowed_useragent 로 막히기 때문에 진입 자체를 차단.
+    //   - Android: Chrome 강제 실행 시도
+    //   - iOS    : 안내 모달 (Safari 로 직접 열기 가이드)
+    const inApp = detectInAppBrowser();
+    if (inApp) {
+      if (isAndroid()) {
+        if (inApp === "kakaotalk") {
+          openInExternalKakao();
+          setTimeout(() => openInExternalAndroid(), 800);
+        } else {
+          openInExternalAndroid();
+        }
+        return;
+      }
+      // iOS / 기타
+      setShowInAppHelp(true);
+      return;
+    }
+
     setLoading(true);
     try {
       const ref = new URL(SUPABASE_URL).hostname.split(".")[0];
@@ -126,18 +143,52 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 피드백용 임시 바로가기 (권한 우회 · 추후 제거 예정) */}
-      <div className="w-full px-6 pb-8">
-        <div className="w-full max-w-sm mx-auto">
-          <p className="text-[11px] text-white/80 text-center mb-2">피드백용 미리보기 · 권한 확인 없이 입장</p>
-          <div className="flex gap-3">
-            <button onClick={() => previewGo("/female")} className="flex-1 py-3 bg-pink-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-pink-600 transition-colors">여성</button>
-            <button onClick={() => previewGo("/male")} className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold text-center shadow-md hover:bg-blue-600 transition-colors">남성</button>
-            <button onClick={() => previewGo("/admin")} className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-semibold text-center shadow-md hover:bg-gray-800 transition-colors">관리자</button>
+      {/* 인앱 브라우저 진입 시 하단 알림 바 (자동 노출, 닫기 가능) */}
+      <InAppBrowserNotice />
+
+      {/* iOS 인앱 → Google 로그인 시도 차단 모달 */}
+      {showInAppHelp && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-[420px] p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Safari 에서 열어주세요</h3>
+              <button onClick={() => setShowInAppHelp(false)} className="text-gray-400 hover:text-gray-700" aria-label="닫기">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-[13px] text-gray-600 leading-relaxed">
+              Google 로그인은 보안 정책상 카카오톡 등 인앱 브라우저에서 차단됩니다.<br />
+              아래 방법으로 Safari 에서 다시 열어주세요.
+            </p>
+            <ol className="text-[13px] text-gray-700 space-y-2 pl-1">
+              <li>1. 화면 오른쪽 상단의 <b>···</b> (또는 공유) 버튼 누르기</li>
+              <li>2. <b>Safari로 열기</b> 선택</li>
+            </ol>
+            <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2.5 flex items-center gap-2">
+              <span className="text-[11px] text-gray-400 truncate flex-1">
+                {typeof window !== "undefined" ? window.location.href : ""}
+              </span>
+              <button
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(window.location.href); } catch {}
+                }}
+                className="flex-shrink-0 px-3 py-1.5 text-[12px] font-semibold rounded-lg bg-white border border-gray-300 hover:border-[#ff8a3d] text-gray-700"
+              >
+                URL 복사
+              </button>
+            </div>
+            <button
+              onClick={() => setShowInAppHelp(false)}
+              className="w-full py-3 rounded-xl text-white font-bold"
+              style={{ backgroundColor: "#ff8a3d" }}
+            >
+              확인
+            </button>
           </div>
-          <button onClick={() => previewGo("/register")} className="w-full mt-2 py-3 bg-white/20 text-white rounded-xl font-semibold text-center border border-white/40 hover:bg-white/30 transition-colors">회원가입</button>
         </div>
-      </div>
+      )}
     </main>
   );
 }

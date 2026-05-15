@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 import Sidebar from "@/components/Sidebar";
-import { isPreviewMode } from "@/lib/preview";
 import ProfileCardSkeleton from "@/components/ProfileCardSkeleton";
 import GridToggle from "@/components/GridToggle";
 
@@ -54,13 +53,18 @@ export default function MalePage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const preview = isPreviewMode();
 
     // 프로필 리스트는 내 ID 에 의존하지 않으므로 /api/me 와 동시에 바로 출발
     const femalesPromise = fetch("/api/profiles?role=female&status=active");
     const meRes = await fetch("/api/me");
     const { user } = await meRes.json();
-    const uid = user?.id ?? "m-001";
+    const uid = user?.id;
+
+    if (!uid) {
+      setCards([]);
+      setLoading(false);
+      return;
+    }
 
     const [matchRes, femalesRes] = await Promise.all([
       fetch(`/api/match?maleId=${encodeURIComponent(uid)}`),
@@ -80,30 +84,14 @@ export default function MalePage() {
       if (user) result.push({ user, matchId: md.id, status: md.status, source: "md", requestedAt: md.createdAt });
     }
 
-    // 피드백용 미리보기 - 매칭/MD 추천에 잡히지 않은 나머지 활성 여성도 모두 노출.
-    // matchId 는 비워서 상세에서 확정/거절 버튼이 뜨지 않도록 함.
-    if (preview) {
-      const alreadyIds = new Set(result.map(r => r.user.id));
-      for (const f of females) {
-        if (!alreadyIds.has(f.id)) {
-          result.push({
-            user: f,
-            matchId: "",
-            status: "preview",
-            source: "match",
-            requestedAt: f.createdAt,
-          });
-        }
-      }
-    }
     result.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
     setCards(result);
     setLoading(false);
   };
 
-  const handleCardClick = (id: string, matchId: string) => {
+  const handleCardClick = (id: string, matchId: string, source: "match" | "md") => {
     sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
-    router.push(`/male/${id}?matchId=${matchId}`);
+    router.push(`/male/${id}?matchId=${matchId}&source=${source}`);
   };
 
   if (loading) {
@@ -161,7 +149,7 @@ export default function MalePage() {
               const badgeCls = `${big ? "text-xs px-2.5 py-1.5" : "text-[10px] px-2 py-1"} font-bold text-white rounded-lg shadow-md`;
               const chipCls = `${big ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]"} bg-white/20 backdrop-blur-sm text-white font-medium rounded-full`;
               return (
-              <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId)}
+              <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId, c.source)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
                 <div className="relative aspect-[9/16] bg-muted overflow-hidden">
                   {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :

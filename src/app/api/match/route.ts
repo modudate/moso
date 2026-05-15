@@ -1,35 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllMatchRequests, getMatchRequests, getMdRecsForMale, getCooldownMaleIds } from "@/lib/db";
-import { getDb } from "@/lib/db";
+import {
+  getAllMatchRequests,
+  getMatchRequests,
+  getMdRecsForMale,
+  getDb,
+  findExistingMatch,
+} from "@/lib/db";
+import { isVisibleNow } from "@/lib/visibility";
 
 export const dynamic = "force-dynamic";
 
-// ── 노출 기간 정책 ────────────────────────────────────────────────────
-// 남성 페이지에서 여성 카드가 노출되는 기간.
-//   - pending  (응답 전)         : 매칭 요청일로부터 30일
-//   - rejected (남성 거절, 번복 가능) : 응답일로부터 7일
-//   - approved (남성 수락, 번복 불가) : 응답일로부터 7일
-// 정책 변경 시 이 두 상수만 조정.
-const PENDING_VISIBLE_DAYS = 30;
-const RESPONDED_VISIBLE_DAYS = 7;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-type VisibleItem = { status: string; requestedAt: string; respondedAt?: string | null };
-
-function isVisibleToMale(item: VisibleItem): boolean {
-  const now = Date.now();
-  if (item.status === "pending") {
-    const t = new Date(item.requestedAt).getTime();
-    return now - t <= PENDING_VISIBLE_DAYS * DAY_MS;
-  }
-  // approved / rejected 는 응답일 기준
-  if (!item.respondedAt) return false;
-  const t = new Date(item.respondedAt).getTime();
-  return now - t <= RESPONDED_VISIBLE_DAYS * DAY_MS;
-}
-
 // ── 상태 전이 정책 ────────────────────────────────────────────────────
-// 매칭 거절(rejected) 은 수락(approved) 으로만 번복 가능.
+// 매칭 거절(rejected) 은 수락(approved) 으로만 번복 가능. (남성 측 7일 노출기간 내)
 // 매칭 확정(approved) 은 어떤 상태로도 번복 불가.
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   pending: ["approved", "rejected"],
@@ -48,12 +30,14 @@ export async function GET(req: NextRequest) {
       getMatchRequests({ maleId }),
       getMdRecsForMale(maleId),
     ]);
-    const matches = allMatches.filter(isVisibleToMale);
-    const mdRecs = allMdRecs.filter((r) => isVisibleToMale({
-      status: r.status,
-      requestedAt: r.createdAt,
-      respondedAt: r.respondedAt,
-    }));
+    const matches = allMatches.filter(isVisibleNow);
+    const mdRecs = allMdRecs.filter((r) =>
+      isVisibleNow({
+        status: r.status,
+        requestedAt: r.createdAt,
+        respondedAt: r.respondedAt,
+      }),
+    );
     return NextResponse.json({ matches, mdRecs });
   }
   if (femaleId) {
@@ -63,26 +47,57 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ error: "maleId 또는 femaleId 필요" }, { status: 400 });
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// POST /api/match
+//   여성이 카트에 담긴 남성들에게 매칭요청을 일괄 전송.
+//
+// 영구 잠금 정책:
+//   같은 (female, male) 쌍에 대해 이미 row 가 있으면 status 와 무관하게 차단.
+//   - upsert 로 status 를 덮어쓰는 기존 동작은 매칭 데이터 손실의 원인이었음.
+//   - 클라이언트는 created / blocked 을 받아서 UI 메시지 처리.
+// ─────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const { femaleProfileId, maleProfileIds } = await req.json();
-  const db = await getDb();
-  const created: string[] = [];
-
-  const cooldownIds = await getCooldownMaleIds(femaleProfileId);
-
-  for (const maleId of maleProfileIds) {
-    if (cooldownIds.includes(maleId)) continue;
-
-    const { error } = await db.from("match_requests").upsert(
-      { female_profile_id: femaleProfileId, male_profile_id: maleId, status: "pending" },
-      { onConflict: "female_profile_id,male_profile_id" },
-    );
-    if (!error) created.push(maleId);
+  const { femaleProfileId, maleProfileIds } = (await req.json()) as {
+    femaleProfileId: string;
+    maleProfileIds: string[];
+  };
+  if (!femaleProfileId || !Array.isArray(maleProfileIds) || maleProfileIds.length === 0) {
+    return NextResponse.json({ error: "femaleProfileId, maleProfileIds 필요" }, { status: 400 });
   }
 
-  await db.from("cart_items").delete().eq("female_profile_id", femaleProfileId);
+  const db = await getDb();
+  const created: string[] = [];
+  const blocked: { maleId: string; reason: "pending" | "approved" | "rejected" }[] = [];
 
-  return NextResponse.json({ success: true, created });
+  for (const maleId of maleProfileIds) {
+    // 1) 기존 (female, male) 매칭 이력 확인 - 있으면 영구 잠금
+    const existing = await findExistingMatch(femaleProfileId, maleId);
+    if (existing) {
+      blocked.push({ maleId, reason: existing.status });
+      continue;
+    }
+
+    // 2) 신규 row insert (upsert 금지)
+    const { error } = await db.from("match_requests").insert({
+      female_profile_id: femaleProfileId,
+      male_profile_id: maleId,
+      status: "pending",
+    });
+    if (!error) created.push(maleId);
+    else {
+      // 동시성으로 unique 충돌이 발생한 경우에도 절대 덮어쓰지 않음
+      blocked.push({ maleId, reason: "pending" });
+    }
+  }
+
+  // 카트는 처리 시도한 남성들만 비움 (잠긴 항목도 같이 정리)
+  await db
+    .from("cart_items")
+    .delete()
+    .eq("female_profile_id", femaleProfileId)
+    .in("male_profile_id", maleProfileIds);
+
+  return NextResponse.json({ success: true, created, blocked });
 }
 
 export async function PATCH(req: NextRequest) {

@@ -21,6 +21,7 @@ export default function FemalePage() {
   const [males, setMales] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Set<string>>(new Set());
+  const [lockedMaleIds, setLockedMaleIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<MultiFilters>({});
   const [tempFilters, setTempFilters] = useState<MultiFilters>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -65,14 +66,13 @@ export default function FemalePage() {
     setMyId(uid);
     setMyStatus(status);
 
-    // active 회원만 cart 조회 (그 외엔 빈 cart)
-    const fetches: [Promise<Response>, Promise<Response> | null] = [
+    // active 회원만 cart / locked 조회 (그 외엔 빈 결과)
+    const fetches: [Promise<Response>, Promise<Response> | null, Promise<Response> | null] = [
       malesPromise,
-      uid && status === "active"
-        ? fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`)
-        : null,
+      uid && status === "active" ? fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`) : null,
+      uid && status === "active" ? fetch("/api/match/locked", { cache: "no-store" }) : null,
     ];
-    const [mRes, cRes] = await Promise.all(fetches);
+    const [mRes, cRes, lRes] = await Promise.all(fetches);
     const mData = await mRes.json();
     setMales(mData);
     if (cRes) {
@@ -81,26 +81,23 @@ export default function FemalePage() {
     } else {
       setCart(new Set());
     }
+    if (lRes) {
+      const lData = await lRes.json();
+      setLockedMaleIds(new Set<string>(lData.lockedMaleIds ?? []));
+    } else {
+      setLockedMaleIds(new Set());
+    }
     setLoading(false);
   };
 
   const toggleCart = async (e: React.MouseEvent, maleId: string) => {
     e.stopPropagation();
-    // 미리보기/비로그인/가입 미완료 상태에서는 cart 기능 차단 (UUID FK 에러 방지)
+    // 안전망 가드 - 정상 흐름이면 미들웨어가 이미 차단
     if (!myId || myStatus !== "active") {
-      if (!myId) {
-        alert(
-          "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
-        );
-      } else if (myStatus === "pending") {
-        alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
-      } else if (myStatus === "rejected") {
-        alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
-      } else if (myStatus === "blocked") {
-        alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
-      } else {
-        alert("회원가입이 완료되지 않았습니다.\n홈 화면에서 가입을 먼저 진행해주세요.");
-      }
+      if (myStatus === "pending") alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
+      else if (myStatus === "rejected") alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
+      else if (myStatus === "blocked") alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
+      else alert("로그인이 필요합니다.");
       return;
     }
     const wasInCart = cart.has(maleId);
@@ -119,6 +116,18 @@ export default function FemalePage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // 영구 잠금 응답이면 즉시 갤러리에서도 숨김
+        if (res.status === 409 && data?.locked) {
+          setLockedMaleIds((prev) => new Set(prev).add(maleId));
+          // 카트 추가 시도였으므로 롤백 (제거된 상태)
+          setCart((prev) => {
+            const n = new Set(prev);
+            n.delete(maleId);
+            return n;
+          });
+          alert(data.error || "이미 매칭 이력이 있는 상대입니다.");
+          return;
+        }
         throw new Error(data.error || `요청 실패 (${res.status})`);
       }
     } catch (err) {
@@ -156,7 +165,8 @@ export default function FemalePage() {
 
   const activeFilterCount = activeCount(filters);
   const tempActiveCount = activeCount(tempFilters);
-  const filtered = males.filter(matchFilter);
+  // 매칭 이력이 한 번이라도 있는 남성은 영구 숨김 (정책)
+  const filtered = males.filter((m) => !lockedMaleIds.has(m.id) && matchFilter(m));
   const paged = filtered.slice(0, visible);
 
   useEffect(() => {

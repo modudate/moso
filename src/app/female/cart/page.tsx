@@ -43,7 +43,7 @@ export default function MatchRequestListPage() {
       const sentData: MatchRequest[] = await sentRes.json();
       setSentRequests(sentData.map(s => ({ ...s, user: maleMap.get(s.maleProfileId) })));
     } else {
-      // 미리보기/비로그인/가입 미완료 → 빈 화면
+      // 비로그인/가입 미완료 → 빈 화면 (정상 흐름이면 미들웨어가 차단)
       setCartUsers([]);
       setSentRequests([]);
     }
@@ -52,19 +52,10 @@ export default function MatchRequestListPage() {
 
   const guardActive = (): boolean => {
     if (femaleId && myStatus === "active") return true;
-    if (!femaleId) {
-      alert(
-        "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
-      );
-    } else if (myStatus === "pending") {
-      alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
-    } else if (myStatus === "rejected") {
-      alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
-    } else if (myStatus === "blocked") {
-      alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
-    } else {
-      alert("회원가입이 완료되지 않았습니다.\n홈 화면에서 가입을 먼저 진행해주세요.");
-    }
+    if (myStatus === "pending") alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
+    else if (myStatus === "rejected") alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
+    else if (myStatus === "blocked") alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
+    else alert("로그인이 필요합니다.");
     return false;
   };
 
@@ -102,6 +93,14 @@ export default function MatchRequestListPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `요청 실패 (${res.status})`);
+      }
+      const data: { created?: string[]; blocked?: { maleId: string; reason: string }[] } = await res.json();
+      const blockedCount = data.blocked?.length ?? 0;
+      const createdCount = data.created?.length ?? 0;
+      if (createdCount === 0 && blockedCount > 0) {
+        alert("선택한 상대는 모두 이미 매칭 이력이 있어 요청을 보낼 수 없습니다.");
+      } else if (blockedCount > 0) {
+        alert(`${createdCount}명에게 매칭요청을 보냈습니다.\n${blockedCount}명은 이미 매칭 이력이 있어 제외되었습니다.`);
       }
       setDone(true);
     } catch (err) {

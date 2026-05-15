@@ -15,13 +15,8 @@ export async function POST(req: NextRequest) {
   let uploaderId = user?.id;
 
   if (!uploaderId) {
-    // 피드백용 미리보기 쿠키 사용자: 익명 폴더에 임시 업로드 허용
-    // (실제 회원가입은 정식 로그인 후에만 진행되도록 /api/register 에서 별도 가드)
-    const isPreview = req.cookies.get("preview_bypass")?.value === "1";
     if (IS_DEV) {
       uploaderId = "dev-anonymous";
-    } else if (isPreview) {
-      uploaderId = "preview-anonymous";
     } else {
       return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
     }

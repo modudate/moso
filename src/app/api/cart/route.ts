@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCartItems, addCartItem, removeCartItem, getDb } from "@/lib/db";
+import { getCartItems, addCartItem, removeCartItem, getDb, findExistingMatch } from "@/lib/db";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +72,19 @@ export async function POST(req: NextRequest) {
     if (!maleProfileId) {
       return NextResponse.json({ error: "maleProfileId 필요" }, { status: 400 });
     }
+
+    // 영구 잠금 검사 — 한 번이라도 매칭 이력이 있는 (female, male) 쌍은 카트에 담기 차단
+    const existing = await findExistingMatch(auth.femaleId, maleProfileId);
+    if (existing) {
+      const msg =
+        existing.status === "approved"
+          ? "이미 매칭이 확정된 상대입니다."
+          : existing.status === "pending"
+          ? "이미 매칭요청을 보낸 상대입니다."
+          : "이전에 매칭이 성사되지 않은 상대입니다. (재요청 불가)";
+      return NextResponse.json({ error: msg, locked: true, lockReason: existing.status }, { status: 409 });
+    }
+
     await addCartItem(auth.femaleId, maleProfileId);
     return NextResponse.json({ success: true });
   } catch (e) {

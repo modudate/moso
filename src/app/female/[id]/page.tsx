@@ -12,6 +12,7 @@ export default function MaleDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [inCart, setInCart] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState<null | "pending" | "approved" | "rejected">(null);
 
   const maleId = params.id as string;
   const [femaleId, setFemaleId] = useState<string | null>(null);
@@ -29,13 +30,16 @@ export default function MaleDetailPage() {
     setFemaleId(uid);
     setMyStatus(status);
 
-    const tasks: [Promise<Response>, Promise<Response> | null] = [
+    const tasks: [Promise<Response>, Promise<Response> | null, Promise<Response> | null] = [
       fetch(`/api/profiles?role=male&status=active`),
       uid && status === "active"
         ? fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`)
         : null,
+      uid && status === "active"
+        ? fetch(`/api/match?femaleId=${encodeURIComponent(uid)}`, { cache: "no-store" })
+        : null,
     ];
-    const [profileRes, cartRes] = await Promise.all(tasks);
+    const [profileRes, cartRes, matchRes] = await Promise.all(tasks);
     const males: User[] = await profileRes.json();
     setUser(males.find(m => m.id === maleId) || null);
     if (cartRes) {
@@ -44,24 +48,32 @@ export default function MaleDetailPage() {
     } else {
       setInCart(false);
     }
+    if (matchRes) {
+      const matches: { maleProfileId: string; status: "pending" | "approved" | "rejected" }[] = await matchRes.json();
+      const found = matches.find((m) => m.maleProfileId === maleId);
+      setLocked(found ? found.status : null);
+    } else {
+      setLocked(null);
+    }
     setLoading(false);
   };
 
   const toggleCart = async () => {
     if (!femaleId || myStatus !== "active") {
-      if (!femaleId) {
-        alert(
-          "정식 로그인 후 이용 가능한 기능입니다.\n홈 화면에서 'Google 계정으로 계속하기'로 로그인 후 다시 시도해주세요.",
-        );
-      } else if (myStatus === "pending") {
-        alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
-      } else if (myStatus === "rejected") {
-        alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
-      } else if (myStatus === "blocked") {
-        alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
-      } else {
-        alert("회원가입이 완료되지 않았습니다.\n홈 화면에서 가입을 먼저 진행해주세요.");
-      }
+      if (myStatus === "pending") alert("아직 가입 승인 대기 중입니다.\n관리자 승인 후 이용 가능합니다.");
+      else if (myStatus === "rejected") alert("가입이 반려된 계정입니다. 관리자에게 문의해주세요.");
+      else if (myStatus === "blocked") alert("이용이 제한된 계정입니다. 관리자에게 문의해주세요.");
+      else alert("로그인이 필요합니다.");
+      return;
+    }
+    if (locked) {
+      alert(
+        locked === "approved"
+          ? "이미 매칭이 확정된 상대입니다."
+          : locked === "pending"
+          ? "이미 매칭요청을 보낸 상대입니다."
+          : "이전에 매칭이 성사되지 않은 상대입니다. (재요청 불가)",
+      );
       return;
     }
     const wasInCart = inCart;
@@ -182,15 +194,28 @@ export default function MaleDetailPage() {
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-4 pt-4 bg-white border-t border-border"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2.5rem)" }}
       >
-        <button onClick={toggleCart}
-          className={`w-full py-4 rounded-2xl font-bold text-base transition-all ${
-            inCart
-              ? "bg-gray-100 text-gray-500"
-              : "text-white"
-          }`}
-          style={inCart ? {} : { backgroundColor: "#ff8a3d" }}>
-          {inCart ? "매칭 후보에서 빼기" : "매칭 후보에 담기"}
-        </button>
+        {locked ? (
+          <div className="w-full py-4 rounded-2xl text-center bg-gray-100">
+            <p className="text-gray-600 font-bold text-base">
+              {locked === "approved"
+                ? "매칭이 확정된 상대입니다"
+                : locked === "pending"
+                ? "이미 매칭요청을 보낸 상대입니다"
+                : "매칭이 성사되지 않은 상대입니다"}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">재요청은 불가능합니다</p>
+          </div>
+        ) : (
+          <button onClick={toggleCart}
+            className={`w-full py-4 rounded-2xl font-bold text-base transition-all ${
+              inCart
+                ? "bg-gray-100 text-gray-500"
+                : "text-white"
+            }`}
+            style={inCart ? {} : { backgroundColor: "#ff8a3d" }}>
+            {inCart ? "매칭 후보에서 빼기" : "매칭 후보에 담기"}
+          </button>
+        )}
       </div>
     </main>
   );

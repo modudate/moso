@@ -64,7 +64,6 @@ export default function Sidebar({ open, onClose, gender }: Props) {
     } catch {
       // ignore
     }
-    document.cookie = "preview_bypass=; path=/; max-age=0; SameSite=Lax";
     router.replace("/");
     router.refresh();
   };

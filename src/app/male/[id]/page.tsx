@@ -5,7 +5,6 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel, smokingLabel } from "@/lib/options";
 import PhotoCarousel from "@/components/PhotoCarousel";
-import { isPreviewMode } from "@/lib/preview";
 
 export default function FemaleDetailPage() {
   const router = useRouter();
@@ -14,15 +13,15 @@ export default function FemaleDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [matchStatus, setMatchStatus] = useState<string>("pending");
   const [loading, setLoading] = useState(true);
-  const [preview, setPreview] = useState(false);
   const [submitting, setSubmitting] = useState<"approved" | "rejected" | null>(null);
   const [toast, setToast] = useState<{ kind: "success" | "info" | "error"; msg: string } | null>(null);
   const [imageZoom, setImageZoom] = useState<string | null>(null);
 
   const femaleId = params.id as string;
   const matchId = searchParams.get("matchId") || "";
+  const sourceParam = (searchParams.get("source") || "").toLowerCase();
+  const source: "match" | "md" = sourceParam === "md" ? "md" : "match";
 
-  useEffect(() => { setPreview(isPreviewMode()); }, []);
   useEffect(() => { fetchData(); }, [femaleId]);
 
   // 토스트 자동 사라짐
@@ -51,8 +50,8 @@ export default function FemaleDetailPage() {
         const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();
         const m = matches.find((x) => x.femaleProfileId === femaleId);
         const md = mdRecs.find((x) => x.femaleProfileId === femaleId);
-        // 우선순위: 매칭요청 > MD 추천. 응답된 상태가 있으면 그대로 반영.
-        const found = m ?? md;
+        // 진입 경로(source)에 해당하는 row 를 우선 — MD 추천 응답이 항상 404 나던 버그 수정
+        const found = source === "md" ? (md ?? m) : (m ?? md);
         if (found) setMatchStatus(found.status);
         else setMatchStatus("pending");
       }
@@ -75,15 +74,9 @@ export default function FemaleDetailPage() {
       if (!ok) return;
     }
 
-    // 피드백용 미리보기에서는 실제 반영하지 않고 UI 상태만 변경
-    if (preview || !matchId) {
-      setMatchStatus(status);
-      setToast({
-        kind: status === "approved" ? "success" : "info",
-        msg: status === "approved"
-          ? "매칭요청이 전달되었습니다 (미리보기)"
-          : "거절 처리되었습니다 (미리보기)",
-      });
+    if (!matchId) {
+      // 매칭 ID 없이 이 화면에 들어오는 경로는 더 이상 정상 동작이 아님
+      setToast({ kind: "error", msg: "유효하지 않은 매칭 정보입니다. 목록에서 다시 진입해주세요." });
       return;
     }
 
@@ -92,7 +85,7 @@ export default function FemaleDetailPage() {
       const res = await fetch("/api/match", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchId, status }),
+        body: JSON.stringify({ matchId, status, source }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -227,8 +220,8 @@ export default function FemaleDetailPage() {
         </div>
       )}
 
-      {/* 하단 고정 버튼 (미리보기 모드일 땐 matchId 없어도 노출) */}
-      {(matchId || preview) && (
+      {/* 하단 고정 버튼 — 정상 진입(matchId 보유) 일 때만 노출 */}
+      {matchId && (
         <div
           className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 bg-white border-t border-border px-4 pt-4"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2.5rem)" }}

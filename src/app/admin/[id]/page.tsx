@@ -195,6 +195,12 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
     const data = await res.json();
     if (res.ok && data.md) {
       setMdRecs(prev => [...prev, data.md]);
+    } else if (data?.locked) {
+      alert(data.error || "이미 매칭/추천 이력이 있는 여성입니다.");
+      // 다시 fetch 해서 후보 목록을 최신 상태로 동기화
+      fetchData();
+    } else if (!res.ok) {
+      alert(data?.error || "추천 전송에 실패했습니다.");
     }
     setMdTarget("");
     setShowMdForm(false);
@@ -215,8 +221,24 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
 
   const alreadyRecommended = useMemo(() => new Set(mdRecs.map(md => md.femaleProfileId)), [mdRecs]);
 
+  // 영구 잠금 — 이 남성과 매칭 이력(pending/approved/rejected)이 있는 여성도 추천 후보에서 제외
+  const alreadyMatched = useMemo(() => {
+    const set = new Set<string>();
+    if (user?.role !== "male") return set;
+    for (const m of matches) {
+      if (m.maleProfileId === userId) set.add(m.femaleProfileId);
+    }
+    return set;
+  }, [matches, user?.role, userId]);
+
   const mdCandidates = useMemo(() => {
-    let list = allUsers.filter(u => u.role === "female" && u.status === "active" && !alreadyRecommended.has(u.id));
+    let list = allUsers.filter(
+      (u) =>
+        u.role === "female" &&
+        u.status === "active" &&
+        !alreadyRecommended.has(u.id) &&
+        !alreadyMatched.has(u.id),
+    );
     if (mdSearch.length >= 1) {
       const q = mdSearch.trim();
       // 전화번호 검색은 하이픈/공백 제거 후 비교 (사용자가 0101234... 처럼 하이픈 없이 입력해도 매칭)
@@ -235,7 +257,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
       });
     }
     return list;
-  }, [allUsers, alreadyRecommended, mdSearch]);
+  }, [allUsers, alreadyRecommended, alreadyMatched, mdSearch]);
 
   const mdTotalPages = Math.ceil(mdCandidates.length / MD_PER_PAGE);
   const mdPaged = mdCandidates.slice((mdPage - 1) * MD_PER_PAGE, mdPage * MD_PER_PAGE);

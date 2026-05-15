@@ -268,7 +268,8 @@ export async function removeCartItem(femaleProfileId: string, maleProfileId: str
 }
 
 // ── Rejection Logs (쿨타임) ────────────────────────────────────────
-
+// (legacy) 거절 후 7일 쿨타임. 현재 정책상 "거절은 영구" 이므로
+// 여성 측 필터에서는 더 이상 사용하지 않고, 남성 측 7일 번복 가능 기간 산정용으로만 의미가 남음.
 export async function getCooldownMaleIds(femaleProfileId: string) {
   const db = await getDb();
   const { data } = await db
@@ -277,6 +278,82 @@ export async function getCooldownMaleIds(femaleProfileId: string) {
     .eq("female_profile_id", femaleProfileId)
     .gt("visible_after", new Date().toISOString());
   return (data || []).map(d => d.male_profile_id);
+}
+
+// ── 영구 잠금 (Lock) — 여성 → 남성 사이의 모든 이력 조회 ───────────────
+// 정책:
+//  · 한 번이라도 매칭요청을 보낸 적이 있는 (female, male) 쌍은
+//    status(pending/approved/rejected) 와 무관하게 여성 측에서 **영구 잠금**.
+//    → 갤러리에서 제외, 카트에 담기 차단, 매칭요청 POST 차단.
+//  · MD 추천 영구 잠금 정책도 동일하게 (male, female) 쌍의 매칭/MD 이력으로 판단.
+//
+// 반환: 해당 여성이 이미 매칭요청을 보낸 남성 ID 들의 집합.
+export async function getLockedMaleIdsForFemale(femaleProfileId: string): Promise<Set<string>> {
+  const db = await getDb();
+  const { data } = await db
+    .from("match_requests")
+    .select("male_profile_id")
+    .eq("female_profile_id", femaleProfileId);
+  return new Set((data || []).map((d) => d.male_profile_id as string));
+}
+
+// 단일 (female, male) 쌍의 잠금 사유 조회
+//  - "lockable" 한 row 가 있으면 status 도 같이 알려줌 (UI 메시지용)
+export async function findExistingMatch(femaleProfileId: string, maleProfileId: string) {
+  const db = await getDb();
+  const { data } = await db
+    .from("match_requests")
+    .select("id, status, requested_at, responded_at")
+    .eq("female_profile_id", femaleProfileId)
+    .eq("male_profile_id", maleProfileId)
+    .maybeSingle();
+  return data
+    ? {
+        id: data.id as string,
+        status: data.status as "pending" | "approved" | "rejected",
+        requestedAt: data.requested_at as string,
+        respondedAt: (data.responded_at as string | null) ?? null,
+      }
+    : null;
+}
+
+// MD 추천 영구 잠금 — (male, female) 쌍에 매칭요청 또는 MD 추천 row 가 이미 존재하면 잠금
+export async function isMdLocked(
+  maleProfileId: string,
+  femaleProfileId: string,
+): Promise<{ locked: boolean; reason?: "match" | "md"; status?: string }> {
+  const db = await getDb();
+  const [{ data: m }, { data: md }] = await Promise.all([
+    db
+      .from("match_requests")
+      .select("status")
+      .eq("male_profile_id", maleProfileId)
+      .eq("female_profile_id", femaleProfileId)
+      .maybeSingle(),
+    db
+      .from("md_recommendations")
+      .select("status")
+      .eq("male_profile_id", maleProfileId)
+      .eq("female_profile_id", femaleProfileId)
+      .maybeSingle(),
+  ]);
+  if (m) return { locked: true, reason: "match", status: m.status as string };
+  if (md) return { locked: true, reason: "md", status: md.status as string };
+  return { locked: false };
+}
+
+// 특정 남성에 대해, 이미 잠긴 (= 매칭/MD 이력이 있는) 여성 ID 들의 집합
+// 관리자 MD 추천 모달의 후보에서 미리 제외할 때 사용.
+export async function getLockedFemaleIdsForMale(maleProfileId: string): Promise<Set<string>> {
+  const db = await getDb();
+  const [{ data: matches }, { data: mds }] = await Promise.all([
+    db.from("match_requests").select("female_profile_id").eq("male_profile_id", maleProfileId),
+    db.from("md_recommendations").select("female_profile_id").eq("male_profile_id", maleProfileId),
+  ]);
+  const set = new Set<string>();
+  for (const r of matches ?? []) set.add(r.female_profile_id as string);
+  for (const r of mds ?? []) set.add(r.female_profile_id as string);
+  return set;
 }
 
 // ── Auto Block (크론) ──────────────────────────────────────────────

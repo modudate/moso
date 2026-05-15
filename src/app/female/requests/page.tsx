@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { MatchRequest, User } from "@/lib/types";
+import { isVisibleNow } from "@/lib/visibility";
 
 // ─────────────────────────────────────────────────────────────────────
 // 매칭 요청 결과 페이지
@@ -60,7 +61,7 @@ export default function MatchRequestResultPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [requests, setRequests] = useState<RequestCardData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [previewBlocked, setPreviewBlocked] = useState(false);
+  const [needLogin, setNeedLogin] = useState(false);
 
   useEffect(() => {
     void fetchData();
@@ -73,9 +74,9 @@ export default function MatchRequestResultPage() {
       const { user: me } = await meRes.json();
       const uid = me?.id;
 
-      // 미리보기/비로그인 → 안내 화면 (실제 데이터 없음)
+      // 미들웨어가 비로그인을 막아주지만, 안전망으로 안내 화면 유지
       if (!uid) {
-        setPreviewBlocked(true);
+        setNeedLogin(true);
         setRequests([]);
         return;
       }
@@ -89,6 +90,10 @@ export default function MatchRequestResultPage() {
       const maleMap = new Map(males.map((m) => [m.id, m]));
 
       const cards: RequestCardData[] = matches
+        // 노출기간 정책: pending 요청일+30d, approved/rejected 응답일 자정+7d
+        .filter((m) =>
+          isVisibleNow({ status: m.status, requestedAt: m.requestedAt, respondedAt: m.respondedAt ?? null }),
+        )
         .map((m): RequestCardData | null => {
           const u = maleMap.get(m.maleProfileId);
           if (!u) return null;
@@ -115,7 +120,7 @@ export default function MatchRequestResultPage() {
         );
 
       setRequests(cards);
-      setPreviewBlocked(false);
+      setNeedLogin(false);
     } catch (err) {
       console.error("매칭 요청 결과 조회 실패", err);
       alert(`매칭 요청 결과를 불러오지 못했습니다.\n${err instanceof Error ? err.message : ""}`);
@@ -154,7 +159,7 @@ export default function MatchRequestResultPage() {
             </svg>
           </button>
           <h1 className="text-lg font-bold flex-1 text-white">
-            매칭 요청 결과 {!loading && !previewBlocked && `(${requests.length})`}
+            매칭 요청 결과 {!loading && !needLogin && `(${requests.length})`}
           </h1>
         </div>
       </header>
@@ -163,7 +168,7 @@ export default function MatchRequestResultPage() {
         <div className="flex items-center justify-center py-24">
           <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : previewBlocked ? (
+      ) : needLogin ? (
         <div className="px-6 pt-16 text-center space-y-3">
           <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
             <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

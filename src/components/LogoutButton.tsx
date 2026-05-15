@@ -21,8 +21,6 @@ export default function LogoutButton({ className }: Props) {
     } catch {
       // ignore
     }
-    // 피드백용 미리보기 쿠키도 함께 초기화
-    document.cookie = "preview_bypass=; path=/; max-age=0; SameSite=Lax";
     router.replace("/");
     router.refresh();
   };
