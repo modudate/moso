@@ -1,0 +1,1396 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<title>MOSO 모두의 소개팅 — 마음에 드는 사람을 직접 고르는 소개팅</title>
+<meta name="description" content="검증된 회원과 1:1 매칭. 갤러리에서 마음에 드는 분을 직접 골라 소개팅하세요." />
+<meta name="theme-color" content="#ff8a3d" />
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+</head>
+<body>
+
+<!-- =========================================================
+     MOSO 랜딩 시작 (이 div 부터 마지막 </div> 까지 복사)
+     ========================================================= -->
+<div class="moso-landing-root">
+
+<style>
+/* ========================================================
+   MOSO 랜딩 — 아임웹 임베드용 스코프드 스타일
+   모든 스타일은 .moso-landing-root 하위에서만 적용됨
+   ======================================================== */
+
+/* 1) 스코프 안의 reset (안전한 범위로만) */
+.moso-landing-root,
+.moso-landing-root *,
+.moso-landing-root *::before,
+.moso-landing-root *::after {
+  box-sizing: border-box !important;
+}
+.moso-landing-root {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, 'Helvetica Neue', 'Apple SD Gothic Neo', sans-serif !important;
+  font-size: 16px !important;
+  color: #1f2937 !important;
+  line-height: 1.55 !important;
+  background: #ffffff !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.moso-landing-root p,
+.moso-landing-root ul,
+.moso-landing-root ol,
+.moso-landing-root li,
+.moso-landing-root figure,
+.moso-landing-root blockquote,
+.moso-landing-root dl,
+.moso-landing-root dd {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-weight: inherit !important;
+}
+/* h 태그는 아임웹이 강하게 스타일링하므로 사용 금지.
+   대신 p 태그 + 전용 클래스(.moso-*-title)로 통일. */
+.moso-landing-root img,
+.moso-landing-root svg {
+  display: block !important;
+  max-width: 100% !important;
+}
+.moso-landing-root a {
+  text-decoration: none !important;
+  color: inherit !important;
+  background: transparent !important;
+}
+.moso-landing-root button {
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  color: inherit !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.moso-landing-root section {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 2) 컨테이너 */
+.moso-container {
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  padding: 0 24px !important;
+  width: 100% !important;
+}
+
+/* ====================================================
+   HEADER (sticky 제거 - 아임웹 자체 헤더와 충돌 방지)
+   ==================================================== */
+.moso-header {
+  position: relative !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  width: 100% !important;
+}
+.moso-header-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 68px !important;
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  padding: 0 24px !important;
+}
+.moso-header-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+}
+.moso-header-logo img {
+  height: 32px !important;
+  width: auto !important;
+}
+.moso-header-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 28px !important;
+}
+.moso-header-nav a {
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
+  color: #4b5563 !important;
+  transition: color 0.15s !important;
+}
+.moso-header-nav a:hover {
+  color: #ff8a3d !important;
+}
+.moso-btn-cta {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 10px 20px !important;
+  background: #ff8a3d !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s !important;
+  text-decoration: none !important;
+}
+.moso-btn-cta:hover {
+  background: #f06a1f !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(255, 138, 61, 0.35) !important;
+  color: #ffffff !important;
+}
+.moso-btn-cta:active {
+  transform: translateY(0) !important;
+}
+
+@media (max-width: 720px) {
+  .moso-header-nav {
+    display: none !important;
+  }
+}
+
+/* ====================================================
+   HERO
+   ==================================================== */
+.moso-hero {
+  position: relative !important;
+  padding: 80px 0 100px !important;
+  background: linear-gradient(180deg, #fff8f1 0%, #ffffff 80%) !important;
+  overflow: hidden !important;
+  width: 100% !important;
+}
+.moso-hero::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -120px !important;
+  right: -120px !important;
+  width: 420px !important;
+  height: 420px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #ffd9c2 0%, transparent 70%) !important;
+  opacity: 0.5 !important;
+  pointer-events: none !important;
+}
+.moso-hero::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: -160px !important;
+  left: -120px !important;
+  width: 380px !important;
+  height: 380px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #ffe6cc 0%, transparent 70%) !important;
+  opacity: 0.6 !important;
+  pointer-events: none !important;
+}
+.moso-hero-inner {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 1.1fr 0.9fr !important;
+  gap: 56px !important;
+  align-items: center !important;
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  padding: 0 24px !important;
+}
+.moso-hero-eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 14px !important;
+  background: #ffffff !important;
+  color: #f06a1f !important;
+  border: 1px solid #ffe7d3 !important;
+  border-radius: 999px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+.moso-hero-eyebrow .moso-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #ff8a3d !important;
+  box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.18) !important;
+  display: inline-block !important;
+}
+.moso-hero-title {
+  display: block !important;
+  font-size: 52px !important;
+  font-weight: 800 !important;
+  line-height: 1.18 !important;
+  margin: 18px 0 18px !important;
+  padding: 0 !important;
+  letter-spacing: -1px !important;
+  color: #111827 !important;
+  text-align: inherit !important;
+}
+.moso-hero-title .moso-accent {
+  color: #ff8a3d !important;
+  background: linear-gradient(180deg, transparent 65%, #ffd9c2 65%) !important;
+  padding: 0 4px !important;
+}
+.moso-hero-lead {
+  display: block !important;
+  font-size: 17px !important;
+  font-weight: 400 !important;
+  color: #4b5563 !important;
+  line-height: 1.7 !important;
+  margin: 0 0 32px !important;
+  padding: 0 !important;
+  max-width: 480px !important;
+}
+.moso-cta-row {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+}
+.moso-btn-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 16px 28px !important;
+  background: #ff8a3d !important;
+  color: #ffffff !important;
+  border-radius: 14px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 18px 50px rgba(255, 138, 61, 0.18) !important;
+  transition: transform 0.15s, box-shadow 0.15s !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+.moso-btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 22px 60px rgba(255, 138, 61, 0.28) !important;
+  color: #ffffff !important;
+}
+.moso-btn-primary svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+.moso-btn-ghost {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 16px 22px !important;
+  background: transparent !important;
+  color: #4b5563 !important;
+  border-radius: 14px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  transition: color 0.15s, background 0.15s !important;
+  text-decoration: none !important;
+}
+.moso-btn-ghost:hover {
+  color: #ff8a3d !important;
+  background: #fff4ec !important;
+}
+
+.moso-hero-meta {
+  display: flex !important;
+  gap: 28px !important;
+  margin-top: 32px !important;
+  flex-wrap: wrap !important;
+}
+.moso-hero-meta-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13.5px !important;
+  color: #4b5563 !important;
+}
+.moso-hero-meta-item svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: #ff8a3d !important;
+  flex-shrink: 0 !important;
+}
+
+/* Hero visual — 모바일 폰 목업 */
+.moso-hero-visual {
+  position: relative !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 480px !important;
+}
+.moso-phone-frame {
+  position: relative !important;
+  width: 280px !important;
+  height: 560px !important;
+  background: #1f2937 !important;
+  border-radius: 38px !important;
+  padding: 12px !important;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25) !important;
+  transform: rotate(-3deg) !important;
+}
+.moso-phone-frame::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 90px !important;
+  height: 22px !important;
+  background: #1f2937 !important;
+  border-radius: 0 0 14px 14px !important;
+  z-index: 2 !important;
+}
+.moso-phone-screen {
+  background: #ffffff !important;
+  border-radius: 28px !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+.moso-phone-header {
+  background: #ff8a3d !important;
+  color: #ffffff !important;
+  padding: 38px 16px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+.moso-phone-header-logo {
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  letter-spacing: 1px !important;
+  color: #ffffff !important;
+}
+.moso-phone-header-icon {
+  width: 22px !important;
+  height: 22px !important;
+  opacity: 0.9 !important;
+  color: #ffffff !important;
+}
+.moso-phone-cards {
+  padding: 14px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+}
+.moso-phone-card {
+  aspect-ratio: 9 / 16 !important;
+  background: linear-gradient(180deg, #d4dee9 0%, #95a8bf 100%) !important;
+  border-radius: 12px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.moso-phone-card.moso-pc-2 {
+  background: linear-gradient(180deg, #f0d8c2 0%, #d8a98a 100%) !important;
+}
+.moso-phone-card.moso-pc-3 {
+  background: linear-gradient(180deg, #c9d8c2 0%, #8aa97a 100%) !important;
+}
+.moso-phone-card.moso-pc-4 {
+  background: linear-gradient(180deg, #e0c9d8 0%, #b08aa9 100%) !important;
+}
+.moso-phone-card-tag {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  padding: 3px 8px !important;
+  background: rgba(255, 138, 61, 0.95) !important;
+  color: #ffffff !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+}
+.moso-phone-card-tag.moso-tag-md {
+  background: rgba(124, 92, 252, 0.95) !important;
+}
+.moso-phone-card-tag.moso-tag-ok {
+  background: rgba(22, 163, 74, 0.95) !important;
+}
+.moso-phone-card-info {
+  position: absolute !important;
+  bottom: 8px !important;
+  left: 8px !important;
+  right: 8px !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+}
+.moso-phone-card-name {
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  color: #ffffff !important;
+}
+.moso-phone-card-meta {
+  font-size: 9px !important;
+  opacity: 0.9 !important;
+  color: #ffffff !important;
+}
+
+/* 플로팅 카드 */
+.moso-float-card {
+  position: absolute !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+.moso-float-card-emoji {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #fff4ec !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+}
+.moso-float-1 {
+  top: 40px !important;
+  left: -10px !important;
+  animation: mosoFloatA 4s ease-in-out infinite !important;
+}
+.moso-float-2 {
+  bottom: 60px !important;
+  right: -20px !important;
+  animation: mosoFloatB 5s ease-in-out infinite !important;
+}
+
+@keyframes mosoFloatA {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes mosoFloatB {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@media (max-width: 920px) {
+  .moso-hero {
+    padding: 56px 0 72px !important;
+  }
+  .moso-hero-inner {
+    grid-template-columns: 1fr !important;
+    gap: 36px !important;
+    text-align: center !important;
+  }
+  .moso-hero-lead {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .moso-hero-title {
+    font-size: 38px !important;
+  }
+  .moso-cta-row {
+    justify-content: center !important;
+  }
+  .moso-hero-meta {
+    justify-content: center !important;
+  }
+  .moso-hero-visual {
+    min-height: 460px !important;
+  }
+}
+@media (max-width: 480px) {
+  .moso-hero-title {
+    font-size: 32px !important;
+  }
+  .moso-hero-lead {
+    font-size: 15.5px !important;
+  }
+  .moso-phone-frame {
+    width: 240px !important;
+    height: 480px !important;
+    transform: rotate(-2deg) !important;
+  }
+}
+
+/* ====================================================
+   SECTION 공통
+   ==================================================== */
+.moso-section {
+  padding: 100px 0 !important;
+  width: 100% !important;
+}
+.moso-section.moso-section-alt {
+  background: #fffaf5 !important;
+}
+.moso-section-eyebrow {
+  display: inline-block !important;
+  color: #ff8a3d !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 14px !important;
+}
+.moso-section-title {
+  display: block !important;
+  font-size: 36px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.5px !important;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+}
+.moso-section-subtitle {
+  font-size: 16px !important;
+  color: #4b5563 !important;
+  max-width: 580px !important;
+  margin: 14px auto 56px !important;
+  line-height: 1.7 !important;
+}
+.moso-section-head {
+  text-align: center !important;
+  max-width: 660px !important;
+  margin: 0 auto 56px !important;
+}
+@media (max-width: 720px) {
+  .moso-section {
+    padding: 72px 0 !important;
+  }
+  .moso-section-title {
+    font-size: 28px !important;
+  }
+  .moso-section-subtitle {
+    font-size: 15px !important;
+    margin-bottom: 40px !important;
+  }
+}
+
+/* ====================================================
+   FEATURES
+   ==================================================== */
+.moso-features {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 24px !important;
+}
+.moso-feature-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 22px !important;
+  padding: 32px 28px !important;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s !important;
+}
+.moso-feature-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+  border-color: #ffd9c2 !important;
+}
+.moso-feature-icon {
+  width: 56px !important;
+  height: 56px !important;
+  background: #fff4ec !important;
+  color: #ff8a3d !important;
+  border-radius: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 18px !important;
+}
+.moso-feature-icon svg {
+  width: 28px !important;
+  height: 28px !important;
+}
+.moso-feature-title {
+  display: block !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+  letter-spacing: -0.2px !important;
+  line-height: 1.35 !important;
+}
+.moso-feature-desc {
+  display: block !important;
+  font-size: 14.5px !important;
+  color: #4b5563 !important;
+  line-height: 1.7 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-weight: 400 !important;
+}
+@media (max-width: 920px) {
+  .moso-features {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+/* ====================================================
+   STEPS
+   ==================================================== */
+.moso-steps {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 20px !important;
+}
+.moso-step {
+  position: relative !important;
+  padding: 28px 22px !important;
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #e5e7eb !important;
+}
+.moso-step-num {
+  position: absolute !important;
+  top: -14px !important;
+  left: 22px !important;
+  background: #ff8a3d !important;
+  color: #ffffff !important;
+  width: 40px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  box-shadow: 0 6px 18px rgba(255, 138, 61, 0.35) !important;
+}
+.moso-step-title {
+  display: block !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin: 16px 0 8px !important;
+  padding: 0 !important;
+  line-height: 1.35 !important;
+}
+.moso-step-desc {
+  display: block !important;
+  font-size: 13.5px !important;
+  color: #4b5563 !important;
+  line-height: 1.65 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-weight: 400 !important;
+}
+@media (max-width: 920px) {
+  .moso-steps {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+@media (max-width: 540px) {
+  .moso-steps {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ====================================================
+   STATS
+   ==================================================== */
+.moso-stats {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 20px !important;
+  margin-top: 24px !important;
+}
+.moso-stat-card {
+  text-align: center !important;
+  padding: 36px 24px !important;
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #e5e7eb !important;
+}
+.moso-stat-num {
+  font-size: 38px !important;
+  font-weight: 800 !important;
+  color: #ff8a3d !important;
+  letter-spacing: -1px !important;
+  display: block !important;
+}
+.moso-stat-label {
+  font-size: 14px !important;
+  color: #4b5563 !important;
+  margin-top: 6px !important;
+  display: block !important;
+}
+@media (max-width: 720px) {
+  .moso-stats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ====================================================
+   FAQ
+   ==================================================== */
+.moso-faq-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 760px !important;
+  margin: 0 auto !important;
+}
+.moso-faq-item {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.moso-faq-item.moso-open {
+  border-color: #ffd9c2 !important;
+  box-shadow: 0 6px 18px rgba(255, 138, 61, 0.08) !important;
+}
+.moso-faq-q {
+  width: 100% !important;
+  background: transparent !important;
+  padding: 22px 24px !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  transition: color 0.15s !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+.moso-faq-q:hover {
+  color: #ff8a3d !important;
+}
+.moso-faq-q-icon {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  background: #fff4ec !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ff8a3d !important;
+  transition: transform 0.25s !important;
+  flex-shrink: 0 !important;
+}
+.moso-faq-item.moso-open .moso-faq-q-icon {
+  transform: rotate(45deg) !important;
+}
+.moso-faq-a {
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 24px !important;
+  transition: max-height 0.3s ease, padding 0.3s ease !important;
+  color: #4b5563 !important;
+  font-size: 14.5px !important;
+  line-height: 1.75 !important;
+}
+.moso-faq-item.moso-open .moso-faq-a {
+  max-height: 360px !important;
+  padding: 0 24px 22px !important;
+}
+.moso-faq-a p {
+  margin: 0 !important;
+}
+
+/* ====================================================
+   FINAL CTA BAND
+   ==================================================== */
+.moso-cta-band {
+  position: relative !important;
+  padding: 80px 0 !important;
+  background: linear-gradient(135deg, #ff8a3d 0%, #f06a1f 100%) !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+  width: 100% !important;
+}
+.moso-cta-band::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -100px !important;
+  right: -100px !important;
+  width: 360px !important;
+  height: 360px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.moso-cta-band::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: -160px !important;
+  left: -100px !important;
+  width: 320px !important;
+  height: 320px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.moso-cta-band-inner {
+  position: relative !important;
+  text-align: center !important;
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  padding: 0 24px !important;
+}
+.moso-cta-band-title {
+  display: block !important;
+  font-size: 38px !important;
+  font-weight: 800 !important;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+  letter-spacing: -0.5px !important;
+  line-height: 1.25 !important;
+  color: #ffffff !important;
+}
+.moso-cta-band-sub {
+  display: block !important;
+  font-size: 17px !important;
+  font-weight: 400 !important;
+  opacity: 0.92 !important;
+  margin: 0 0 32px !important;
+  padding: 0 !important;
+  color: #ffffff !important;
+}
+.moso-cta-band .moso-btn-primary {
+  background: #ffffff !important;
+  color: #ff8a3d !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18) !important;
+}
+.moso-cta-band .moso-btn-primary:hover {
+  background: #ffffff !important;
+  color: #ff8a3d !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22) !important;
+}
+@media (max-width: 720px) {
+  .moso-cta-band-title {
+    font-size: 28px !important;
+  }
+  .moso-cta-band-sub {
+    font-size: 15px !important;
+  }
+}
+
+/* ====================================================
+   FOOTER
+   ==================================================== */
+.moso-footer {
+  background: #0f172a !important;
+  color: #94a3b8 !important;
+  padding: 56px 0 32px !important;
+  font-size: 13.5px !important;
+  width: 100% !important;
+}
+.moso-footer-inner {
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  padding: 0 24px !important;
+}
+.moso-footer-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 24px !important;
+  padding-bottom: 28px !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+.moso-footer-brand {
+  max-width: 360px !important;
+}
+.moso-footer-brand-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+.moso-footer-brand-logo img {
+  height: 28px !important;
+}
+.moso-footer-brand p {
+  display: block !important;
+  margin: 8px 0 0 !important;
+  padding: 0 !important;
+  line-height: 1.7 !important;
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  color: #94a3b8 !important;
+}
+.moso-footer-links {
+  display: flex !important;
+  gap: 40px !important;
+  flex-wrap: wrap !important;
+}
+.moso-footer-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.moso-footer-col-title {
+  display: block !important;
+  color: #e2e8f0 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  margin: 0 0 6px !important;
+  padding: 0 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  line-height: 1.4 !important;
+}
+.moso-footer-col a {
+  color: #94a3b8 !important;
+  transition: color 0.15s !important;
+  text-decoration: none !important;
+}
+.moso-footer-col a:hover {
+  color: #ffffff !important;
+}
+.moso-footer-copy {
+  padding-top: 24px !important;
+  text-align: center !important;
+  color: #64748b !important;
+  font-size: 12.5px !important;
+}
+
+/* ====================================================
+   SCROLL-IN ANIMATION
+   ==================================================== */
+.moso-reveal {
+  opacity: 0 !important;
+  transform: translateY(20px) !important;
+  transition: opacity 0.7s ease, transform 0.7s ease !important;
+}
+.moso-reveal.moso-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+</style>
+
+<!-- ───────── HEADER ───────── -->
+<header class="moso-header">
+  <div class="moso-header-inner">
+    <a href="https://moso-rho.vercel.app" class="moso-header-logo" target="_blank" rel="noopener">
+      <img src="https://moso-rho.vercel.app/header_logo.png" alt="MOSO 모두의 소개팅" />
+    </a>
+    <nav class="moso-header-nav">
+      <a href="#moso-features">서비스 특징</a>
+      <a href="#moso-how">이용 방법</a>
+      <a href="#moso-faq">자주 묻는 질문</a>
+    </nav>
+    <a href="https://moso-rho.vercel.app" class="moso-btn-cta" target="_blank" rel="noopener">
+      지금 시작하기
+    </a>
+  </div>
+</header>
+
+<!-- ───────── HERO ───────── -->
+<section class="moso-hero">
+  <div class="moso-hero-inner">
+    <div class="moso-hero-text moso-reveal">
+      <span class="moso-hero-eyebrow">
+        <span class="moso-dot"></span>
+        검증된 회원만 모인 1:1 소개팅
+      </span>
+      <p class="moso-hero-title">
+        마음에 드는 사람을<br />
+        <span class="moso-accent">직접 고르는</span> 소개팅
+      </p>
+      <p class="moso-hero-lead">
+        MOSO 는 운영진이 검수한 회원만 활동하는 1:1 소개팅 플랫폼입니다.<br />
+        갤러리에서 마음에 드는 분을 골라 매칭 요청을 보내보세요.
+      </p>
+      <div class="moso-cta-row">
+        <a href="https://moso-rho.vercel.app" class="moso-btn-primary" target="_blank" rel="noopener">
+          무료로 시작하기
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+        <a href="#moso-how" class="moso-btn-ghost">
+          이용 방법 보기 →
+        </a>
+      </div>
+      <div class="moso-hero-meta">
+        <div class="moso-hero-meta-item">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          관리자 직접 검수
+        </div>
+        <div class="moso-hero-meta-item">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          개인정보 안전 보호
+        </div>
+        <div class="moso-hero-meta-item">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+          매칭 시 카톡 연결
+        </div>
+      </div>
+    </div>
+
+    <div class="moso-hero-visual moso-reveal">
+      <div class="moso-phone-frame">
+        <div class="moso-phone-screen">
+          <div class="moso-phone-header">
+            <div class="moso-phone-header-logo">MOSO</div>
+            <svg class="moso-phone-header-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </div>
+          <div class="moso-phone-cards">
+            <div class="moso-phone-card">
+              <span class="moso-phone-card-tag">관심도착</span>
+              <div class="moso-phone-card-info">
+                <div class="moso-phone-card-name">유여자</div>
+                <div class="moso-phone-card-meta">1996년생 · 167cm</div>
+              </div>
+            </div>
+            <div class="moso-phone-card moso-pc-2">
+              <span class="moso-phone-card-tag moso-tag-md">MD 추천</span>
+              <div class="moso-phone-card-info">
+                <div class="moso-phone-card-name">jjom생이</div>
+                <div class="moso-phone-card-meta">2006년생 · 172cm</div>
+              </div>
+            </div>
+            <div class="moso-phone-card moso-pc-3">
+              <span class="moso-phone-card-tag">관심도착</span>
+              <div class="moso-phone-card-info">
+                <div class="moso-phone-card-name">소나</div>
+                <div class="moso-phone-card-meta">1997년생 · 165cm</div>
+              </div>
+            </div>
+            <div class="moso-phone-card moso-pc-4">
+              <span class="moso-phone-card-tag moso-tag-ok">매칭완료</span>
+              <div class="moso-phone-card-info">
+                <div class="moso-phone-card-name">하늘</div>
+                <div class="moso-phone-card-meta">1995년생 · 168cm</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="moso-float-card moso-float-1">
+        <div class="moso-float-card-emoji">💝</div>
+        <div>관심이 도착했어요!</div>
+      </div>
+      <div class="moso-float-card moso-float-2">
+        <div class="moso-float-card-emoji">🎉</div>
+        <div>매칭이 성사됐어요!</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── WHY MOSO (FEATURES) ───────── -->
+<section class="moso-section" id="moso-features">
+  <div class="moso-container">
+    <div class="moso-section-head moso-reveal">
+      <span class="moso-section-eyebrow">WHY MOSO</span>
+      <p class="moso-section-title">진짜 만남을 위한,<br />가장 신중한 소개팅</p>
+      <p class="moso-section-subtitle">
+        매칭 알고리즘에 맡기지 않고, 본인이 직접 보고 마음을 결정하세요.<br />
+        운영진이 모든 회원을 검수하기 때문에 안심하고 만날 수 있어요.
+      </p>
+    </div>
+
+    <div class="moso-features">
+      <div class="moso-feature-card moso-reveal">
+        <div class="moso-feature-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+          </svg>
+        </div>
+        <p class="moso-feature-title">운영진의 1:1 검수</p>
+        <p class="moso-feature-desc">모든 가입 신청을 운영진이 직접 검토합니다. 허위 프로필·부정확한 정보는 미리 걸러내요. 안심하고 둘러보세요.</p>
+      </div>
+
+      <div class="moso-feature-card moso-reveal">
+        <div class="moso-feature-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+          </svg>
+        </div>
+        <p class="moso-feature-title">마음에 드는 분을 직접 선택</p>
+        <p class="moso-feature-desc">알고리즘이 정해주는 대로가 아닌, 갤러리에서 본인이 직접 고르는 방식. 상세 프로필을 보고 마음에 드는 분에게만 매칭 요청을 보내세요.</p>
+      </div>
+
+      <div class="moso-feature-card moso-reveal">
+        <div class="moso-feature-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+        </div>
+        <p class="moso-feature-title">매칭 성사 시 운영진이 연결</p>
+        <p class="moso-feature-desc">매칭이 성사되면 운영진이 카카오톡으로 부드럽게 연락처를 전달드려요. 어색한 첫 인사도 우리가 도와드립니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── HOW IT WORKS ───────── -->
+<section class="moso-section moso-section-alt" id="moso-how">
+  <div class="moso-container">
+    <div class="moso-section-head moso-reveal">
+      <span class="moso-section-eyebrow">HOW IT WORKS</span>
+      <p class="moso-section-title">단 4단계로,<br />새로운 인연을 만나보세요</p>
+      <p class="moso-section-subtitle">가입부터 매칭까지 모든 과정이 단순하고 명확해요.</p>
+    </div>
+
+    <div class="moso-steps">
+      <div class="moso-step moso-reveal">
+        <span class="moso-step-num">01</span>
+        <p class="moso-step-title">구글 계정으로 가입</p>
+        <p class="moso-step-desc">복잡한 회원가입 없이 구글 계정으로 30초 만에 시작.</p>
+      </div>
+      <div class="moso-step moso-reveal">
+        <span class="moso-step-num">02</span>
+        <p class="moso-step-title">프로필과 이상형 등록</p>
+        <p class="moso-step-desc">본인 정보와 이상형 조건을 입력합니다. 운영진 승인이 진행돼요.</p>
+      </div>
+      <div class="moso-step moso-reveal">
+        <span class="moso-step-num">03</span>
+        <p class="moso-step-title">마음에 드는 분 선택</p>
+        <p class="moso-step-desc">갤러리를 둘러보고 마음에 드는 분에게 매칭 요청을 보내세요.</p>
+      </div>
+      <div class="moso-step moso-reveal">
+        <span class="moso-step-num">04</span>
+        <p class="moso-step-title">매칭 성사 → 카톡 연결</p>
+        <p class="moso-step-desc">상대가 수락하면 운영진이 카카오톡으로 부드럽게 연결해드려요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── STATS / TRUST ───────── -->
+<section class="moso-section">
+  <div class="moso-container">
+    <div class="moso-section-head moso-reveal">
+      <span class="moso-section-eyebrow">TRUST</span>
+      <p class="moso-section-title">믿을 수 있는 만남,<br />검증된 시스템</p>
+    </div>
+
+    <div class="moso-stats">
+      <div class="moso-stat-card moso-reveal">
+        <span class="moso-stat-num">100%</span>
+        <span class="moso-stat-label">관리자 직접 검수 가입</span>
+      </div>
+      <div class="moso-stat-card moso-reveal">
+        <span class="moso-stat-num">1:1</span>
+        <span class="moso-stat-label">진심 있는 매칭만 진행</span>
+      </div>
+      <div class="moso-stat-card moso-reveal">
+        <span class="moso-stat-num">7일</span>
+        <span class="moso-stat-label">매칭 응답 노출 후 자동 종료</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── FAQ ───────── -->
+<section class="moso-section moso-section-alt" id="moso-faq">
+  <div class="moso-container">
+    <div class="moso-section-head moso-reveal" style="margin-bottom: 48px !important;">
+      <span class="moso-section-eyebrow">FAQ</span>
+      <p class="moso-section-title">자주 묻는 질문</p>
+    </div>
+
+    <div class="moso-faq-list">
+      <div class="moso-faq-item moso-reveal">
+        <button class="moso-faq-q" type="button">
+          <span>어떤 분들이 가입할 수 있나요?</span>
+          <span class="moso-faq-q-icon">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
+        </button>
+        <div class="moso-faq-a">
+          <p>만 19세 이상 성인 누구나 가입 신청이 가능합니다. 운영진이 가입 신청을 검토 후 승인되면 본격적으로 활동하실 수 있어요.</p>
+        </div>
+      </div>
+
+      <div class="moso-faq-item moso-reveal">
+        <button class="moso-faq-q" type="button">
+          <span>이용 요금이 있나요?</span>
+          <span class="moso-faq-q-icon">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
+        </button>
+        <div class="moso-faq-a">
+          <p>요금 정책에 대한 상세 내용은 가입 후 안내드립니다. 정확한 안내가 필요하신 경우 카카오톡 문의로 연락 주세요.</p>
+        </div>
+      </div>
+
+      <div class="moso-faq-item moso-reveal">
+        <button class="moso-faq-q" type="button">
+          <span>매칭은 어떻게 이루어지나요?</span>
+          <span class="moso-faq-q-icon">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
+        </button>
+        <div class="moso-faq-a">
+          <p>여성 회원이 갤러리에서 마음에 드는 남성 회원에게 매칭 요청을 보냅니다. 남성 회원이 수락하면 매칭이 성사되고, 운영진이 카카오톡으로 두 분을 부드럽게 연결해드립니다.</p>
+        </div>
+      </div>
+
+      <div class="moso-faq-item moso-reveal">
+        <button class="moso-faq-q" type="button">
+          <span>개인정보는 안전하게 관리되나요?</span>
+          <span class="moso-faq-q-icon">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
+        </button>
+        <div class="moso-faq-a">
+          <p>모든 회원 정보는 암호화되어 저장되며, 매칭 외의 목적으로는 절대 사용되지 않습니다. 연락처는 매칭이 성사된 경우에만 운영진이 안전하게 전달드립니다.</p>
+        </div>
+      </div>
+
+      <div class="moso-faq-item moso-reveal">
+        <button class="moso-faq-q" type="button">
+          <span>매칭이 안 되면 어떻게 하나요?</span>
+          <span class="moso-faq-q-icon">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </span>
+        </button>
+        <div class="moso-faq-a">
+          <p>거절되어도 괜찮아요. 다른 분들이 계속 가입하고 있어 새로운 인연이 계속 생겨요. 또한 운영진이 적합한 분을 직접 추천해드리는 MD 추천 시스템도 운영하고 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── FINAL CTA ───────── -->
+<section class="moso-cta-band">
+  <div class="moso-cta-band-inner">
+    <p class="moso-cta-band-title moso-reveal">
+      당신의 인연,<br />
+      MOSO 에서 시작하세요
+    </p>
+    <p class="moso-cta-band-sub moso-reveal">구글 계정으로 30초만에 시작 · 별도 가입 절차 없음</p>
+    <a href="https://moso-rho.vercel.app" class="moso-btn-primary moso-reveal" target="_blank" rel="noopener">
+      무료로 시작하기
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+      </svg>
+    </a>
+  </div>
+</section>
+
+<!-- ───────── FOOTER ───────── -->
+<footer class="moso-footer">
+  <div class="moso-footer-inner">
+    <div class="moso-footer-row">
+      <div class="moso-footer-brand">
+        <div class="moso-footer-brand-logo">
+          <img src="https://moso-rho.vercel.app/header_logo.png" alt="MOSO" />
+        </div>
+        <p>MOSO 모두의 소개팅 — 운영진이 검수한 회원만 활동하는 1:1 소개팅 플랫폼. 마음에 드는 사람을 직접 골라 만나보세요.</p>
+      </div>
+      <div class="moso-footer-links">
+        <div class="moso-footer-col">
+          <p class="moso-footer-col-title">서비스</p>
+          <a href="https://moso-rho.vercel.app" target="_blank" rel="noopener">시작하기</a>
+          <a href="#moso-features">서비스 특징</a>
+          <a href="#moso-how">이용 방법</a>
+          <a href="#moso-faq">FAQ</a>
+        </div>
+        <div class="moso-footer-col">
+          <p class="moso-footer-col-title">약관</p>
+          <a href="https://moso-rho.vercel.app/terms" target="_blank" rel="noopener">이용약관</a>
+          <a href="https://moso-rho.vercel.app/privacy" target="_blank" rel="noopener">개인정보처리방침</a>
+        </div>
+        <div class="moso-footer-col">
+          <p class="moso-footer-col-title">문의</p>
+          <a href="https://2o017.channel.io" target="_blank" rel="noopener">카카오톡 채널</a>
+        </div>
+      </div>
+    </div>
+    <div class="moso-footer-copy">
+      © 2026 MOSO 모두의 소개팅. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.querySelector(".moso-landing-root");
+    if (!root) return;
+
+    /* ───── FAQ accordion ───── */
+    root.querySelectorAll(".moso-faq-item").forEach(function (item) {
+      var btn = item.querySelector(".moso-faq-q");
+      if (!btn) return;
+      btn.addEventListener("click", function () {
+        // 다른 열린 항목 닫기
+        root.querySelectorAll(".moso-faq-item.moso-open").forEach(function (other) {
+          if (other !== item) other.classList.remove("moso-open");
+        });
+        item.classList.toggle("moso-open");
+      });
+    });
+
+    /* ───── 스크롤 페이드인 ───── */
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("moso-visible");
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+      root.querySelectorAll(".moso-reveal").forEach(function (el) { io.observe(el); });
+    } else {
+      root.querySelectorAll(".moso-reveal").forEach(function (el) {
+        el.classList.add("moso-visible");
+      });
+    }
+
+    /* ───── 부드러운 스크롤 (앵커 링크) ───── */
+    root.querySelectorAll('a[href^="#moso-"]').forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        var id = a.getAttribute("href");
+        if (!id || id.length <= 1) return;
+        var target = document.querySelector(id);
+        if (!target) return;
+        e.preventDefault();
+        var top = target.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top: top, behavior: "smooth" });
+      });
+    });
+  })();
+</script>
+
+</div>
+<!-- =========================================================
+     MOSO 랜딩 끝
+     ========================================================= -->
+
+</body>
+</html>
