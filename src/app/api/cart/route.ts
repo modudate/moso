@@ -52,6 +52,14 @@ async function resolveFemaleId(): Promise<
 export async function GET(req: NextRequest) {
   const femaleId = req.nextUrl.searchParams.get("femaleId");
   if (!femaleId) return NextResponse.json({ error: "femaleId 필요" }, { status: 400 });
+
+  // 본인 카트 + 관리자만 조회 허용
+  const auth = await resolveFemaleId();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (auth.femaleId !== femaleId) {
+    return NextResponse.json({ error: "본인의 매칭 후보만 조회할 수 있습니다." }, { status: 403 });
+  }
+
   const items = await getCartItems(femaleId);
   // snake_case → camelCase 변환 (클라이언트 호환)
   const mapped = (items ?? []).map((item: Record<string, unknown>) => ({

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { addProfileLink, getProfileLinkByToken, getUser, incrementLinkAccess } from "@/lib/store";
+import { requireAdmin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
   const { userId } = await req.json();
   const user = getUser(userId);
   if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });

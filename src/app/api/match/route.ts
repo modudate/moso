@@ -7,6 +7,7 @@ import {
   findExistingMatch,
 } from "@/lib/db";
 import { isVisibleNow } from "@/lib/visibility";
+import { requireAdmin, requireUser, requireActiveFemale, requireActiveMale, isAdmin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,22 @@ export async function GET(req: NextRequest) {
   const femaleId = req.nextUrl.searchParams.get("femaleId");
   const all = req.nextUrl.searchParams.get("all");
 
-  if (all === "true") return NextResponse.json(await getAllMatchRequests());
+  // ?all=true → 관리자 전용
+  if (all === "true") {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+    return NextResponse.json(await getAllMatchRequests());
+  }
+
+  // 로그인 필수 + 본인 ID 와 일치하거나 관리자만 허용
+  const userAuth = await requireUser();
+  if (!userAuth.ok) return userAuth.response;
+  const admin = await isAdmin(userAuth.userId);
+
   if (maleId) {
+    if (maleId !== userAuth.userId && !admin) {
+      return NextResponse.json({ error: "본인 또는 관리자만 조회할 수 있습니다." }, { status: 403 });
+    }
     const [allMatches, allMdRecs] = await Promise.all([
       getMatchRequests({ maleId }),
       getMdRecsForMale(maleId),
@@ -40,10 +55,15 @@ export async function GET(req: NextRequest) {
     );
     return NextResponse.json({ matches, mdRecs });
   }
+
   if (femaleId) {
+    if (femaleId !== userAuth.userId && !admin) {
+      return NextResponse.json({ error: "본인 또는 관리자만 조회할 수 있습니다." }, { status: 403 });
+    }
     const matches = await getMatchRequests({ femaleId });
     return NextResponse.json(matches);
   }
+
   return NextResponse.json({ error: "maleId 또는 femaleId 필요" }, { status: 400 });
 }
 
@@ -51,12 +71,13 @@ export async function GET(req: NextRequest) {
 // POST /api/match
 //   여성이 카트에 담긴 남성들에게 매칭요청을 일괄 전송.
 //
-// 영구 잠금 정책:
-//   같은 (female, male) 쌍에 대해 이미 row 가 있으면 status 와 무관하게 차단.
-//   - upsert 로 status 를 덮어쓰는 기존 동작은 매칭 데이터 손실의 원인이었음.
-//   - 클라이언트는 created / blocked 을 받아서 UI 메시지 처리.
+// 권한: active 여성 본인만 (femaleProfileId 는 본인 ID 와 일치해야 함)
+// 영구 잠금: 같은 (female, male) 쌍에 row 있으면 status 무관 차단
 // ─────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const auth = await requireActiveFemale();
+  if (!auth.ok) return auth.response;
+
   const { femaleProfileId, maleProfileIds } = (await req.json()) as {
     femaleProfileId: string;
     maleProfileIds: string[];
@@ -64,33 +85,29 @@ export async function POST(req: NextRequest) {
   if (!femaleProfileId || !Array.isArray(maleProfileIds) || maleProfileIds.length === 0) {
     return NextResponse.json({ error: "femaleProfileId, maleProfileIds 필요" }, { status: 400 });
   }
+  if (femaleProfileId !== auth.userId) {
+    return NextResponse.json({ error: "본인 ID 로만 매칭요청을 보낼 수 있습니다." }, { status: 403 });
+  }
 
   const db = await getDb();
   const created: string[] = [];
   const blocked: { maleId: string; reason: "pending" | "approved" | "rejected" }[] = [];
 
   for (const maleId of maleProfileIds) {
-    // 1) 기존 (female, male) 매칭 이력 확인 - 있으면 영구 잠금
     const existing = await findExistingMatch(femaleProfileId, maleId);
     if (existing) {
       blocked.push({ maleId, reason: existing.status });
       continue;
     }
-
-    // 2) 신규 row insert (upsert 금지)
     const { error } = await db.from("match_requests").insert({
       female_profile_id: femaleProfileId,
       male_profile_id: maleId,
       status: "pending",
     });
     if (!error) created.push(maleId);
-    else {
-      // 동시성으로 unique 충돌이 발생한 경우에도 절대 덮어쓰지 않음
-      blocked.push({ maleId, reason: "pending" });
-    }
+    else blocked.push({ maleId, reason: "pending" });
   }
 
-  // 카트는 처리 시도한 남성들만 비움 (잠긴 항목도 같이 정리)
   await db
     .from("cart_items")
     .delete()
@@ -100,7 +117,16 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, created, blocked });
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// PATCH /api/match
+//   남성이 자신에게 들어온 매칭요청 / MD 추천에 응답.
+//
+// 권한: active 남성 본인만 (matchId 의 male_profile_id 가 본인 id 와 일치해야 함)
+// ─────────────────────────────────────────────────────────────────────
 export async function PATCH(req: NextRequest) {
+  const auth = await requireActiveMale();
+  if (!auth.ok) return auth.response;
+
   const { matchId, status, source } = await req.json();
 
   if (!matchId || !status) {
@@ -113,7 +139,7 @@ export async function PATCH(req: NextRequest) {
   const db = await getDb();
   const table = source === "md" ? "md_recommendations" : "match_requests";
 
-  // 현재 상태 조회 후 전이 가능 여부 검증
+  // 현재 상태 조회 + 본인 매칭인지 검증
   const { data: current, error: fetchErr } = await db
     .from(table)
     .select("*")
@@ -122,6 +148,9 @@ export async function PATCH(req: NextRequest) {
 
   if (fetchErr || !current) {
     return NextResponse.json({ error: "매칭 요청 없음" }, { status: 404 });
+  }
+  if (current.male_profile_id !== auth.userId) {
+    return NextResponse.json({ error: "본인의 매칭만 응답할 수 있습니다." }, { status: 403 });
   }
 
   const currentStatus = current.status as string;
@@ -145,9 +174,6 @@ export async function PATCH(req: NextRequest) {
 
   if (error || !mr) return NextResponse.json({ error: "매칭 요청 업데이트 실패" }, { status: 500 });
 
-  // 거절 로그 처리:
-  //  - 새로 rejected 가 되면 로그를 갱신 (visible_after = now + 7d 트리거)
-  //  - rejected → approved 번복 시에는 여성 측 쿨타임 로그 제거
   if (status === "rejected") {
     await db.from("rejection_logs").upsert(
       { male_profile_id: mr.male_profile_id, female_profile_id: mr.female_profile_id, rejected_at: new Date().toISOString() },

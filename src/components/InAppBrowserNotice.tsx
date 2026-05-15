@@ -16,18 +16,21 @@ const DISMISS_KEY = "moso_inapp_banner_dismissed";
 //   · Android  → Chrome 자동 실행 시도 (intent:// 또는 kakaotalk://web/openExternal)
 //   · iOS      → 외부 브라우저 강제 불가. 모달로 "··· 메뉴 → Safari 로 열기" 안내 + URL 복사
 export default function InAppBrowserNotice() {
+  const [mounted, setMounted] = useState(false);
   const [kind, setKind] = useState<InAppKind>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // 클라이언트 mount 후에만 navigator/sessionStorage 접근 (SSR hydration 안전)
   useEffect(() => {
-    const detected = detectInAppBrowser();
-    setKind(detected);
-    if (sessionStorage.getItem(DISMISS_KEY) === "1") setDismissed(true);
-  }, []);
+    if (mounted) return;
+    setMounted(true);
+    setKind(detectInAppBrowser());
+    setDismissed(sessionStorage.getItem(DISMISS_KEY) === "1");
+  }, [mounted]);
 
-  if (!kind || dismissed) return null;
+  if (!mounted || !kind || dismissed) return null;
 
   const onOpenExternal = () => {
     if (typeof window === "undefined") return;

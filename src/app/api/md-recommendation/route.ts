@@ -6,16 +6,31 @@ import {
   getAllMdRecommendations,
   isMdLocked,
 } from "@/lib/db";
+import { requireAdmin, requireUser, isAdmin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const maleId = req.nextUrl.searchParams.get("maleId");
-  if (maleId) return NextResponse.json(await getMdRecsForMale(maleId));
+  if (maleId) {
+    // 본인 (남성) 또는 관리자만
+    const userAuth = await requireUser();
+    if (!userAuth.ok) return userAuth.response;
+    if (userAuth.userId !== maleId && !(await isAdmin(userAuth.userId))) {
+      return NextResponse.json({ error: "본인 또는 관리자만 조회할 수 있습니다." }, { status: 403 });
+    }
+    return NextResponse.json(await getMdRecsForMale(maleId));
+  }
+  // 전체 조회는 관리자만
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
   return NextResponse.json(await getAllMdRecommendations());
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
   const { maleProfileId, femaleProfileId } = await req.json();
   if (!maleProfileId || !femaleProfileId) {
     return NextResponse.json({ error: "maleProfileId, femaleProfileId 필수" }, { status: 400 });
@@ -46,6 +61,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id 필수" }, { status: 400 });
 
