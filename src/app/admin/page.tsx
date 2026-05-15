@@ -35,22 +35,57 @@ export default function AdminPage() {
   const [mdCountMap, setMdCountMap] = useState<Map<string, number>>(new Map());
   const [mdIds, setMdIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [genderFilter, setGenderFilter] = useState("");
-  const [matchFilter, setMatchFilter] = useState("");
-  const [mdFilter, setMdFilter] = useState("");
-  const [infoFilters, setInfoFilters] = useState<MultiFilters>({});
+  // 필터 상태를 sessionStorage 에 저장해 회원 상세 → 뒤로가기 시 복원
+  // (운영팀 요청: 같은 필터로 회원 여러 명을 연속 확인할 때 매번 다시 거는 게 번거롭다)
+  const FILTER_KEY = "admin_filter_state_v1";
+  const initialFilters = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(FILTER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [search, setSearch] = useState<string>(initialFilters?.search ?? "");
+  const [statusFilter, setStatusFilter] = useState<string>(initialFilters?.statusFilter ?? "");
+  const [genderFilter, setGenderFilter] = useState<string>(initialFilters?.genderFilter ?? "");
+  const [matchFilter, setMatchFilter] = useState<string>(initialFilters?.matchFilter ?? "");
+  const [mdFilter, setMdFilter] = useState<string>(initialFilters?.mdFilter ?? "");
+  const [infoFilters, setInfoFilters] = useState<MultiFilters>(initialFilters?.infoFilters ?? {});
   const [tempInfoFilters, setTempInfoFilters] = useState<MultiFilters>({});
   const [showInfoFilters, setShowInfoFilters] = useState(false);
   const [idealMap, setIdealMap] = useState<Map<string, IdealType>>(new Map());
-  const [idealFilters, setIdealFilters] = useState<MultiFilters>({});
+  const [idealFilters, setIdealFilters] = useState<MultiFilters>(initialFilters?.idealFilters ?? {});
   const [tempIdealFilters, setTempIdealFilters] = useState<MultiFilters>({});
   const [showIdealFilters, setShowIdealFilters] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(initialFilters?.page ?? 1);
   const [rejectTarget, setRejectTarget] = useState<User | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const infoJobRef = useRef<HTMLDivElement | null>(null);
+
+  // 필터 상태가 바뀌면 sessionStorage 동기화
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem(
+        FILTER_KEY,
+        JSON.stringify({
+          search,
+          statusFilter,
+          genderFilter,
+          matchFilter,
+          mdFilter,
+          infoFilters,
+          idealFilters,
+          page,
+        }),
+      );
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [search, statusFilter, genderFilter, matchFilter, mdFilter, infoFilters, idealFilters, page]);
 
   // 직장이 정확히 1개일 때만 직업 sub-filter 노출
   const singleSelectedWorkplace = (tempInfoFilters.workplace && tempInfoFilters.workplace.length === 1)
@@ -165,6 +200,20 @@ export default function AdminPage() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // 회원 상세에서 뒤로가기 시 스크롤 위치 복원
+  useEffect(() => {
+    if (loading) return;
+    try {
+      const y = sessionStorage.getItem("admin_scroll_y");
+      if (y) {
+        window.scrollTo(0, parseInt(y, 10));
+        sessionStorage.removeItem("admin_scroll_y");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [loading]);
 
   const patchStatus = (id: string, updates: Record<string, unknown>) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } as User : u));
@@ -363,7 +412,11 @@ export default function AdminPage() {
               const ms = matchMap.get(u.id);
               return (
                 <div key={u.id} className={`flex items-center gap-4 p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
-                  onClick={() => router.push(`/admin/${u.id}`)}>
+                  onClick={() => {
+                    // 뒤로가기 시 스크롤 위치 복원용
+                    try { sessionStorage.setItem("admin_scroll_y", String(window.scrollY)); } catch {}
+                    router.push(`/admin/${u.id}`);
+                  }}>
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                     {u.photoUrls[0] ? <img src={u.photoUrls[0]} alt={u.nickname} className="w-full h-full object-cover" /> :
                       <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>}

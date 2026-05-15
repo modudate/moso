@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MOSO 모두의 소개팅 — 운영 가이드 (기능 & 정책)</title>
+<link rel="stylesheet" as="style" crossorigin="anonymous"
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --brand: #ff8a3d;
+    --brand-bg: #fff4ec;
+    --ok: #16a34a;
+    --warn: #d97706;
+    --danger: #dc2626;
+    --info: #2563eb;
+    --gray-900: #111827;
+    --gray-700: #374151;
+    --gray-600: #4b5563;
+    --gray-500: #6b7280;
+    --gray-300: #d1d5db;
+    --gray-200: #e5e7eb;
+    --gray-100: #f3f4f6;
+    --gray-50: #f9fafb;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+      system-ui, Roboto, 'Helvetica Neue', 'Apple SD Gothic Neo', 'Noto Sans KR',
+      sans-serif;
+    color: var(--gray-900);
+    background: #fff;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+  .container {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 56px 96px;
+  }
+  /* 표지 */
+  .cover {
+    border-bottom: 4px solid var(--brand);
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .cover .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--brand);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .cover h1 {
+    font-size: 36px;
+    margin: 18px 0 8px;
+    letter-spacing: -0.5px;
+    font-weight: 800;
+  }
+  .cover .sub {
+    font-size: 15px;
+    color: var(--gray-600);
+  }
+  .cover .meta {
+    margin-top: 18px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+  .cover .meta b { color: var(--gray-900); font-weight: 700; }
+
+  /* 목차 */
+  .toc {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin: 28px 0 40px;
+    page-break-inside: avoid;
+  }
+  .toc h3 {
+    margin: 0 0 14px;
+    font-size: 14px;
+    color: var(--gray-500);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .toc ol {
+    margin: 0;
+    padding-left: 22px;
+    font-size: 14.5px;
+    color: var(--gray-700);
+  }
+  .toc ol li { margin: 6px 0; }
+  .toc a { color: var(--gray-700); text-decoration: none; }
+  .toc a:hover { color: var(--brand); }
+
+  /* 섹션 */
+  section {
+    margin: 64px 0;
+  }
+  h2 {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 18px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gray-200);
+    letter-spacing: -0.3px;
+  }
+  h2 .num {
+    color: var(--brand);
+    margin-right: 8px;
+    font-weight: 800;
+  }
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 28px 0 10px;
+    color: var(--gray-900);
+  }
+  h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 18px 0 8px;
+    color: var(--gray-700);
+  }
+  p { margin: 8px 0 14px; font-size: 14.5px; color: var(--gray-700); }
+  ul, ol { font-size: 14.5px; color: var(--gray-700); padding-left: 22px; }
+  li { margin: 4px 0; }
+  strong, b { color: var(--gray-900); font-weight: 700; }
+  code {
+    font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+    background: var(--gray-100);
+    color: var(--gray-900);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 13px;
+  }
+
+  /* 콜아웃 */
+  .callout {
+    border-left: 4px solid var(--brand);
+    background: var(--brand-bg);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout.warn {
+    border-color: var(--warn);
+    background: #fffbeb;
+  }
+  .callout.danger {
+    border-color: var(--danger);
+    background: #fef2f2;
+  }
+  .callout.info {
+    border-color: var(--info);
+    background: #eff6ff;
+  }
+  .callout.ok {
+    border-color: var(--ok);
+    background: #f0fdf4;
+  }
+  .callout .head {
+    font-weight: 700;
+    color: var(--gray-900);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* 표 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 18px;
+    font-size: 13.5px;
+  }
+  thead th {
+    background: var(--gray-50);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--gray-300);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--gray-700);
+  }
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: top;
+    color: var(--gray-700);
+  }
+  tbody tr:hover td { background: #fafafa; }
+  td.code, th.code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; }
+
+  /* 정책 카드 */
+  .policy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .policy-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: white;
+  }
+  .policy-card h4 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: var(--gray-900);
+  }
+  .policy-card .label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand);
+    background: var(--brand-bg);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+  }
+  .policy-card p { font-size: 13.5px; margin: 4px 0 0; color: var(--gray-600); }
+
+  /* 배지 */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--gray-100);
+    color: var(--gray-700);
+  }
+  .badge.ok { background: #dcfce7; color: #166534; }
+  .badge.warn { background: #fef3c7; color: #92400e; }
+  .badge.danger { background: #fee2e2; color: #991b1b; }
+  .badge.info { background: #dbeafe; color: #1e40af; }
+  .badge.brand { background: var(--brand-bg); color: var(--brand); }
+
+  /* 다이어그램 컨테이너 */
+  .mermaid {
+    background: var(--gray-50);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 18px 0;
+    text-align: center;
+    overflow: visible;
+  }
+
+  /* 키밸류 grid */
+  .kv {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 6px 18px;
+    margin: 10px 0 14px;
+    font-size: 14px;
+  }
+  .kv dt { color: var(--gray-500); font-weight: 600; }
+  .kv dd { margin: 0; color: var(--gray-900); }
+
+  /* 인쇄 최적화 */
+  @page { size: A4; margin: 12mm 14mm; }
+  @media print {
+    body { font-size: 12px; }
+    .container { padding: 0; max-width: none; }
+    section, .toc { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+    .callout, .policy-card, .mermaid { page-break-inside: avoid; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+    a { color: var(--gray-900); text-decoration: none; }
+    .no-print { display: none !important; }
+    .cover { border-bottom-width: 3px; }
+  }
+
+  .print-hint {
+    position: sticky;
+    top: 12px;
+    z-index: 100;
+    background: var(--brand);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(255,138,61,0.35);
+    margin-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 인쇄 안내 (PDF 저장 시 자동 제거) -->
+  <div class="print-hint no-print">
+    📄 PDF 로 저장하려면 <b style="margin: 0 4px;">Ctrl + P</b> (mac: ⌘ + P) → "PDF로 저장"
+  </div>
+
+  <!-- ─── 표지 ─────────────────────────── -->
+  <header class="cover">
+    <span class="logo">MOSO · 모두의 소개팅</span>
+    <h1>운영 가이드 — 기능 &amp; 정책 통합 문서</h1>
+    <p class="sub">매니저 / 운영팀 / 개발팀 공용. 정책 결정의 단일 진실원(single source of truth).</p>
+    <div class="meta">
+      <span>버전 <b>v2.0</b></span>
+      <span>최종 업데이트 <b>2026-05-15</b></span>
+      <span>대상 사이트 <b>moso-rho.vercel.app</b></span>
+    </div>
+  </header>
+
+  <!-- ─── 한 페이지 요약 ───────────────── -->
+  <section>
+    <h2><span class="num">0.</span>한 페이지 요약 (꼭 알아야 할 것)</h2>
+
+    <div class="callout">
+      <span class="head">⭐ 핵심 정책 8가지 (2026-05-15 확정)</span>
+      MOSO 의 모든 매칭/추천/노출 동작은 아래 8개 규칙으로만 움직입니다.
+      이게 다입니다. 외워두시면 회원 응대가 쉬워집니다.
+    </div>
+
+    <div class="policy-grid">
+      <div class="policy-card">
+        <span class="label">정책 1</span>
+        <h4>매칭 영구 잠금</h4>
+        <p>한 번이라도 매칭요청이 오간 (여성, 남성) 쌍은 status(대기·확정·거절) 와 무관하게 <b>영구 잠금</b>. 재요청 불가, 갤러리에서 영구 사라짐.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 2</span>
+        <h4>노출기간 = 응답일 자정 + 7일</h4>
+        <p>매칭 확정/거절된 카드는 응답일(KST) 자정 기준 <b>다음 동일 요일 0시</b>에 자동 사라짐. 대기중은 요청일 +30일.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 3</span>
+        <h4>수락은 번복 불가, 거절은 7일 내 수락만 가능</h4>
+        <p>남성 매칭 확정(approved)은 어떤 상태로도 못 돌림. 거절(rejected)은 7일 노출 기간 내 수락으로 번복 가능.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 4</span>
+        <h4>거절은 영구</h4>
+        <p>한 번 매칭이 성사되지 않은(rejected) 상대는 여성이 영구 재요청 불가, 관리자도 영구 MD 추천 불가.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 5</span>
+        <h4>MD 추천 영구 잠금</h4>
+        <p>한 번이라도 매칭이력 또는 MD 추천이 있는 (남, 여) 쌍은 관리자 모달 후보에서 자동 제외 + 서버 차단.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 6</span>
+        <h4>인앱 브라우저 자동 안내</h4>
+        <p>카카오톡/페북/인스타 안에서 들어오면 하단에 "다른 브라우저로 열어주세요" 안내. Android 는 Chrome 자동 실행.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 7</span>
+        <h4>회원 만료일 자동 차단 (cron)</h4>
+        <p>관리자 승인 시 자동 +30일 만료일 부여. 매일 cron 으로 만료 회원을 active → blocked 로 자동 전환.</p>
+      </div>
+      <div class="policy-card">
+        <span class="label">정책 8</span>
+        <h4>모든 API 권한 가드</h4>
+        <p>모든 API 엔드포인트에 인증/관리자 가드. 외부 호출/봇 요청은 401/403 으로 즉시 차단 (2026-05-15 보안 핫픽스).</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <span class="head">💡 운영팀 매뉴얼화 권장</span>
+      위 8개 정책만 인쇄해서 책상에 두시면 회원 문의 응대 90% 가 해결됩니다.
+      뒤로 갈수록 깊이가 깊어지지만, 처음에는 이 페이지만 익히셔도 충분합니다.
+    </div>
+  </section>
+
+  <!-- ─── 목차 ─────────────────────────── -->
+  <nav class="toc">
+    <h3>목차 · TABLE OF CONTENTS</h3>
+    <ol>
+      <li><a href="#sec-1">회원 라이프사이클 &amp; 상태 전이</a></li>
+      <li><a href="#sec-2">매칭 플로우 (남녀/관리자 시점)</a></li>
+      <li><a href="#sec-3">화면별 기능 가이드</a></li>
+      <li><a href="#sec-4">핵심 정책 상세 (8개)</a></li>
+      <li><a href="#sec-5">매니저 FAQ &amp; 응대 시나리오</a></li>
+      <li><a href="#sec-6">최근 변경 이력 (Changelog)</a></li>
+      <li><a href="#sec-7">추후 추가 예정 (TODO)</a></li>
+      <li><a href="#sec-A">부록 A. 라우트 전체 맵</a></li>
+      <li><a href="#sec-B">부록 B. API 권한 매트릭스</a></li>
+      <li><a href="#sec-C">부록 C. 환경변수 / 운영 정보</a></li>
+    </ol>
+  </nav>
+
+  <!-- ─── 1. 회원 라이프사이클 ─────────── -->
+  <section id="sec-1">
+    <h2><span class="num">1.</span>회원 라이프사이클 &amp; 상태 전이</h2>
+
+    <p>회원은 4가지 상태(<code>pending → active → blocked / rejected</code>) 중 하나에 있습니다.
+    상태에 따라 사이트에서 할 수 있는 일이 정확히 결정됩니다.</p>
+
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> pending: 회원가입 신청
+    pending --> active: 관리자 승인<br/>(만료일 자동 +30일)
+    pending --> rejected: 관리자 반려<br/>(사유 5자 이상 필수)
+    rejected --> pending: 관리자 반려 취소<br/>(사유 자동 비움)
+    active --> blocked: 수동 차단<br/>또는 만료일 도달 (cron)
+    blocked --> active: 관리자 해제
+    </div>
+
+    <table>
+      <thead><tr><th>상태</th><th>이용 가능 화면</th><th>매니저 액션</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge warn">pending</span></td><td>가입 신청 완료 안내만</td><td>승인 또는 반려 (사유)</td></tr>
+        <tr><td><span class="badge ok">active</span></td><td>모든 회원 기능 (성별별 메인, 매칭, 카트)</td><td>차단</td></tr>
+        <tr><td><span class="badge danger">blocked</span></td><td>이용 제한 안내만</td><td>차단 해제</td></tr>
+        <tr><td><span class="badge">rejected</span></td><td>반려 사유 안내만</td><td>반려 취소 → pending 복귀</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <span class="head">⚠️ 만료일 자동 차단</span>
+      관리자가 회원을 승인하면 <b>자동으로 30일 후 만료일</b>이 부여됩니다. cron 이 매일 돌면서
+      만료일이 지난 active 회원을 자동으로 blocked 로 전환합니다. 만료일 연장은 관리자 회원 상세 페이지에서 가능.
+    </div>
+  </section>
+
+  <!-- ─── 2. 매칭 플로우 ─────────────────── -->
+  <section id="sec-2">
+    <h2><span class="num">2.</span>매칭 플로우 (시점별)</h2>
+
+    <h3>2-1. 여성 회원 시점</h3>
+    <div class="mermaid">
+flowchart TD
+    A[/female 갤러리/] --> B[필터/정렬]
+    B --> C{매칭 이력 있는<br/>남성 자동 제외}
+    C --> D[남성 카드 클릭]
+    D --> E[/female/maleId 상세/]
+    E --> F[매칭 후보에 담기]
+    F --> G[/female/cart 카트/]
+    G --> H[N명에게 매칭요청 보내기]
+    H --> I{각 (여성,남성) 쌍 검사}
+    I -->|이력 없음| J[match_requests insert<br/>status=pending]
+    I -->|이력 있음| K[blocked: 차단 안내]
+    J --> L[/female/requests 결과/]
+    L --> M{탭}
+    M -->|대기중| N[응답 대기]
+    M -->|수락| O[매칭 성사 + 카톡 안내 예정]
+    M -->|거절| P[성사 안 됨]
+    </div>
+
+    <h3>2-2. 남성 회원 시점</h3>
+    <div class="mermaid">
+flowchart TD
+    A[/male 메인/] --> B{매칭/MD 추천<br/>가시성 필터}
+    B --> C[노출기간 안 카드만<br/>대기중 30일 / 응답완료 7일]
+    C --> D[카드 클릭]
+    D --> E[/male/femaleId 상세/]
+    E --> F{현재 상태}
+    F -->|pending| G[매칭 요청 / 거절]
+    F -->|approved| H[수락한 매칭 표시<br/>번복 불가]
+    F -->|rejected| I[수락으로 번복<br/>7일 내 가능]
+    G -->|매칭 요청| J[approved 영구]
+    G -->|거절| K[rejected + rejection_logs<br/>여성 측 영구 잠금]
+    </div>
+
+    <h3>2-3. 관리자 시점</h3>
+    <div class="mermaid">
+flowchart TD
+    A[/admin 회원 목록/] --> B[검색/필터<br/>상태/성별/매칭/MD/정보/이상형]
+    B --> C[행 액션]
+    C --> D{회원 상태별}
+    D -->|pending| E[승인 → +30일<br/>or 반려 사유]
+    D -->|active| F[차단]
+    D -->|blocked| G[해제]
+    D -->|rejected| H[반려 취소 → pending]
+    A --> I[/admin/userId 상세/]
+    I --> J[프로필 인라인 수정]
+    I --> K[사진 관리 즉시 저장]
+    I --> L[매칭 내역 열람]
+    I --> M[MD 추천<br/>잠금된 여성 자동 제외]
+    I --> N[관리자 메모 CRUD]
+    I --> O[만료일 캘린더]
+    </div>
+  </section>
+
+  <!-- ─── 3. 화면별 기능 ─────────────────── -->
+  <section id="sec-3">
+    <h2><span class="num">3.</span>화면별 기능 가이드</h2>
+
+    <h3>3-1. 랜딩 <code>/</code></h3>
+    <ul>
+      <li>Google 로그인 버튼 (PKCE 직접 구현)</li>
+      <li>이용약관 / 개인정보 링크</li>
+      <li>인앱 브라우저(카카오톡/페북/인스타/라인/네이버)에서 진입 시 하단에 자동 안내 바
+        <ul>
+          <li>Android: "열기" 클릭 시 Chrome 자동 실행 (intent URL)</li>
+          <li>iOS: Safari 안내 모달 (Apple 정책상 자동 전환 불가)</li>
+        </ul>
+      </li>
+      <li>피드백용 미리보기 모드는 <b>완전 제거됨</b> (2026-05-15)</li>
+    </ul>
+
+    <h3>3-2. 회원가입 <code>/register</code> (2단계)</h3>
+    <h4>1단계 — 프로필 기본정보</h4>
+    <ul>
+      <li>본명 / 닉네임 (실시간 중복 체크, 2~10자, 한글·영문·숫자만) / 성별 / 출생년도 / 키 / 전화번호</li>
+      <li>거주지 (시·도 + 구·군·시 동적) / 직장(11종) → 직업(직장별 동적) / 근무패턴 / 연봉 / 학력</li>
+      <li>흡연 / MBTI / 매력 (100~200자) / 연인이 생기면 (100~200자)</li>
+    </ul>
+    <h4>사진 업로드 (필수)</h4>
+    <ul>
+      <li>대표사진 2~4장 / 매력 사진 1장(1:1 크롭) / 연인이 생기면 사진 1장(1:1 크롭)</li>
+      <li>서버: sharp WebP 변환, 5MB 제한, 1200×1600 축소</li>
+    </ul>
+    <h4>2단계 — 이상형 정보</h4>
+    <ul>
+      <li>선호 나이/키/거주지/직장/연봉/학력/흡연/MBTI (모두 다중 선택)</li>
+      <li>최애 포인트 정확히 4개 (선택 순서 번호 부여)</li>
+      <li>약관 동의: 이용약관·개인정보·만19세 (필수) + 마케팅(선택)</li>
+    </ul>
+
+    <h3>3-3. 여성 메인 <code>/female</code></h3>
+    <ul>
+      <li>남성 active 회원 카드 그리드 (1열/2열 토글, 무한스크롤)</li>
+      <li>정보 필터(7개 다중) + 직장 1개 선택 시 직업 sub-filter</li>
+      <li>하트 토글 → 카트에 담기/빼기</li>
+      <li><b>매칭 이력 있는 남성은 영구 안 보임</b> (정책 1)</li>
+      <li>헤더: 매칭 후보 카운트 + 햄버거 메뉴(사이드바)</li>
+    </ul>
+
+    <h3>3-4. 여성 → 남성 상세 <code>/female/[id]</code></h3>
+    <ul>
+      <li>대표사진 캐러셀 + 정보 + 매력/연인 사진 (라이트박스)</li>
+      <li>하단 버튼은 잠금 상태에 따라 자동 분기:
+        <ul>
+          <li>이력 없음: <b>매칭 후보에 담기 / 빼기</b> 토글</li>
+          <li>대기중: <b>이미 매칭요청을 보낸 상대입니다</b></li>
+          <li>확정: <b>매칭이 확정된 상대입니다</b></li>
+          <li>거절: <b>매칭이 성사되지 않은 상대입니다</b></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>3-5. 매칭 후보 (카트) <code>/female/cart</code></h3>
+    <ul>
+      <li>상단: 카트에 담긴 남성 리스트 (개별 X 제거 가능)</li>
+      <li>"N명에게 매칭 요청 보내기" 버튼 → 일괄 전송</li>
+      <li>전송 시 영구 잠금된 상대는 자동 제외 + 안내 메시지</li>
+      <li>전송 후 매칭요청 보낸 남성은 카트에서 자동 삭제</li>
+      <li>하단 고정: "매칭 요청 보낸 남성" 가로 스크롤 (참고용)</li>
+    </ul>
+
+    <h3>3-6. 매칭 요청 결과 <code>/female/requests</code></h3>
+    <ul>
+      <li>탭: 전체 / 대기중 / 수락 / 거절 (각 카운트 표시)</li>
+      <li>카드 상태별 안내:
+        <ul>
+          <li>대기중: 노란 박스 "상대방의 응답을 기다리고 있어요"</li>
+          <li>매칭 성사: 초록 박스 + 🎉 + "운영진이 카톡으로 연락처 전달 예정"</li>
+          <li>거절: 회색 박스 + 위로 메시지</li>
+        </ul>
+      </li>
+      <li><b>응답 후 7일(자정 기준) 지나면 자동 사라짐</b> (정책 2)</li>
+    </ul>
+
+    <h3>3-7. 남성 메인 <code>/male</code></h3>
+    <ul>
+      <li>받은 매칭요청 + MD 추천 통합 카드 그리드</li>
+      <li>상태 뱃지: 대기중(노랑) / 매칭요청 보냄(초록) / 거절됨(회색) / MD(보라)</li>
+      <li>가시성: 대기중 30일, 응답 완료 7일 (자정 기준) 후 자동 사라짐 (정책 2)</li>
+      <li>EmptyState: 받은 매칭이 없을 때 유쾌한 안내 + 랜덤 팁</li>
+    </ul>
+
+    <h3>3-8. 남성 → 여성 상세 <code>/male/[id]</code></h3>
+    <ul>
+      <li>사진 캐러셀 + 정보 + 매력/연인 사진</li>
+      <li>하단 버튼은 매칭 상태에 따라 자동 분기:
+        <ul>
+          <li>대기중: <b>매칭 요청</b>(주황, confirm 후 번복 불가) / <b>거절</b>(회색)</li>
+          <li>매칭요청 보냄: "매칭요청을 보냈습니다" 안내 박스</li>
+          <li>거절됨: "수락으로 번복" 버튼 + 7일 안내</li>
+        </ul>
+      </li>
+      <li><b>MD 추천 응답도 정상 동작</b> (이전엔 source 누락 버그로 항상 실패, 2026-05-15 수정)</li>
+    </ul>
+
+    <h3>3-9. 관리자 메인 <code>/admin</code></h3>
+    <ul>
+      <li>검색: 이름/전화번호 (2글자 이상)</li>
+      <li>필터: 상태 / 성별 / 매칭 / MD 추천 이력 / 정보 / 이상형</li>
+      <li>회원 행: 썸네일 + 이름·닉네임 + 뱃지(NEW/MD/상태/성별/매칭) + 요약 + 만료일</li>
+      <li>액션: 상태별로 다른 버튼 (승인/반려/차단/해제/반려취소)</li>
+      <li>승인 시 자동으로 +30일 만료일 부여</li>
+      <li>반려 시 5자 이상 사유 필수 (회원 화면에 노출)</li>
+    </ul>
+
+    <h3>3-10. 관리자 회원 상세 <code>/admin/[id]</code></h3>
+    <ul>
+      <li>사진 관리: 대표 4장 + 매력 + 연인 (X 클릭 시 즉시 삭제 confirm)</li>
+      <li>프로필 인라인 수정 (더블클릭 텍스트 / 드롭다운 셀렉트)</li>
+      <li>이상형 정보 표시 (열람 전용)</li>
+      <li>매칭 내역 (상대 사진/이름/상태/날짜)</li>
+      <li>MD 추천 (남성 회원만): 매칭 이력 있는 여성 자동 제외 + 서버 차단</li>
+      <li>관리자 메모 CRUD (수정 시각 표시, 회원에게 비공개)</li>
+      <li>만료일 캘린더 + 반려 사유 표시/수정</li>
+    </ul>
+
+    <h3>3-11. 외부 공개 프로필 <code>/profile/[token]</code></h3>
+    <ul>
+      <li>로그인 불필요, 토큰 기반</li>
+      <li>5일 만료 + 최대 10회 접근</li>
+      <li>전화번호/이메일 제외</li>
+      <li>현재 토큰 생성 UI 는 별도 (필요 시 관리자가 API 직접 호출)</li>
+    </ul>
+
+    <h3>3-12. 사이드바 (햄버거 메뉴)</h3>
+    <table>
+      <thead><tr><th>메뉴</th><th>동작</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>이용가이드</td><td>—</td><td><span class="badge warn">링크 대기</span></td></tr>
+        <tr><td>매칭요청 결과 (여성만)</td><td>/female/requests</td><td><span class="badge ok">활성</span></td></tr>
+        <tr><td>내 프로필 미리보기</td><td>/female/me 또는 /male/me</td><td><span class="badge ok">활성</span></td></tr>
+        <tr><td>내 프로필 수정요청</td><td>https://2o017.channel.io (채널톡)</td><td><span class="badge ok">활성</span></td></tr>
+        <tr><td>친구 초대</td><td>navigator.share / 클립보드 복사</td><td><span class="badge ok">활성</span></td></tr>
+        <tr><td>오프라인 모임 신청</td><td>—</td><td><span class="badge warn">링크 대기</span></td></tr>
+        <tr><td>카카오톡 채널 문의</td><td>—</td><td><span class="badge warn">링크 대기</span></td></tr>
+        <tr><td>로그아웃</td><td>signOut + 홈 이동</td><td><span class="badge ok">활성</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── 4. 핵심 정책 상세 ─────────────── -->
+  <section id="sec-4">
+    <h2><span class="num">4.</span>핵심 정책 상세 (8개)</h2>
+
+    <h3>정책 1. 매칭 영구 잠금 ⭐</h3>
+    <p>한 번이라도 매칭요청이 발생한 (여성, 남성) 쌍은 status 와 무관하게 <b>영구 잠금</b>됩니다.</p>
+    <table>
+      <thead><tr><th>방어선</th><th>위치</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td>1차</td><td>여성 갤러리 <code>/female</code></td><td>매칭 이력 있는 남성을 화면에서 영구 제외</td></tr>
+        <tr><td>2차</td><td>여성 → 남성 상세 <code>/female/[id]</code></td><td>하단 버튼이 잠금 사유 안내로 변경</td></tr>
+        <tr><td>3차</td><td>카트 추가 API <code>POST /api/cart</code></td><td>409 차단 + 한국어 에러</td></tr>
+        <tr><td>4차</td><td>일괄 매칭요청 API <code>POST /api/match</code></td><td>insert 차단 (upsert 제거됨, blocked 응답)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <span class="head">⚠️ 마이그레이션 주의</span>
+      이 정책 적용으로, 기존에 거절/확정 매칭이 있던 (여성, 남성) 쌍은
+      여성 갤러리에서 즉시 사라집니다. 정상 동작입니다.
+    </div>
+
+    <h3>정책 2. 노출 기간 = 응답일 자정 + 7일 ⭐</h3>
+    <p>모든 노출 기간은 KST(한국 시간) 자정을 기준으로 계산됩니다.</p>
+    <table>
+      <thead><tr><th>상태</th><th>노출 시작</th><th>노출 종료</th><th>예시</th></tr></thead>
+      <tbody>
+        <tr><td>pending</td><td>요청 시각</td><td>요청일(KST) 자정 + 30일</td><td>5/15 응답 → 6/15 0시 만료</td></tr>
+        <tr><td>approved</td><td>응답 시각</td><td>응답일(KST) 자정 + 7일</td><td>수요일 매칭 → 다음 수요일 0시 만료</td></tr>
+        <tr><td>rejected</td><td>응답 시각</td><td>응답일(KST) 자정 + 7일</td><td>수요일 거절 → 다음 수요일 0시 만료</td></tr>
+      </tbody>
+    </table>
+
+    <h3>정책 3. 수락은 번복 불가, 거절은 7일 내 수락만 가능</h3>
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> pending: 여성이 매칭요청
+    pending --> approved: 남성 수락 (confirm 후, 영구 확정)
+    pending --> rejected: 남성 거절 (rejection_logs +7d 쿨타임)
+    rejected --> approved: 7일 내 수락으로 번복 (쿨타임 해제)
+    approved --> [*]: 최종 (관리자 오프라인 매칭 진행)
+    </div>
+
+    <h3>정책 4. 거절은 영구</h3>
+    <p>한 번 매칭이 성사되지 않은(rejected) (여성, 남성) 쌍은 <b>영구 재요청 불가</b>입니다.
+    여성이 다시 그 남성에게 매칭요청 보낼 수 없고, 관리자도 그 남성에게 그 여성을 MD 추천할 수 없습니다.</p>
+
+    <h3>정책 5. MD 추천 영구 잠금</h3>
+    <p>관리자 추천 모달에서 후보 여성 리스트 자동 제외 + 서버 차단 양쪽 처리. 다음 경우 잠김:</p>
+    <ul>
+      <li>그 (남, 여) 쌍에 매칭요청 row 가 있음 (status 무관)</li>
+      <li>그 (남, 여) 쌍에 MD 추천 row 가 이미 있음</li>
+    </ul>
+
+    <h3>정책 6. 인앱 브라우저 자동 안내</h3>
+    <p>카카오톡/페이스북/인스타그램/라인/네이버 인앱 브라우저로 진입한 사용자에게 자동 노출.</p>
+    <table>
+      <thead><tr><th>OS / 브라우저</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td>Android · 카카오톡</td><td>"열기" → 카카오 외부 열기 시도 → Chrome 자동 실행</td></tr>
+        <tr><td>Android · 기타 인앱</td><td>"열기" → Chrome 자동 실행 (intent URL)</td></tr>
+        <tr><td>iOS · 모든 인앱</td><td>안내 모달: "오른쪽 위 ··· → Safari로 열기" + URL 복사</td></tr>
+        <tr><td>일반 브라우저</td><td>알림 바 표시 안 함</td></tr>
+      </tbody>
+    </table>
+    <p>Google 로그인 버튼 클릭 시에도 동일한 가드가 작동합니다 (Google 403 페이지로 안 빠짐).</p>
+
+    <h3>정책 7. 회원 만료일 자동 차단 (cron)</h3>
+    <ul>
+      <li>관리자 승인 시 자동으로 +30일 만료일 부여</li>
+      <li>매일 cron 이 만료일 도달한 active 회원을 blocked 로 자동 전환</li>
+      <li>cron 엔드포인트: <code>GET /api/cron/auto-block</code></li>
+      <li><b>주의:</b> <code>CRON_SECRET</code> 환경변수가 미설정이면 cron 이 503 으로 비활성화됩니다.</li>
+    </ul>
+
+    <h3>정책 8. 모든 API 권한 가드 (보안)</h3>
+    <p>2026-05-15 보안 핫픽스로 모든 API 에 인증/관리자 가드가 적용됐습니다.
+    상세 매트릭스는 <a href="#sec-B">부록 B</a> 참조.</p>
+    <ul>
+      <li>요약: 정상 사용자/관리자에게는 변화 없음. 외부 봇/우회 호출만 401/403 차단.</li>
+    </ul>
+  </section>
+
+  <!-- ─── 5. 매니저 FAQ ─────────────────── -->
+  <section id="sec-5">
+    <h2><span class="num">5.</span>매니저 FAQ &amp; 응대 시나리오</h2>
+
+    <h3>Q1. 관리자 페이지 "매칭 있음" 5개 옵션의 정확한 의미가?</h3>
+    <table>
+      <thead><tr><th>옵션</th><th>판정 기준</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>매칭 있음</td><td>total &gt; 0</td><td>매칭요청 이력 1건 이상 (대기/확정/거절 모두 포함)</td></tr>
+        <tr><td>매칭 확정 있음</td><td>approved &gt; 0</td><td>남성이 수락한 매칭이 있는 회원</td></tr>
+        <tr><td>대기중 있음</td><td>pending &gt; 0</td><td>아직 응답 안 한 매칭이 있는 회원</td></tr>
+        <tr><td>거절 있음</td><td>rejected &gt; 0</td><td>남성이 거절한 매칭이 있는 회원</td></tr>
+        <tr><td>매칭 없음</td><td>total === 0</td><td>매칭요청 이력 0건</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Q2. 회원이 "갤러리에서 그 남성이 갑자기 안 보여요" 라고 문의하면?</h3>
+    <p>→ 그 (여성, 남성) 쌍에 매칭요청 이력이 있어서 영구 제외된 케이스입니다. 정책 1에 따라 정상 동작입니다.
+    한 번 거절 또는 확정/대기 중인 상대는 다시 갤러리에 안 나오게 설계했습니다.</p>
+
+    <h3>Q3. "왜 매칭이 사라졌나요?" 문의가 오면?</h3>
+    <p>→ 응답일(KST) 자정 + 7일 후 자동 사라짐 (정책 2). 예: 수요일에 매칭 → 다음 수요일 0시 만료.
+    이 정책 이전에는 upsert 버그로 진짜 데이터 손실이 있을 수 있었으나, 2026-05-15 이후로는 정책에 따른 정상 만료입니다.</p>
+
+    <h3>Q4. 카톡으로 링크 받은 회원이 "Google 로그인이 안 돼요" 라고 하면?</h3>
+    <p>→ Android: 하단 알림바에서 "다른 브라우저로 열기" 누르면 Chrome 으로 자동 전환됩니다.
+    iOS: 안내 모달의 가이드대로 Safari 로 열어주시라고 안내. 이게 Apple/Google 정책상 카톡 안에서는 안 되는 게 맞습니다.</p>
+
+    <h3>Q5. "매칭이 확정된 회원에게 다시 매칭요청을 보내고 싶어요"</h3>
+    <p>→ 정책 1 (영구 잠금) 으로 불가능합니다. 한 번 확정된 매칭은 운영팀이 카톡으로 후속 안내하는 단계로 넘어갑니다.</p>
+
+    <h3>Q6. "매칭 후보 카트에 같은 사람이 두 번 보여요"</h3>
+    <p>→ 정책 1 적용 후로는 발생하지 않습니다. 갤러리에서 영구 제외 + 서버 차단으로 4중 방어. 만약 발생한다면 데이터 정합성 이슈이니 즉시 개발팀에 알려주세요.</p>
+
+    <h3>Q7. 회원이 "프로필 수정하고 싶어요" 하면?</h3>
+    <p>→ 사이드바 메뉴 "내 프로필 수정요청" 누르면 채널톡 (https://2o017.channel.io) 으로 연결됩니다. 운영팀이 받아서 관리자 화면에서 직접 수정.</p>
+
+    <h3>Q8. 거절당한 회원이 "다시 한 번 기회를 주세요" 하면?</h3>
+    <p>→ 정책 4 (거절 영구). 같은 (남, 여) 쌍은 재시도 불가입니다. 다른 회원과의 매칭은 그대로 가능합니다.</p>
+  </section>
+
+  <!-- ─── 6. Changelog ─────────────────── -->
+  <section id="sec-6">
+    <h2><span class="num">6.</span>최근 변경 이력 (Changelog)</h2>
+
+    <h3>2026-05-15 (오늘)</h3>
+    <table>
+      <thead><tr><th>커밋</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td><code>fc66c13</code></td><td>매칭 잠금 안내 문구 한 줄로 단순화 (부제 제거)</td></tr>
+        <tr><td><code>5e8410c</code></td><td>인앱 브라우저 안내 바 카피 순화 + 텍스트 잘림 0%</td></tr>
+        <tr><td><code>c9c95d4</code></td><td>인앱 브라우저 안내 바 디자인 개선</td></tr>
+        <tr><td><code>0369d7b</code></td><td><b>보안 핫픽스</b>: 모든 API 엔드포인트에 인증/인가 가드 적용 (14개 구멍 차단)</td></tr>
+        <tr><td><code>0f18403</code></td><td><b>매칭 영구 잠금</b> + 미리보기 제거 + 인앱 브라우저 안내 (Phase 0~3)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2026-05-15 — 적용된 정책 변경</h3>
+    <ul>
+      <li>① 거절 → 영구 (재요청 불가)</li>
+      <li>② MD 추천 → 응답 후 영구 불가</li>
+      <li>③ approved 7일 후 → 갤러리에서 영구 숨김</li>
+      <li>④ MD 추천은 여성에게 비공개 유지</li>
+      <li>⑤ 1주일 = 응답일(KST) 자정 + 7일 (다음 동일 요일 0시)</li>
+    </ul>
+
+    <h3>2026-05-15 — 보안 핫픽스로 막힌 14개 엔드포인트</h3>
+    <p>이전엔 누구나 외부에서 호출 가능했음. 매니저님이 보고한 "이상한 매칭 데이터" 의 잠재 원인 중 하나였음.</p>
+    <table>
+      <thead><tr><th>엔드포인트</th><th>이전</th><th>현재</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /api/profiles</code> (전체)</td><td>200 (전화번호 노출)</td><td>401</td></tr>
+        <tr><td><code>PATCH /api/profiles</code></td><td>200 (임의 수정)</td><td>401</td></tr>
+        <tr><td><code>POST /api/match</code></td><td>200 (강제 생성)</td><td>401</td></tr>
+        <tr><td><code>PATCH /api/match</code></td><td>가드 없음</td><td>401</td></tr>
+        <tr><td><code>GET /api/match?all=true</code></td><td>200</td><td>401</td></tr>
+        <tr><td><code>GET /api/admin/bootstrap</code></td><td>200 (모든 운영 데이터)</td><td>401</td></tr>
+        <tr><td><code>POST/DELETE /api/md-recommendation</code></td><td>가드 없음</td><td>401</td></tr>
+        <tr><td><code>POST/PATCH/DELETE /api/notes</code></td><td>가드 없음</td><td>401</td></tr>
+        <tr><td><code>POST /api/profiles/link</code></td><td>가드 없음</td><td>401</td></tr>
+        <tr><td><code>POST /api/profiles/block</code></td><td>가드 없음</td><td>401</td></tr>
+        <tr><td><code>GET /api/cart?femaleId=</code></td><td>200</td><td>401</td></tr>
+        <tr><td><code>GET /api/cron/auto-block</code></td><td>200 (CRON_SECRET 미설정 시)</td><td>503</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── 7. TODO ─────────────────────── -->
+  <section id="sec-7">
+    <h2><span class="num">7.</span>추후 추가 예정 (TODO)</h2>
+    <table>
+      <thead><tr><th>항목</th><th>현재</th><th>필요 액션</th></tr></thead>
+      <tbody>
+        <tr><td>이용가이드 (사이드바)</td><td>비활성</td><td>외부 URL (노션/PDF 등) 받으면 즉시 활성화</td></tr>
+        <tr><td>오프라인 모임 신청 (사이드바)</td><td>비활성</td><td>신청 폼 URL 받으면 즉시 활성화</td></tr>
+        <tr><td>카카오톡 채널 문의 (사이드바)</td><td>비활성</td><td>카카오 채널 URL 받으면 즉시 활성화</td></tr>
+        <tr><td>MD ↔ 매칭요청 충돌 정책</td><td>미정</td><td>A/B/C 결정 (A 권장: 매칭요청 우선, MD 자동 흡수)</td></tr>
+        <tr><td>카카오 알림톡 자동화</td><td>수동 안내</td><td>매칭 성사 시 자동 카톡 발송 도입</td></tr>
+        <tr><td>카카오 로그인</td><td>없음</td><td>iOS 인앱에서도 자연스러운 로그인 위해 도입 검토</td></tr>
+        <tr><td>회원 신고 / 차단 기능</td><td>없음</td><td>회원 간 신고 도입 시 reports 테이블 추가</td></tr>
+        <tr><td>푸시 / 이메일 알림</td><td>없음</td><td>매칭 응답 알림 시 외부 메시징 연동</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── 부록 A. 라우트 ─────────────── -->
+  <section id="sec-A">
+    <h2><span class="num">A.</span>부록: 라우트 전체 맵</h2>
+    <table>
+      <thead><tr><th>경로</th><th>화면</th><th>접근 권한</th></tr></thead>
+      <tbody>
+        <tr><td><code>/</code></td><td>랜딩 (Google 로그인)</td><td>누구나</td></tr>
+        <tr><td><code>/auth/callback</code></td><td>OAuth 콜백</td><td>누구나</td></tr>
+        <tr><td><code>/register</code></td><td>회원가입 2단계</td><td>로그인 + 신규</td></tr>
+        <tr><td><code>/register/complete</code></td><td>가입 완료 안내</td><td>누구나</td></tr>
+        <tr><td><code>/pending</code></td><td>승인 대기 안내</td><td>pending</td></tr>
+        <tr><td><code>/blocked</code></td><td>이용 제한 안내</td><td>blocked</td></tr>
+        <tr><td><code>/rejected</code></td><td>반려 안내 + 사유</td><td>rejected</td></tr>
+        <tr><td><code>/terms</code> / <code>/privacy</code></td><td>약관/개인정보</td><td>누구나</td></tr>
+        <tr><td><code>/female</code></td><td>여성 메인 (남성 갤러리)</td><td>active 여성</td></tr>
+        <tr><td><code>/female/[id]</code></td><td>남성 상세</td><td>active 여성</td></tr>
+        <tr><td><code>/female/cart</code></td><td>매칭 후보</td><td>active 여성</td></tr>
+        <tr><td><code>/female/requests</code></td><td>매칭 요청 결과</td><td>active 여성</td></tr>
+        <tr><td><code>/female/me</code></td><td>내 프로필 미리보기</td><td>active 여성</td></tr>
+        <tr><td><code>/male</code></td><td>남성 메인 (받은 매칭)</td><td>active 남성</td></tr>
+        <tr><td><code>/male/[id]</code></td><td>여성 상세 + 수락/거절</td><td>active 남성</td></tr>
+        <tr><td><code>/male/me</code></td><td>내 프로필 미리보기</td><td>active 남성</td></tr>
+        <tr><td><code>/admin</code></td><td>관리자 회원 목록</td><td>admins</td></tr>
+        <tr><td><code>/admin/[id]</code></td><td>관리자 회원 상세</td><td>admins</td></tr>
+        <tr><td><code>/profile/[token]</code></td><td>외부 공개 프로필</td><td>토큰 유효 시</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── 부록 B. API ─────────────────── -->
+  <section id="sec-B">
+    <h2><span class="num">B.</span>부록: API 권한 매트릭스</h2>
+    <table>
+      <thead><tr><th>엔드포인트</th><th>Method</th><th>권한</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><code>/api/me</code></td><td>GET</td><td>공개</td><td>비로그인은 user:null 반환</td></tr>
+        <tr><td><code>/api/check-nickname</code></td><td>GET</td><td>공개</td><td>형식+중복 체크</td></tr>
+        <tr><td><code>/api/match/locked</code></td><td>GET</td><td>로그인 (active 여성)</td><td>본인 잠금 남성 ID 목록</td></tr>
+        <tr><td><code>/api/register</code></td><td>POST</td><td>로그인 (Supabase auth 본인)</td><td>최초 가입 1회</td></tr>
+        <tr><td><code>/api/profiles?id=</code></td><td>GET</td><td>본인 또는 관리자</td><td>—</td></tr>
+        <tr><td><code>/api/profiles?role=</code></td><td>GET</td><td>로그인 회원 / 관리자</td><td>일반 회원은 active 만</td></tr>
+        <tr><td><code>/api/profiles</code> (전체)</td><td>GET</td><td>관리자만</td><td>—</td></tr>
+        <tr><td><code>/api/profiles</code></td><td>PATCH</td><td>관리자만</td><td>—</td></tr>
+        <tr><td><code>/api/match</code></td><td>POST</td><td>active 여성 본인</td><td>femaleProfileId 본인 강제</td></tr>
+        <tr><td><code>/api/match</code></td><td>PATCH</td><td>active 남성 본인</td><td>matchId.male_profile_id 본인 강제</td></tr>
+        <tr><td><code>/api/match?maleId/femaleId=</code></td><td>GET</td><td>본인 또는 관리자</td><td>—</td></tr>
+        <tr><td><code>/api/match?all=true</code></td><td>GET</td><td>관리자만</td><td>—</td></tr>
+        <tr><td><code>/api/cart</code></td><td>GET/POST/DELETE</td><td>active 여성 본인</td><td>—</td></tr>
+        <tr><td><code>/api/notes</code></td><td>POST/PATCH/DELETE</td><td>관리자만</td><td>—</td></tr>
+        <tr><td><code>/api/md-recommendation</code></td><td>POST/DELETE</td><td>관리자만</td><td>매칭 이력 잠금 검사</td></tr>
+        <tr><td><code>/api/md-recommendation?maleId=</code></td><td>GET</td><td>본인 또는 관리자</td><td>—</td></tr>
+        <tr><td><code>/api/admin/bootstrap</code></td><td>GET</td><td>관리자만</td><td>icn1 region</td></tr>
+        <tr><td><code>/api/upload</code></td><td>POST</td><td>로그인</td><td>5MB·sharp WebP</td></tr>
+        <tr><td><code>/api/profiles/link</code></td><td>POST</td><td>관리자만</td><td>5일 만료 토큰</td></tr>
+        <tr><td><code>/api/profiles/link?token=</code></td><td>GET</td><td>토큰 유효 시</td><td>로그인 불필요</td></tr>
+        <tr><td><code>/api/profiles/block</code></td><td>POST</td><td>관리자만</td><td>legacy</td></tr>
+        <tr><td><code>/api/cron/auto-block</code></td><td>GET</td><td>Bearer ${CRON_SECRET}</td><td>secret 없으면 503</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── 부록 C. 환경변수 ─────────────── -->
+  <section id="sec-C">
+    <h2><span class="num">C.</span>부록: 환경변수 / 운영 정보</h2>
+
+    <h3>필수 환경변수 (Vercel)</h3>
+    <table>
+      <thead><tr><th>변수</th><th>설명</th><th>필수 여부</th></tr></thead>
+      <tbody>
+        <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>Supabase 프로젝트 URL</td><td>✅</td></tr>
+        <tr><td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td><td>Supabase Anon Key</td><td>✅</td></tr>
+        <tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Supabase Service Role Key (서버 전용)</td><td>✅</td></tr>
+        <tr><td><code>CRON_SECRET</code></td><td>cron 인증용 시크릿 (32자 권장)</td><td>cron 사용 시 필수</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout danger">
+      <span class="head">⚠️ CRON_SECRET 미설정 주의</span>
+      만료일 자동 차단 cron(<code>/api/cron/auto-block</code>)은 <code>CRON_SECRET</code>이 없으면 503 으로 비활성화됩니다.
+      Vercel 대시보드 → Settings → Environment Variables 에서 추가하시고
+      Vercel Cron 설정에 <code>Authorization: Bearer ${CRON_SECRET}</code> 헤더를 넣어주세요.
+    </div>
+
+    <h3>운영 인프라</h3>
+    <dl class="kv">
+      <dt>프레임워크</dt><dd>Next.js 16 App Router + React 19 (TypeScript)</dd>
+      <dt>스타일</dt><dd>Tailwind CSS 4 + Pretendard</dd>
+      <dt>DB / 인증 / 스토리지</dt><dd>Supabase (PostgreSQL + Auth + Storage)</dd>
+      <dt>배포</dt><dd>Vercel (관리자 부트스트랩 API 는 icn1 region 고정)</dd>
+      <dt>이미지 처리</dt><dd>sharp (서버 변환, WebP 1200×1600)</dd>
+      <dt>크론</dt><dd>Vercel Cron → /api/cron/auto-block</dd>
+      <dt>도메인</dt><dd>moso-rho.vercel.app</dd>
+    </dl>
+
+    <h3>데이터 모델 핵심 테이블</h3>
+    <table>
+      <thead><tr><th>테이블</th><th>주요 컬럼</th></tr></thead>
+      <tbody>
+        <tr><td><code>users</code></td><td>id, email, phone, role, status, rejection_reason</td></tr>
+        <tr><td><code>profiles</code></td><td>user_id, real_name, nickname, photo_urls, expires_at, ...</td></tr>
+        <tr><td><code>ideal_types</code></td><td>user_id + 선호 정보 다중 배열</td></tr>
+        <tr><td><code>match_requests</code></td><td>female_profile_id, male_profile_id (UNIQUE), status, requested_at, responded_at</td></tr>
+        <tr><td><code>md_recommendations</code></td><td>male_profile_id, female_profile_id, status, created_at</td></tr>
+        <tr><td><code>rejection_logs</code></td><td>male_profile_id, female_profile_id, rejected_at, visible_after</td></tr>
+        <tr><td><code>cart_items</code></td><td>female_profile_id, male_profile_id (UNIQUE), added_at</td></tr>
+        <tr><td><code>admin_notes</code></td><td>user_id, content, created_at, updated_at</td></tr>
+        <tr><td><code>profile_share_links</code></td><td>token, user_id, expires_at, access_count, max_access</td></tr>
+        <tr><td><code>admins</code></td><td>id (= auth.uid)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 푸터 -->
+  <footer style="margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--gray-200); text-align: center; color: var(--gray-500); font-size: 12px;">
+    <p>MOSO 모두의 소개팅 · 운영 가이드 v2.0 · 최종 업데이트 2026-05-15</p>
+    <p>본 문서가 정책 결정의 단일 진실원입니다. 새 정책이 추가되면 이 문서가 먼저 갱신됩니다.</p>
+  </footer>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "neutral",
+    themeVariables: {
+      primaryColor: "#fff4ec",
+      primaryTextColor: "#111827",
+      primaryBorderColor: "#ff8a3d",
+      lineColor: "#9ca3af",
+      fontSize: "13px",
+    },
+    flowchart: { padding: 12, curve: "basis" },
+    sequence: { actorMargin: 60 },
+  });
+</script>
+</body>
+</html>
