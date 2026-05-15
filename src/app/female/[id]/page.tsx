@@ -203,7 +203,6 @@ export default function MaleDetailPage() {
                 ? "이미 매칭요청을 보낸 상대입니다"
                 : "매칭이 성사되지 않은 상대입니다"}
             </p>
-            <p className="text-xs text-gray-500 mt-1">재요청은 불가능합니다</p>
           </div>
         ) : (
           <button onClick={toggleCart}
