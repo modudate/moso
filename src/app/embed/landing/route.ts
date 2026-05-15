@@ -96,6 +96,8 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
+        // CDN 이 헤더에 따라 다른 응답을 캐시하도록
+        "Vary": "Sec-Fetch-Dest",
         // 자체 페이지도 다른 곳에 임베드 안 되게
         "X-Frame-Options": "DENY",
         "Content-Security-Policy": "frame-ancestors 'none'",
@@ -108,12 +110,14 @@ export async function GET(req: NextRequest) {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
+      // CDN 이 Sec-Fetch-Dest 헤더 별로 다른 응답을 캐시 (직접 접근 차단을 캐시가 우회하지 못하게)
+      "Vary": "Sec-Fetch-Dest",
       // 어떤 도메인이든 iframe 임베드 허용 (아임웹 도메인 변동성 대응)
       // 만약 특정 도메인만 허용하고 싶으면 아래를 다음으로 변경:
       //   "Content-Security-Policy": "frame-ancestors https://*.imweb.me https://imweb.me https://your-domain.com"
       "Content-Security-Policy": "frame-ancestors *",
       "X-Frame-Options": "ALLOWALL",
-      // CDN 캐시 5분 + SWR 1시간
+      // CDN 캐시 5분 + SWR 1시간 (Vary 와 함께 헤더별로 분리 캐싱)
       "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
     },
   });
