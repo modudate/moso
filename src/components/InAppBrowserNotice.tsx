@@ -68,48 +68,85 @@ export default function InAppBrowserNotice() {
     setDismissed(true);
   };
 
+  // 인앱 브라우저별 친근한 카피
+  const title =
+    kind === "kakaotalk"
+      ? "카카오톡 브라우저에서는"
+      : kind === "facebook" || kind === "instagram"
+      ? "지금 인앱 브라우저예요"
+      : "안전한 로그인을 위해";
+  const subtitle =
+    kind === "kakaotalk"
+      ? "Google 로그인이 안 돼요. 외부 브라우저로 열기"
+      : "Chrome 또는 Safari에서 열어주세요";
+
   return (
     <>
       {/* 하단 스티키 알림 바 */}
       <div
-        className="fixed bottom-0 inset-x-0 z-[200] mx-auto w-full max-w-[480px]"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}
+        className="fixed bottom-0 inset-x-0 z-[200] flex justify-center px-3 pointer-events-none"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.875rem)" }}
       >
-        <div className="mx-3 mb-2 rounded-2xl bg-white/95 backdrop-blur shadow-2xl border border-orange-200 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-9 h-9 flex-shrink-0 rounded-full bg-orange-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-[#ff8a3d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="w-full max-w-[420px] rounded-2xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.18)] border border-orange-100 overflow-hidden pointer-events-auto animate-slideUpBanner">
+          <div className="px-4 py-3.5 flex items-center gap-3">
+            {/* 아이콘 */}
+            <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-[#ff8a3d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 9v3.75m0 3.008h.008v.008H12v-.008zM9.401 3.003c.526-.91 1.832-.91 2.358 0l9.262 16.027c.526.91-.131 2.07-1.179 2.07H1.318c-1.048 0-1.705-1.16-1.179-2.07L9.401 3.003z"
+                  d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
                 />
               </svg>
             </div>
+
+            {/* 텍스트 */}
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-gray-900 leading-tight">안전한 로그인을 위해</p>
-              <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">
-                Chrome / Safari 에서 열어주세요
+              <p className="text-[14px] font-bold text-gray-900 leading-tight truncate">
+                {title}
+              </p>
+              <p className="text-[12px] text-gray-500 mt-1 leading-snug truncate">
+                {subtitle}
               </p>
             </div>
+
+            {/* 액션 버튼 */}
             <button
               onClick={onOpenExternal}
-              className="flex-shrink-0 px-3 py-1.5 rounded-lg text-white text-[12px] font-bold shadow-sm hover:opacity-90"
+              className="flex-shrink-0 px-4 py-2.5 rounded-xl text-white text-[13px] font-bold shadow-md transition-transform active:scale-95 hover:shadow-lg"
               style={{ backgroundColor: "#ff8a3d" }}
             >
-              열기 →
+              열기
             </button>
+
+            {/* 닫기 */}
             <button
               onClick={close}
-              className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-700"
+              className="flex-shrink-0 w-8 h-8 -mr-1 flex items-center justify-center text-gray-300 hover:text-gray-600 transition-colors"
               aria-label="닫기"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
+
+        <style jsx>{`
+          @keyframes slideUpBanner {
+            from {
+              transform: translateY(140%);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          .animate-slideUpBanner {
+            animation: slideUpBanner 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+        `}</style>
       </div>
 
       {/* iOS 안내 모달 (외부 브라우저 자동 열기 불가) */}
