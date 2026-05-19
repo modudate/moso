@@ -260,9 +260,13 @@ function EmptyState() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold text-foreground mb-3">아직 들어온 매칭 요청이 없어요</h2>
-      <p className="text-muted-fg text-base max-w-md mb-4">
-        걱정 마세요! 많은 여성 회원분들이 매일 새로운 프로필을 확인하고 있습니다.
+      <h2 className="text-2xl font-bold text-foreground mb-3 leading-snug">
+        아직 들어온<br />매칭 요청이 없어요
+      </h2>
+      <p className="text-muted-fg text-base max-w-md mb-4 leading-relaxed">
+        걱정 마세요!<br />
+        많은 여성 회원분들이 매일<br />
+        새로운 프로필을 확인하고 있습니다.
       </p>
       <div className="bg-primary-light/50 rounded-2xl px-6 py-4 max-w-md">
         <p className="text-sm text-primary-dark font-medium">{randomTip}</p>

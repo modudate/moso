@@ -1,6 +1,6 @@
 // 클라이언트/서버 공통 검증 규칙
 // - 닉네임: 영문/숫자/한글/한글 자모만, 2~10자, 특수문자·이모티콘·공백 금지
-// - 소개글(charm / dating_style): 100~200자
+// - 소개글(charm / dating_style): 30~200자 (운영 피드백 반영: 100자는 부담스러워한다는 의견 다수)
 
 export const NICKNAME_MIN = 2;
 export const NICKNAME_MAX = 10;
@@ -23,7 +23,7 @@ export function sanitizeNicknameInput(value: string): string {
   return filtered.slice(0, NICKNAME_MAX);
 }
 
-export const INTRO_MIN = 100;
+export const INTRO_MIN = 30;
 export const INTRO_MAX = 200;
 
 export function validateIntroText(value: string, label: string): { ok: true } | { ok: false; reason: string } {

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import InAppBrowserNotice from "@/components/InAppBrowserNotice";
-import { detectInAppBrowser, isAndroid, openInExternalAndroid, openInExternalKakao } from "@/lib/in-app-browser";
+import { detectInAppBrowser, isAndroid, openInExternalAndroid, openInExternalKakao, type InAppKind } from "@/lib/in-app-browser";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
@@ -34,6 +34,15 @@ function base64UrlAscii(str: string): string {
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [showInAppHelp, setShowInAppHelp] = useState(false);
+  // 인앱 브라우저(카카오톡 등) 진입 여부 — 마운트 후 1회 측정
+  //   true 면 Google 로그인 버튼 비활성화 + "다른 브라우저로 열기" 안내로 대체.
+  //   배경: 갤럭시 + 카톡 인앱에서 Google 계정 선택 시 이메일이 mailto: 로 잘못 인식돼
+  //   기본 메일 앱(삼성 이메일 등)이 열리는 카톡 자체 버그 회피.
+  const [inAppKind, setInAppKind] = useState<InAppKind>(null);
+
+  useEffect(() => {
+    setInAppKind(detectInAppBrowser());
+  }, []);
 
   // Google 로그인 → 뒤로가기/취소로 돌아올 때 bfcache 로 복원되면 loading 이 true 인 채로 남아
   // "로그인 중..." 오버레이가 계속 떠 있는 버그를 방지
@@ -49,6 +58,21 @@ export default function Home() {
       document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
+
+  // 인앱 브라우저에서 "다른 브라우저로 열기" 클릭 시 외부 브라우저 강제 실행 시도
+  const handleEscapeInApp = () => {
+    if (!inAppKind) return;
+    if (isAndroid()) {
+      if (inAppKind === "kakaotalk") {
+        openInExternalKakao();
+        setTimeout(() => openInExternalAndroid(), 800);
+      } else {
+        openInExternalAndroid();
+      }
+      return;
+    }
+    setShowInAppHelp(true);
+  };
 
   const handleGoogleLogin = async () => {
     if (loading) return;
@@ -115,23 +139,59 @@ export default function Home() {
         />
 
         <div className="w-full max-w-sm flex flex-col items-center gap-3">
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-white rounded-2xl font-semibold text-gray-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:pointer-events-none"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-[#ff8a3d] border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              </svg>
-            )}
-            {loading ? "로그인 중..." : "Google 계정으로 계속하기"}
-          </button>
+          {/* 인앱 브라우저(카톡 등)일 땐 Google 버튼 자체를 잠그고, 외부 브라우저 이동 버튼을 1차로 노출.
+              카톡 인앱 + 갤럭시에서 Google 계정 탭 시 삼성 메일이 열리는 버그를 원천 차단. */}
+          {inAppKind ? (
+            <>
+              <button
+                disabled
+                aria-disabled="true"
+                className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-white/60 rounded-2xl font-semibold text-gray-400 shadow-md cursor-not-allowed select-none"
+              >
+                <svg width="20" height="20" viewBox="0 0 48 48" className="opacity-50">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                Google 로그인 불가
+              </button>
+              <button
+                onClick={handleEscapeInApp}
+                className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-gray-900 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+                다른 브라우저로 열기
+              </button>
+              <p className="text-[12px] leading-5 text-white text-center mt-1 font-medium">
+                {inAppKind === "kakaotalk"
+                  ? "카카오톡 안에서는 Google 로그인이 차단돼요."
+                  : "이 브라우저에서는 Google 로그인이 차단돼요."}
+                <br />
+                위 버튼을 눌러 크롬·사파리에서 열어주세요.
+              </p>
+            </>
+          ) : (
+            <button
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-white rounded-2xl font-semibold text-gray-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:pointer-events-none"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-[#ff8a3d] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+              )}
+              {loading ? "로그인 중..." : "Google 계정으로 계속하기"}
+            </button>
+          )}
 
           <p className="text-[11px] leading-5 text-white/90 text-center mt-1">
             ‘Google 계정으로 계속하기’를 누르면 모두의 모임{" "}

@@ -1,0 +1,41 @@
+<!--
+  iframe 미리보기 — 브라우저로 직접 열어서 어떻게 보이는지 확인
+  더블클릭으로 바로 열기:
+    C:\code_storage\ourmo\docs\landing-iframe-preview.html
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MOSO 임베드 미리보기 (실제 아임웹 임베드 동일)</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, system-ui, sans-serif; }
+  .info-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: #1f2937; color: #fff;
+    padding: 10px 16px; font-size: 13px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .info-bar a { color: #ff8a3d; text-decoration: none; font-weight: 700; }
+  .iframe-wrap { width: 100%; }
+  iframe { display: block; width: 100%; border: 0; background: #fff; }
+</style>
+</head>
+<body>
+
+<div class="info-bar">
+  <span>📦 iframe 임베드 미리보기 — <a href="https://moso-rho.vercel.app/embed/landing" target="_blank">실제 URL</a> (브라우저 직접 접근 시 차단)</span>
+  <span>아임웹에서 보이는 모습과 동일</span>
+</div>
+
+<div class="iframe-wrap">
+  <iframe src="https://moso-rho.vercel.app/embed/landing"
+          style="height: 4500px;"
+          scrolling="no"
+          referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</div>
+
+</body>
+</html>

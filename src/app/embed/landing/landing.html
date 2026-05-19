@@ -15,7 +15,7 @@
 <!-- =========================================================
      MOSO 랜딩 시작 (이 div 부터 마지막 </div> 까지 복사)
      ========================================================= -->
-<div class="moso-landing-root">
+<div class="moso-landing-root" style="display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; color: #1f2937 !important; font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important; line-height: 1.55 !important;">
 
 <style>
 /* ========================================================
@@ -199,13 +199,11 @@
 }
 .moso-hero-inner {
   position: relative !important;
-  display: grid !important;
-  grid-template-columns: 1.1fr 0.9fr !important;
-  gap: 56px !important;
-  align-items: center !important;
+  display: block !important;
   max-width: 1120px !important;
   margin: 0 auto !important;
   padding: 0 24px !important;
+  text-align: center !important;
 }
 .moso-hero-eyebrow {
   display: inline-flex !important;
@@ -324,190 +322,14 @@
   flex-shrink: 0 !important;
 }
 
-/* Hero visual — 모바일 폰 목업 */
-.moso-hero-visual {
-  position: relative !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  min-height: 480px !important;
-}
-.moso-phone-frame {
-  position: relative !important;
-  width: 280px !important;
-  height: 560px !important;
-  background: #1f2937 !important;
-  border-radius: 38px !important;
-  padding: 12px !important;
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25) !important;
-  transform: rotate(-3deg) !important;
-}
-.moso-phone-frame::before {
-  content: "" !important;
-  position: absolute !important;
-  top: 16px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 90px !important;
-  height: 22px !important;
-  background: #1f2937 !important;
-  border-radius: 0 0 14px 14px !important;
-  z-index: 2 !important;
-}
-.moso-phone-screen {
-  background: #ffffff !important;
-  border-radius: 28px !important;
-  width: 100% !important;
-  height: 100% !important;
-  overflow: hidden !important;
-  position: relative !important;
-}
-.moso-phone-header {
-  background: #ff8a3d !important;
-  color: #ffffff !important;
-  padding: 38px 16px 14px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-}
-.moso-phone-header-logo {
-  font-weight: 800 !important;
-  font-size: 16px !important;
-  letter-spacing: 1px !important;
-  color: #ffffff !important;
-}
-.moso-phone-header-icon {
-  width: 22px !important;
-  height: 22px !important;
-  opacity: 0.9 !important;
-  color: #ffffff !important;
-}
-.moso-phone-cards {
-  padding: 14px !important;
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 10px !important;
-}
-.moso-phone-card {
-  aspect-ratio: 9 / 16 !important;
-  background: linear-gradient(180deg, #d4dee9 0%, #95a8bf 100%) !important;
-  border-radius: 12px !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-.moso-phone-card.moso-pc-2 {
-  background: linear-gradient(180deg, #f0d8c2 0%, #d8a98a 100%) !important;
-}
-.moso-phone-card.moso-pc-3 {
-  background: linear-gradient(180deg, #c9d8c2 0%, #8aa97a 100%) !important;
-}
-.moso-phone-card.moso-pc-4 {
-  background: linear-gradient(180deg, #e0c9d8 0%, #b08aa9 100%) !important;
-}
-.moso-phone-card-tag {
-  position: absolute !important;
-  top: 8px !important;
-  left: 8px !important;
-  padding: 3px 8px !important;
-  background: rgba(255, 138, 61, 0.95) !important;
-  color: #ffffff !important;
-  font-size: 9px !important;
-  font-weight: 700 !important;
-  border-radius: 6px !important;
-}
-.moso-phone-card-tag.moso-tag-md {
-  background: rgba(124, 92, 252, 0.95) !important;
-}
-.moso-phone-card-tag.moso-tag-ok {
-  background: rgba(22, 163, 74, 0.95) !important;
-}
-.moso-phone-card-info {
-  position: absolute !important;
-  bottom: 8px !important;
-  left: 8px !important;
-  right: 8px !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
-}
-.moso-phone-card-name {
-  font-weight: 700 !important;
-  font-size: 11px !important;
-  color: #ffffff !important;
-}
-.moso-phone-card-meta {
-  font-size: 9px !important;
-  opacity: 0.9 !important;
-  color: #ffffff !important;
-}
-
-/* 플로팅 카드 */
-.moso-float-card {
-  position: absolute !important;
-  background: #ffffff !important;
-  border-radius: 16px !important;
-  padding: 14px 16px !important;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: #1f2937 !important;
-}
-.moso-float-card-emoji {
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-  background: #fff4ec !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 18px !important;
-}
-.moso-float-1 {
-  top: 40px !important;
-  left: -10px !important;
-  animation: mosoFloatA 4s ease-in-out infinite !important;
-}
-.moso-float-2 {
-  bottom: 60px !important;
-  right: -20px !important;
-  animation: mosoFloatB 5s ease-in-out infinite !important;
-}
-
-@keyframes mosoFloatA {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-@keyframes mosoFloatB {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
+/* 폰 목업 / 플로팅 카드 제거됨 — 히어로 텍스트 중앙 레이아웃 */
 
 @media (max-width: 920px) {
   .moso-hero {
     padding: 56px 0 72px !important;
   }
-  .moso-hero-inner {
-    grid-template-columns: 1fr !important;
-    gap: 36px !important;
-    text-align: center !important;
-  }
-  .moso-hero-lead {
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
   .moso-hero-title {
     font-size: 38px !important;
-  }
-  .moso-cta-row {
-    justify-content: center !important;
-  }
-  .moso-hero-meta {
-    justify-content: center !important;
-  }
-  .moso-hero-visual {
-    min-height: 460px !important;
   }
 }
 @media (max-width: 480px) {
@@ -516,11 +338,6 @@
   }
   .moso-hero-lead {
     font-size: 15.5px !important;
-  }
-  .moso-phone-frame {
-    width: 240px !important;
-    height: 480px !important;
-    transform: rotate(-2deg) !important;
   }
 }
 
@@ -976,10 +793,320 @@
   opacity: 1 !important;
   transform: translateY(0) !important;
 }
+
+/* ════════════════════════════════════════════════════════════
+   ✨ DESIGN POLISH LAYER ✨
+   기존 스타일 위에 시각적 디테일을 한 번 더 입히는 레이어
+   ════════════════════════════════════════════════════════════ */
+
+/* ─── Hero 강화 ─── */
+.moso-landing-root .moso-hero-eyebrow {
+  background: linear-gradient(135deg, #ffffff 0%, #fff4ec 100%) !important;
+  border: 1px solid rgba(255, 138, 61, 0.25) !important;
+  box-shadow: 0 8px 24px rgba(255, 138, 61, 0.12) !important;
+  padding: 8px 18px !important;
+  font-size: 13px !important;
+}
+.moso-landing-root .moso-hero-title {
+  font-size: 56px !important;
+  letter-spacing: -1.5px !important;
+  line-height: 1.15 !important;
+}
+.moso-landing-root .moso-hero-title .moso-accent {
+  background: linear-gradient(120deg, transparent 60%, #ffd9c2 60%, #ffd9c2 95%, transparent 95%) !important;
+  color: #f06a1f !important;
+  padding: 0 6px !important;
+}
+.moso-landing-root .moso-hero-lead {
+  font-size: 17.5px !important;
+  color: #374151 !important;
+  line-height: 1.75 !important;
+}
+.moso-landing-root .moso-btn-primary {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff6b1c 100%) !important;
+  box-shadow: 0 14px 40px rgba(255, 138, 61, 0.35), 0 4px 12px rgba(255, 138, 61, 0.2) !important;
+  padding: 18px 32px !important;
+  font-size: 16.5px !important;
+  letter-spacing: -0.2px !important;
+}
+.moso-landing-root .moso-btn-primary:hover {
+  background: linear-gradient(135deg, #ff8a3d 0%, #f06a1f 100%) !important;
+  box-shadow: 0 20px 50px rgba(255, 138, 61, 0.45), 0 6px 16px rgba(255, 138, 61, 0.25) !important;
+  transform: translateY(-3px) !important;
+}
+.moso-landing-root .moso-hero-meta-item {
+  background: #ffffff !important;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid #f3e6d8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+@media (max-width: 720px) {
+  .moso-landing-root .moso-hero-title {
+    font-size: 38px !important;
+  }
+}
+
+/* 폰 목업 / 플로팅 카드 관련 CSS 제거됨 */
+
+/* ─── Section eyebrow / title 강화 ─── */
+.moso-landing-root .moso-section-eyebrow {
+  font-size: 12.5px !important;
+  letter-spacing: 2.5px !important;
+  padding: 6px 14px !important;
+  background: linear-gradient(135deg, #fff4ec 0%, #ffe7d3 100%) !important;
+  border-radius: 999px !important;
+  color: #f06a1f !important;
+  font-weight: 800 !important;
+  display: inline-block !important;
+  margin-bottom: 20px !important;
+}
+.moso-landing-root .moso-section-title {
+  font-size: 40px !important;
+  letter-spacing: -1px !important;
+  line-height: 1.22 !important;
+  font-weight: 800 !important;
+}
+.moso-landing-root .moso-section-subtitle {
+  font-size: 16.5px !important;
+  color: #4b5563 !important;
+  line-height: 1.75 !important;
+}
+@media (max-width: 720px) {
+  .moso-landing-root .moso-section-title {
+    font-size: 30px !important;
+  }
+}
+
+/* ─── Feature 카드 — gradient icon + lift ─── */
+.moso-landing-root .moso-feature-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf5 100%) !important;
+  border: 1px solid #f3e6d8 !important;
+  border-radius: 24px !important;
+  padding: 36px 32px !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s, border-color 0.3s !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.moso-landing-root .moso-feature-card::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 140px !important;
+  height: 140px !important;
+  background: radial-gradient(circle, rgba(255, 138, 61, 0.08) 0%, transparent 70%) !important;
+  border-radius: 50% !important;
+  transform: translate(40%, -40%) !important;
+  pointer-events: none !important;
+}
+.moso-landing-root .moso-feature-card:hover {
+  transform: translateY(-8px) !important;
+  box-shadow: 0 24px 60px rgba(255, 138, 61, 0.18), 0 6px 16px rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(255, 138, 61, 0.3) !important;
+}
+.moso-landing-root .moso-feature-icon {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff6b1c 100%) !important;
+  color: #ffffff !important;
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 24px rgba(255, 138, 61, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  margin-bottom: 22px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+.moso-landing-root .moso-feature-title {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  margin: 0 0 12px !important;
+  color: #111827 !important;
+  letter-spacing: -0.3px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+.moso-landing-root .moso-feature-desc {
+  font-size: 14.5px !important;
+  color: #4b5563 !important;
+  line-height: 1.75 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* ─── Step 카드 — 더 크고 임팩트 있는 번호 ─── */
+.moso-landing-root .moso-step {
+  background: #ffffff !important;
+  border: 1px solid #f3e6d8 !important;
+  border-radius: 22px !important;
+  padding: 36px 26px 28px !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+  position: relative !important;
+}
+.moso-landing-root .moso-step:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08) !important;
+}
+.moso-landing-root .moso-step-num {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ec4899 100%) !important;
+  width: 48px !important;
+  height: 32px !important;
+  font-size: 14px !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.35) !important;
+  top: -16px !important;
+}
+.moso-landing-root .moso-step-title {
+  font-size: 16.5px !important;
+  font-weight: 800 !important;
+  margin: 18px 0 8px !important;
+  color: #111827 !important;
+  letter-spacing: -0.2px !important;
+}
+
+/* ─── Stats — gradient number ─── */
+.moso-landing-root .moso-stat-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf5 100%) !important;
+  border: 1px solid #f3e6d8 !important;
+  border-radius: 22px !important;
+  padding: 44px 24px !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.moso-landing-root .moso-stat-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 40px rgba(255, 138, 61, 0.12) !important;
+}
+.moso-landing-root .moso-stat-num {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ec4899 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-size: 48px !important;
+  font-weight: 900 !important;
+  letter-spacing: -1.5px !important;
+  line-height: 1 !important;
+}
+.moso-landing-root .moso-stat-label {
+  font-size: 14.5px !important;
+  color: #4b5563 !important;
+  margin-top: 10px !important;
+  font-weight: 600 !important;
+}
+
+/* ─── FAQ — 카드 간격, 활성 강조, hover ─── */
+.moso-landing-root .moso-faq-list {
+  gap: 14px !important;
+}
+.moso-landing-root .moso-faq-item {
+  background: #ffffff !important;
+  border: 1px solid #f3e6d8 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s !important;
+}
+.moso-landing-root .moso-faq-item:hover {
+  border-color: rgba(255, 138, 61, 0.3) !important;
+  box-shadow: 0 8px 24px rgba(255, 138, 61, 0.1) !important;
+}
+.moso-landing-root .moso-faq-item.moso-open {
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%) !important;
+  border-color: rgba(255, 138, 61, 0.4) !important;
+  box-shadow: 0 14px 36px rgba(255, 138, 61, 0.16) !important;
+}
+.moso-landing-root .moso-faq-q {
+  padding: 26px 28px !important;
+  font-size: 16.5px !important;
+  letter-spacing: -0.2px !important;
+}
+.moso-landing-root .moso-faq-q-icon {
+  width: 32px !important;
+  height: 32px !important;
+  background: linear-gradient(135deg, #fff4ec 0%, #ffe7d3 100%) !important;
+  color: #f06a1f !important;
+}
+.moso-landing-root .moso-faq-item.moso-open .moso-faq-q-icon {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff6b1c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px rgba(255, 138, 61, 0.3) !important;
+}
+.moso-landing-root .moso-faq-a {
+  font-size: 15px !important;
+  line-height: 1.8 !important;
+  color: #4b5563 !important;
+}
+.moso-landing-root .moso-faq-item.moso-open .moso-faq-a {
+  padding: 0 28px 26px !important;
+}
+
+/* ─── CTA Band — dramatic gradient + glow ─── */
+.moso-landing-root .moso-cta-band {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(236, 72, 153, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(255, 235, 100, 0.25) 0%, transparent 40%),
+    linear-gradient(135deg, #ff8a3d 0%, #f06a1f 100%) !important;
+}
+.moso-landing-root .moso-cta-band-title {
+  font-size: 44px !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.18) !important;
+}
+.moso-landing-root .moso-cta-band-sub {
+  font-size: 17.5px !important;
+  margin-bottom: 36px !important;
+}
+.moso-landing-root .moso-cta-band .moso-btn-primary {
+  background: #ffffff !important;
+  color: #f06a1f !important;
+  padding: 20px 40px !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+.moso-landing-root .moso-cta-band .moso-btn-primary:hover {
+  background: #ffffff !important;
+  color: #f06a1f !important;
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+}
+@media (max-width: 720px) {
+  .moso-landing-root .moso-cta-band-title {
+    font-size: 32px !important;
+  }
+}
+
+/* ─── Header CTA 보강 ─── */
+.moso-landing-root .moso-btn-cta {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff6b1c 100%) !important;
+  box-shadow: 0 6px 16px rgba(255, 138, 61, 0.3) !important;
+  padding: 11px 22px !important;
+}
+.moso-landing-root .moso-btn-cta:hover {
+  box-shadow: 0 10px 24px rgba(255, 138, 61, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ─── Footer 디테일 ─── */
+.moso-landing-root .moso-footer-col-title {
+  color: #ff8a3d !important;
+  letter-spacing: 1px !important;
+}
+.moso-landing-root .moso-footer-row {
+  padding-bottom: 36px !important;
+}
+.moso-landing-root .moso-footer-brand p {
+  font-size: 14px !important;
+}
 </style>
 
 <!-- ───────── HEADER ───────── -->
-<header class="moso-header">
+<header class="moso-header" style="display: block !important; position: relative !important; background: #ffffff !important; border-bottom: 1px solid #f1f5f9 !important; width: 100% !important;">
   <div class="moso-header-inner">
     <a href="https://moso-rho.vercel.app" class="moso-header-logo" target="_blank" rel="noopener">
       <img src="https://moso-rho.vercel.app/header_logo.png" alt="MOSO 모두의 소개팅" />
@@ -988,33 +1115,35 @@
       <a href="#moso-features">서비스 특징</a>
       <a href="#moso-how">이용 방법</a>
       <a href="#moso-faq">자주 묻는 질문</a>
+      <a href="/shop" class="moso-nav-highlight" style="color: #ff8a3d !important; font-weight: 700 !important;">이용권 결제</a>
     </nav>
-    <a href="https://moso-rho.vercel.app" class="moso-btn-cta" target="_blank" rel="noopener">
-      지금 시작하기
-    </a>
   </div>
 </header>
 
-<!-- ───────── HERO ───────── -->
-<section class="moso-hero">
-  <div class="moso-hero-inner">
-    <div class="moso-hero-text moso-reveal">
-      <span class="moso-hero-eyebrow">
+<!-- ───────── HERO (텍스트 중앙) ───────── -->
+<div class="moso-hero" style="display: block !important; position: relative !important; padding: 100px 0 110px !important; background: linear-gradient(180deg, #fff8f1 0%, #ffffff 70%) !important; overflow: hidden !important; width: 100% !important;">
+  <!-- 장식 orb -->
+  <div style="position: absolute !important; top: -80px !important; left: 50% !important; transform: translateX(-50%) !important; width: 700px !important; height: 700px !important; border-radius: 50% !important; background: radial-gradient(circle, rgba(255,138,61,0.12) 0%, transparent 60%) !important; pointer-events: none !important;"></div>
+  <div style="position: absolute !important; bottom: -180px !important; right: -80px !important; width: 400px !important; height: 400px !important; border-radius: 50% !important; background: radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 60%) !important; pointer-events: none !important;"></div>
+
+  <div class="moso-container" style="position: relative !important; text-align: center !important;">
+    <div class="moso-reveal">
+      <span class="moso-hero-eyebrow" style="margin-bottom: 24px !important;">
         <span class="moso-dot"></span>
         검증된 회원만 모인 1:1 소개팅
       </span>
-      <p class="moso-hero-title">
+      <p class="moso-hero-title" style="text-align: center !important; margin-left: auto !important; margin-right: auto !important; max-width: 740px !important;">
         마음에 드는 사람을<br />
         <span class="moso-accent">직접 고르는</span> 소개팅
       </p>
-      <p class="moso-hero-lead">
+      <p class="moso-hero-lead" style="text-align: center !important; margin-left: auto !important; margin-right: auto !important; max-width: 560px !important;">
         MOSO 는 운영진이 검수한 회원만 활동하는 1:1 소개팅 플랫폼입니다.<br />
         갤러리에서 마음에 드는 분을 골라 매칭 요청을 보내보세요.
       </p>
-      <div class="moso-cta-row">
+      <div class="moso-cta-row" style="justify-content: center !important;">
         <a href="https://moso-rho.vercel.app" class="moso-btn-primary" target="_blank" rel="noopener">
           무료로 시작하기
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width: 18px !important; height: 18px !important;">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
         </a>
@@ -1022,86 +1151,34 @@
           이용 방법 보기 →
         </a>
       </div>
-      <div class="moso-hero-meta">
+      <div class="moso-hero-meta" style="justify-content: center !important; margin-top: 40px !important;">
         <div class="moso-hero-meta-item">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px !important; height: 18px !important; color: #ff8a3d !important; flex-shrink: 0 !important;">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           관리자 직접 검수
         </div>
         <div class="moso-hero-meta-item">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px !important; height: 18px !important; color: #ff8a3d !important; flex-shrink: 0 !important;">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
           </svg>
           개인정보 안전 보호
         </div>
         <div class="moso-hero-meta-item">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px !important; height: 18px !important; color: #ff8a3d !important; flex-shrink: 0 !important;">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
           </svg>
           매칭 시 카톡 연결
         </div>
       </div>
     </div>
-
-    <div class="moso-hero-visual moso-reveal">
-      <div class="moso-phone-frame">
-        <div class="moso-phone-screen">
-          <div class="moso-phone-header">
-            <div class="moso-phone-header-logo">MOSO</div>
-            <svg class="moso-phone-header-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </div>
-          <div class="moso-phone-cards">
-            <div class="moso-phone-card">
-              <span class="moso-phone-card-tag">관심도착</span>
-              <div class="moso-phone-card-info">
-                <div class="moso-phone-card-name">유여자</div>
-                <div class="moso-phone-card-meta">1996년생 · 167cm</div>
-              </div>
-            </div>
-            <div class="moso-phone-card moso-pc-2">
-              <span class="moso-phone-card-tag moso-tag-md">MD 추천</span>
-              <div class="moso-phone-card-info">
-                <div class="moso-phone-card-name">jjom생이</div>
-                <div class="moso-phone-card-meta">2006년생 · 172cm</div>
-              </div>
-            </div>
-            <div class="moso-phone-card moso-pc-3">
-              <span class="moso-phone-card-tag">관심도착</span>
-              <div class="moso-phone-card-info">
-                <div class="moso-phone-card-name">소나</div>
-                <div class="moso-phone-card-meta">1997년생 · 165cm</div>
-              </div>
-            </div>
-            <div class="moso-phone-card moso-pc-4">
-              <span class="moso-phone-card-tag moso-tag-ok">매칭완료</span>
-              <div class="moso-phone-card-info">
-                <div class="moso-phone-card-name">하늘</div>
-                <div class="moso-phone-card-meta">1995년생 · 168cm</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="moso-float-card moso-float-1">
-        <div class="moso-float-card-emoji">💝</div>
-        <div>관심이 도착했어요!</div>
-      </div>
-      <div class="moso-float-card moso-float-2">
-        <div class="moso-float-card-emoji">🎉</div>
-        <div>매칭이 성사됐어요!</div>
-      </div>
-    </div>
   </div>
-</section>
+</div>
 
 <!-- ───────── WHY MOSO (FEATURES) ───────── -->
-<section class="moso-section" id="moso-features">
+<div class="moso-section" id="moso-features" style="display: block !important; padding: 100px 0 !important; width: 100% !important; background: #ffffff !important;">
   <div class="moso-container">
-    <div class="moso-section-head moso-reveal">
+    <div class="moso-section-head moso-reveal" style="text-align: center !important; max-width: 660px !important; margin: 0 auto 56px !important; padding: 0 !important;">
       <span class="moso-section-eyebrow">WHY MOSO</span>
       <p class="moso-section-title">진짜 만남을 위한,<br />가장 신중한 소개팅</p>
       <p class="moso-section-subtitle">
@@ -1110,7 +1187,7 @@
       </p>
     </div>
 
-    <div class="moso-features">
+    <div class="moso-features" style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 24px !important;">
       <div class="moso-feature-card moso-reveal">
         <div class="moso-feature-icon">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
@@ -1142,18 +1219,18 @@
       </div>
     </div>
   </div>
-</section>
+</div>
 
 <!-- ───────── HOW IT WORKS ───────── -->
-<section class="moso-section moso-section-alt" id="moso-how">
+<div class="moso-section moso-section-alt" id="moso-how" style="display: block !important; padding: 100px 0 !important; width: 100% !important; background: #fffaf5 !important;">
   <div class="moso-container">
-    <div class="moso-section-head moso-reveal">
+    <div class="moso-section-head moso-reveal" style="text-align: center !important; max-width: 660px !important; margin: 0 auto 56px !important; padding: 0 !important;">
       <span class="moso-section-eyebrow">HOW IT WORKS</span>
       <p class="moso-section-title">단 4단계로,<br />새로운 인연을 만나보세요</p>
       <p class="moso-section-subtitle">가입부터 매칭까지 모든 과정이 단순하고 명확해요.</p>
     </div>
 
-    <div class="moso-steps">
+    <div class="moso-steps" style="display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 20px !important;">
       <div class="moso-step moso-reveal">
         <span class="moso-step-num">01</span>
         <p class="moso-step-title">구글 계정으로 가입</p>
@@ -1176,17 +1253,17 @@
       </div>
     </div>
   </div>
-</section>
+</div>
 
 <!-- ───────── STATS / TRUST ───────── -->
-<section class="moso-section">
+<div class="moso-section" style="display: block !important; padding: 100px 0 !important; width: 100% !important; background: #ffffff !important;">
   <div class="moso-container">
-    <div class="moso-section-head moso-reveal">
+    <div class="moso-section-head moso-reveal" style="text-align: center !important; max-width: 660px !important; margin: 0 auto 56px !important; padding: 0 !important;">
       <span class="moso-section-eyebrow">TRUST</span>
       <p class="moso-section-title">믿을 수 있는 만남,<br />검증된 시스템</p>
     </div>
 
-    <div class="moso-stats">
+    <div class="moso-stats" style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 20px !important; margin-top: 24px !important;">
       <div class="moso-stat-card moso-reveal">
         <span class="moso-stat-num">100%</span>
         <span class="moso-stat-label">관리자 직접 검수 가입</span>
@@ -1201,17 +1278,17 @@
       </div>
     </div>
   </div>
-</section>
+</div>
 
 <!-- ───────── FAQ ───────── -->
-<section class="moso-section moso-section-alt" id="moso-faq">
+<div class="moso-section moso-section-alt" id="moso-faq" style="display: block !important; padding: 100px 0 !important; width: 100% !important; background: #fffaf5 !important;">
   <div class="moso-container">
-    <div class="moso-section-head moso-reveal" style="margin-bottom: 48px !important;">
+    <div class="moso-section-head moso-reveal" style="text-align: center !important; max-width: 660px !important; margin: 0 auto 48px !important; padding: 0 !important;">
       <span class="moso-section-eyebrow">FAQ</span>
       <p class="moso-section-title">자주 묻는 질문</p>
     </div>
 
-    <div class="moso-faq-list">
+    <div class="moso-faq-list" style="display: flex !important; flex-direction: column !important; gap: 12px !important; max-width: 760px !important; margin: 0 auto !important;">
       <div class="moso-faq-item moso-reveal">
         <button class="moso-faq-q" type="button">
           <span>어떤 분들이 가입할 수 있나요?</span>
@@ -1283,10 +1360,10 @@
       </div>
     </div>
   </div>
-</section>
+</div>
 
 <!-- ───────── FINAL CTA ───────── -->
-<section class="moso-cta-band">
+<div class="moso-cta-band" style="display: block !important; position: relative !important; padding: 80px 0 !important; background: linear-gradient(135deg, #ff8a3d 0%, #f06a1f 100%) !important; color: #ffffff !important; overflow: hidden !important; width: 100% !important;">
   <div class="moso-cta-band-inner">
     <p class="moso-cta-band-title moso-reveal">
       당신의 인연,<br />
@@ -1300,10 +1377,10 @@
       </svg>
     </a>
   </div>
-</section>
+</div>
 
 <!-- ───────── FOOTER ───────── -->
-<footer class="moso-footer">
+<footer class="moso-footer" style="display: block !important; padding: 56px 0 32px !important; background: #0f172a !important; color: #94a3b8 !important; width: 100% !important;">
   <div class="moso-footer-inner">
     <div class="moso-footer-row">
       <div class="moso-footer-brand">
@@ -1341,6 +1418,160 @@
   (function () {
     var root = document.querySelector(".moso-landing-root");
     if (!root) return;
+
+    /* ════════════════════════════════════════════════════════
+       🔍 디버깅 콘솔 (필요 시 활성화 — 기본 OFF)
+       활성화: window.__MOSO_DEBUG = true 후 새로고침
+       ════════════════════════════════════════════════════════ */
+    if (window.__MOSO_DEBUG) (function debugMoso() {
+      var TAG = "%c[MOSO-DEBUG]";
+      var TAG_STYLE = "background:#ff8a3d;color:#fff;padding:2px 6px;border-radius:4px;font-weight:700;";
+
+      function log() {
+        var args = Array.prototype.slice.call(arguments);
+        console.log.apply(console, [TAG, TAG_STYLE].concat(args));
+      }
+      function group(name) {
+        console.group("%c[MOSO-DEBUG] " + name, TAG_STYLE);
+      }
+      function groupEnd() { console.groupEnd(); }
+
+      log("진단 시작 - " + new Date().toLocaleTimeString());
+      log("환경:", {
+        ua: navigator.userAgent.slice(0, 80),
+        viewport: window.innerWidth + "x" + window.innerHeight,
+        url: location.href,
+      });
+
+      // 1. wrapper 자체 스타일 확인
+      var rootCs = getComputedStyle(root);
+      group("1. .moso-landing-root (wrapper)");
+      log("font-family:", rootCs.fontFamily);
+      log("font-size:", rootCs.fontSize);
+      log("color:", rootCs.color);
+      log("line-height:", rootCs.lineHeight);
+      log("background:", rootCs.backgroundColor);
+      log("width:", rootCs.width);
+      groupEnd();
+
+      // 2. 핵심 섹션의 padding/margin 실측
+      var checks = [
+        { sel: ".moso-hero", expect: { padding: "80px 0px 100px" } },
+        { sel: "#moso-features", expect: { padding: "100px 0px" } },
+        { sel: "#moso-how", expect: { padding: "100px 0px" } },
+        { sel: "#moso-faq", expect: { padding: "100px 0px" } },
+        { sel: ".moso-cta-band", expect: { padding: "80px 0px" } },
+        { sel: ".moso-footer", expect: { padding: "56px 0px 32px" } },
+      ];
+      group("2. 섹션별 spacing 실제 값 (vs 기대값)");
+      checks.forEach(function (c) {
+        var el = root.querySelector(c.sel);
+        if (!el) {
+          log("❌ 요소 못 찾음:", c.sel);
+          return;
+        }
+        var cs = getComputedStyle(el);
+        var pad = cs.paddingTop + " " + cs.paddingRight + " " + cs.paddingBottom + (cs.paddingLeft !== cs.paddingRight ? " " + cs.paddingLeft : "");
+        var ok = pad.indexOf(c.expect.padding) !== -1;
+        log((ok ? "✅" : "⚠️ 깨짐") + " " + c.sel + " — padding:", pad, "(기대:", c.expect.padding + ")",
+          "display:", cs.display, "margin:", cs.marginTop + " " + cs.marginRight + " " + cs.marginBottom + " " + cs.marginLeft);
+      });
+      groupEnd();
+
+      // 3. grid/flex 컨테이너 확인
+      var grids = [
+        { sel: ".moso-features", expect: "grid" },
+        { sel: ".moso-steps", expect: "grid" },
+        { sel: ".moso-stats", expect: "grid" },
+        { sel: ".moso-faq-list", expect: "flex" },
+        { sel: ".moso-hero-inner", expect: "grid" },
+      ];
+      group("3. 레이아웃 컨테이너 (grid/flex)");
+      grids.forEach(function (g) {
+        var el = root.querySelector(g.sel);
+        if (!el) { log("❌ 요소 못 찾음:", g.sel); return; }
+        var cs = getComputedStyle(el);
+        var ok = cs.display === g.expect;
+        log((ok ? "✅" : "⚠️ 깨짐") + " " + g.sel + " — display:", cs.display, "(기대:", g.expect + ")",
+          "gap:", cs.gap, "grid-template-columns:", cs.gridTemplateColumns);
+      });
+      groupEnd();
+
+      // 4. 외부 (아임웹) 가 우리 요소에 적용한 inherited / cascaded 스타일 추적
+      group("4. 외부 CSS 침범 확인 (전역 reset 흔적)");
+      var html = document.documentElement;
+      var body = document.body;
+      log("html cs - margin/padding:",
+        getComputedStyle(html).margin, "/", getComputedStyle(html).padding,
+        "font-family:", getComputedStyle(html).fontFamily.slice(0, 60));
+      log("body cs - margin/padding:",
+        getComputedStyle(body).margin, "/", getComputedStyle(body).padding,
+        "font-family:", getComputedStyle(body).fontFamily.slice(0, 60));
+      // body 의 부모 wrapper 들 (아임웹은 #wrap, .imw-page 등 사용)
+      var parentChain = [];
+      var p = root.parentElement;
+      var depth = 0;
+      while (p && p !== document.documentElement && depth < 8) {
+        parentChain.push({
+          tag: p.tagName.toLowerCase(),
+          id: p.id || "",
+          cls: (p.className || "").toString().slice(0, 60),
+          padding: getComputedStyle(p).padding,
+          margin: getComputedStyle(p).margin,
+          maxWidth: getComputedStyle(p).maxWidth,
+          width: getComputedStyle(p).width,
+          overflow: getComputedStyle(p).overflow,
+        });
+        p = p.parentElement;
+        depth++;
+      }
+      log("랩퍼 부모 체인 (위 → 아래는 외부, 마지막이 우리 root 의 즉시 부모):");
+      console.table(parentChain);
+      groupEnd();
+
+      // 5. 충돌 의심 selectors 탐지
+      group("5. 의심스러운 외부 CSS 룰 (sheet 검사)");
+      try {
+        var suspects = [];
+        for (var i = 0; i < document.styleSheets.length; i++) {
+          var sheet = document.styleSheets[i];
+          try {
+            var rules = sheet.cssRules || sheet.rules;
+            if (!rules) continue;
+            for (var j = 0; j < rules.length; j++) {
+              var r = rules[j];
+              if (!r.selectorText || !r.style) continue;
+              // section, h1-h6, 또는 padding:0 / margin:0 의심 룰
+              var sel = r.selectorText;
+              var hasReset = (r.style.padding === "0px" || r.style.padding === "0") ||
+                             (r.style.margin === "0px" || r.style.margin === "0");
+              var matchesSection = /\bsection\b/i.test(sel);
+              if ((hasReset && (sel.indexOf("*") !== -1 || matchesSection)) || matchesSection) {
+                suspects.push({
+                  sheet: (sheet.href || "inline").slice(-60),
+                  selector: sel.slice(0, 80),
+                  padding: r.style.padding || "-",
+                  margin: r.style.margin || "-",
+                });
+              }
+            }
+          } catch (e) {
+            log("⚠️ 시트 접근 차단(CORS):", (sheet.href || "inline").slice(-60));
+          }
+        }
+        if (suspects.length === 0) {
+          log("✅ 의심 룰 없음");
+        } else {
+          log("⚠️ 의심 룰 " + suspects.length + "건 발견:");
+          console.table(suspects.slice(0, 30));
+        }
+      } catch (e) {
+        log("스타일시트 검사 실패:", e.message);
+      }
+      groupEnd();
+
+      log("진단 완료. 위 내용을 캡처해서 개발자에게 전달해주세요.");
+    })();
 
     /* ───── FAQ accordion ───── */
     root.querySelectorAll(".moso-faq-item").forEach(function (item) {

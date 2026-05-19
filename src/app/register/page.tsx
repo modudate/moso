@@ -574,6 +574,11 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="선호 거주지 (복수 선택)" id="idealCities">
+              <SelectAllRow
+                allSelected={idealCities.length === CITIES.length}
+                onAll={() => setIdealCities([...CITIES])}
+                onClear={() => setIdealCities([])}
+              />
               <div className="flex flex-wrap gap-2">
                 {CITIES.map(c => (
                   <button key={c} onClick={() => toggleMulti(idealCities, c, setIdealCities)}
@@ -620,6 +625,11 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="선호 학력 (복수 선택)" id="idealEducation">
+              <SelectAllRow
+                allSelected={idealEducation.length === EDUCATIONS.length}
+                onAll={() => setIdealEducation([...EDUCATIONS])}
+                onClear={() => setIdealEducation([])}
+              />
               <div className="flex flex-wrap gap-2">
                 {EDUCATIONS.map(e => (
                   <button key={e} onClick={() => toggleMulti(idealEducation, e, setIdealEducation)}
@@ -644,6 +654,11 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="선호 MBTI (복수 선택)" id="idealMbti">
+              <SelectAllRow
+                allSelected={idealMbti.length === MBTI_TYPES.length}
+                onAll={() => setIdealMbti([...MBTI_TYPES])}
+                onClear={() => setIdealMbti([])}
+              />
               <div className="grid grid-cols-4 gap-2">
                 {MBTI_TYPES.map(m => (
                   <button key={m} onClick={() => toggleMulti(idealMbti, m, setIdealMbti)}
@@ -734,26 +749,27 @@ function Field({ label, children, id }: { label: string; children: React.ReactNo
   );
 }
 
-// 다중 선택 항목에서 "전체 선택 / 무관" 단축 버튼 한 줄
+// 다중 선택 항목에서 "무관" 단축 버튼
+//   - 활성(누른 상태) = 전체 선택 = 무관 (어떤 옵션이든 OK)
+//   - 비활성 = 사용자가 일부만 골랐거나 아직 안 고른 상태
+//   - 클릭 시 토글: 비활성 → 전체 선택 / 활성 → 전체 해제
+// 운영 피드백: 기존엔 "전체 선택"과 "무관"이 둘 다 있어 헷갈리고, "무관"은 단순 안내 텍스트라
+//   터치가 안 된다는 항의가 많아 단일 토글로 통합.
 function SelectAllRow({ allSelected, onAll, onClear }: { allSelected: boolean; onAll: () => void; onClear: () => void }) {
   return (
     <div className="flex gap-2 mb-2">
       <button
         type="button"
-        onClick={onAll}
-        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-          allSelected ? "text-white border-transparent" : "bg-white text-foreground border-border hover:border-[#ff8a3d]/30"
+        onClick={allSelected ? onClear : onAll}
+        aria-pressed={allSelected}
+        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+          allSelected
+            ? "text-white border-transparent shadow-sm"
+            : "bg-white text-foreground border-border hover:border-[#ff8a3d]/40"
         }`}
         style={allSelected ? { backgroundColor: "#ff8a3d" } : {}}
       >
-        전체 선택
-      </button>
-      <button
-        type="button"
-        onClick={onClear}
-        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-muted-fg border border-border hover:border-gray-400 transition-colors"
-      >
-        무관 (선택 해제)
+        무관 {allSelected ? "(해제)" : "(전체 선택)"}
       </button>
     </div>
   );
