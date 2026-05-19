@@ -790,13 +790,23 @@ function EditableField({ label, value, fieldKey, editing, editValue, suffix, max
   label: string; value: string; fieldKey: string; editing: string | null; editValue: string; suffix?: string; maxLength?: number;
   onDoubleClick: (key: string, val: string) => void; onSave: (key: string, val: unknown) => void; onChange: (v: string) => void; onKeyDown: (e: React.KeyboardEvent, key: string) => void; onCancel: () => void;
 }) {
+  const composingRef = useRef(false);
   if (editing === fieldKey) {
     return (
       <div>
         <span className="text-muted-fg text-sm">{label}</span>
         {maxLength ? (
           <div>
-            <textarea autoFocus value={editValue} onChange={(e) => { if (e.target.value.length <= maxLength) onChange(e.target.value); }}
+            <textarea autoFocus value={editValue}
+              onChange={(e) => {
+                if (composingRef.current || e.target.value.length <= maxLength) onChange(e.target.value);
+              }}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={(e) => {
+                composingRef.current = false;
+                const v = e.currentTarget.value;
+                onChange(v.length > maxLength ? v.slice(0, maxLength) : v);
+              }}
               onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
               onBlur={onCancel} rows={3} maxLength={maxLength}
               className="w-full px-3 py-2 border border-primary rounded-lg text-base focus:outline-none resize-none" />

@@ -61,6 +61,11 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // 한국어 IME 조합 중 onChange 가 중간 상태를 덮어쓰는 문제 방지용 ref
+  const nickComposingRef = useRef(false);
+  const charmComposingRef = useRef(false);
+  const datingComposingRef = useRef(false);
+
   // 닉네임 중복체크 상태 (디바운스)
   const [nickStatus, setNickStatus] = useState<
     | { kind: "idle" }
@@ -322,7 +327,18 @@ export default function RegisterPage() {
               <input
                 type="text"
                 value={nickname}
-                onChange={(e) => setNickname(sanitizeNicknameInput(e.target.value))}
+                onChange={(e) => {
+                  if (nickComposingRef.current) {
+                    setNickname(e.target.value);
+                  } else {
+                    setNickname(sanitizeNicknameInput(e.target.value));
+                  }
+                }}
+                onCompositionStart={() => { nickComposingRef.current = true; }}
+                onCompositionEnd={(e) => {
+                  nickComposingRef.current = false;
+                  setNickname(sanitizeNicknameInput(e.currentTarget.value));
+                }}
                 placeholder={`이성에게 보여질 닉네임 (최대 ${NICKNAME_MAX}자, 특수문자/이모티콘 불가)`}
                 maxLength={NICKNAME_MAX}
                 className="input-field"
@@ -444,7 +460,18 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="저의 매력은" id="charm">
-              <textarea value={charm} onChange={(e) => { if (e.target.value.length <= INTRO_MAX) setCharm(e.target.value); }}
+              <textarea value={charm}
+                onChange={(e) => {
+                  if (charmComposingRef.current || e.target.value.length <= INTRO_MAX) {
+                    setCharm(e.target.value);
+                  }
+                }}
+                onCompositionStart={() => { charmComposingRef.current = true; }}
+                onCompositionEnd={(e) => {
+                  charmComposingRef.current = false;
+                  const v = e.currentTarget.value;
+                  setCharm(v.length > INTRO_MAX ? v.slice(0, INTRO_MAX) : v);
+                }}
                 placeholder={`저의 매력을 자유롭게 적어주세요 (최소 ${INTRO_MIN}자)`} rows={5} maxLength={INTRO_MAX}
                 className="input-field resize-none" />
               <span className={`text-xs ${charm.trim().length < INTRO_MIN ? "text-red-500" : "text-muted-fg"}`}>
@@ -453,7 +480,18 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="연인이 생기면 하고 싶은 일은" id="datingStyle">
-              <textarea value={datingStyle} onChange={(e) => { if (e.target.value.length <= INTRO_MAX) setDatingStyle(e.target.value); }}
+              <textarea value={datingStyle}
+                onChange={(e) => {
+                  if (datingComposingRef.current || e.target.value.length <= INTRO_MAX) {
+                    setDatingStyle(e.target.value);
+                  }
+                }}
+                onCompositionStart={() => { datingComposingRef.current = true; }}
+                onCompositionEnd={(e) => {
+                  datingComposingRef.current = false;
+                  const v = e.currentTarget.value;
+                  setDatingStyle(v.length > INTRO_MAX ? v.slice(0, INTRO_MAX) : v);
+                }}
                 placeholder={`연인이 생기면 함께 하고 싶은 일을 적어주세요 (최소 ${INTRO_MIN}자)`} rows={5} maxLength={INTRO_MAX}
                 className="input-field resize-none" />
               <span className={`text-xs ${datingStyle.trim().length < INTRO_MIN ? "text-red-500" : "text-muted-fg"}`}>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "개인정보처리방침 - 모두의 모임",
+  title: "개인정보처리방침 - 모두의 소개팅",
 };
 
 export default function PrivacyPage() {
@@ -15,10 +15,10 @@ export default function PrivacyPage() {
       </header>
 
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 text-sm leading-7 text-gray-800">
-        <p className="text-xs text-gray-500">시행일: 2026년 3월 17일 (Placeholder — 정식 본문은 클라이언트 변호사 검토 후 교체 예정)</p>
+        <p className="text-xs text-gray-500">시행일: 2026년 5월 21일</p>
 
         <p>
-          모두의 모임(이하 “회사”)은 「개인정보 보호법」 등 관련 법령을 준수하며,
+          모두의 소개팅(이하 &quot;회사&quot;)은 「개인정보 보호법」 등 관련 법령을 준수하며,
           회원의 개인정보 보호를 위해 다음과 같이 처리방침을 수립·공개합니다.
         </p>
 
@@ -97,8 +97,8 @@ export default function PrivacyPage() {
 
         <Section title="9. 개인정보 보호 책임자">
           <ul className="list-disc pl-5 space-y-1">
-            <li>책임자: (운영사 지정 예정)</li>
-            <li>이메일: (운영사 지정 예정)</li>
+            <li>책임자: 정원진</li>
+            <li>이메일: modudate@kakao.com</li>
           </ul>
         </Section>
 
@@ -111,8 +111,6 @@ export default function PrivacyPage() {
             <li>경찰청 사이버수사국 (ecrm.cyber.go.kr / 182)</li>
           </ul>
         </Section>
-
-        <p className="pt-6 text-xs text-gray-500">본 문서는 placeholder입니다. 실제 운영 전에 클라이언트의 변호사 검토를 거친 본문으로 교체되어야 합니다.</p>
       </article>
     </main>
   );
