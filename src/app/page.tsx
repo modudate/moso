@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -111,7 +111,7 @@ export default function Home() {
       const redirectTo = encodeURIComponent(
         `${window.location.origin}/auth/callback`,
       );
-      window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&code_challenge=${challenge}&code_challenge_method=s256`;
+      window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&code_challenge=${challenge}&code_challenge_method=s256&hl=ko`;
     } catch {
       setLoading(false);
     }
@@ -194,7 +194,7 @@ export default function Home() {
           )}
 
           <p className="text-[11px] leading-5 text-white/90 text-center mt-1">
-            ‘Google 계정으로 계속하기’를 누르면 모두의 모임{" "}
+            ‘Google 계정으로 계속하기’를 누르면 모두의 소개팅{" "}
             <Link href="/terms" className="underline font-medium">이용약관</Link>
             에 동의하는 것으로 간주됩니다. 회원의 개인정보 처리 방식은{" "}
             <Link href="/privacy" className="underline font-medium">개인정보처리방침</Link>

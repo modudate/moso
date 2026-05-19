@@ -89,7 +89,7 @@ export default function ProfileViewPage({ params }: { params: Promise<{ token: s
         </div>
       )}
 
-      <p className="text-center text-xs text-muted-fg/50 py-6">모두의 모임 · 이 링크는 생성일로부터 5일 후 만료됩니다</p>
+      <p className="text-center text-xs text-muted-fg/50 py-6">모두의 소개팅 · 이 링크는 생성일로부터 5일 후 만료됩니다</p>
     </main>
   );
 }

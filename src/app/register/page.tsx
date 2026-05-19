@@ -138,6 +138,7 @@ export default function RegisterPage() {
     if (!realName.trim()) return { msg: "본명을 입력해주세요", key: "realName" };
     const nv = validateNickname(nickname);
     if (!nv.ok) return { msg: nv.reason, key: "nickname" };
+    if (nickStatus.kind === "checking") return { msg: "닉네임 중복 확인 중입니다. 잠시 후 다시 시도해주세요.", key: "nickname" };
     if (nickStatus.kind === "error") return { msg: nickStatus.msg, key: "nickname" };
     if (!gender) return { msg: "성별을 선택해주세요", key: "gender" };
     if (!birthYear) return { msg: "출생년도를 선택해주세요", key: "birthYear" };

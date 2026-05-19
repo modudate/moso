@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useImperativeHandle, forwardRef } from "react";
+import { useState, useRef, useImperativeHandle, forwardRef, useId } from "react";
 import ImageCropperModal from "./ImageCropperModal";
 
 export interface ImageUploaderHandle {
@@ -50,6 +50,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
     const [failed, setFailed] = useState(false);
     const pendingUpload = useRef<Promise<{ path: string; url: string } | null> | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const inputId = useId();
     const [cropSrc, setCropSrc] = useState<string | null>(null);
     const pendingFileName = useRef<string>("photo");
 
@@ -159,9 +160,9 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
         <div className="relative inline-block">
           {preview ? (
             <>
-              <div
-                className={`${sizeClass} rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-[#ff8a3d] transition-all ${failed ? "ring-2 ring-red-400" : ""}`}
-                onClick={() => inputRef.current?.click()}
+              <label
+                htmlFor={inputId}
+                className={`${sizeClass} rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-[#ff8a3d] transition-all block ${failed ? "ring-2 ring-red-400" : ""}`}
               >
                 <img src={preview} alt={label || "사진"} className="w-full h-full object-cover" />
                 {uploading && (
@@ -174,7 +175,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
                     <span className="text-white text-xs font-medium">업로드 실패</span>
                   </div>
                 )}
-              </div>
+              </label>
               {(onRemove || failed) && (
                 <button
                   onClick={(e) => { e.stopPropagation(); handleRemoveClick(); }}
@@ -187,22 +188,23 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
               )}
             </>
           ) : (
-            <button
-              onClick={() => inputRef.current?.click()}
+            <label
+              htmlFor={inputId}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className={`${sizeClass} rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-[#ff8a3d] hover:text-[#ff8a3d] transition-colors`}
+              className={`${sizeClass} rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-[#ff8a3d] hover:text-[#ff8a3d] transition-colors cursor-pointer`}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
               <span className="text-[10px] mt-1">사진 등록</span>
-            </button>
+            </label>
           )}
           <input
             ref={inputRef}
+            id={inputId}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
             className="hidden"
             onChange={handleChange}
           />

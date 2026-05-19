@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { addProfileLink, getProfileLinkByToken, getUser, incrementLinkAccess } from "@/lib/store";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getUserById } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +11,28 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const { userId } = await req.json();
-  const user = getUser(userId);
+  if (!userId) return NextResponse.json({ error: "userId 필요" }, { status: 400 });
+
+  const user = await getUserById(userId);
   if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
 
+  const service = await createServiceClient();
   const token = nanoid(12);
   const now = new Date();
-  const expires = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-  addProfileLink({ token, userId, createdAt: now.toISOString(), expiresAt: expires.toISOString(), accessCount: 0, maxAccess: 10 });
+  const expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+  const { error } = await service.from("profile_links").insert({
+    token,
+    user_id: userId,
+    expires_at: expiresAt.toISOString(),
+    access_count: 0,
+    max_access: 10,
+  });
+
+  if (error) {
+    return NextResponse.json({ error: "링크 생성 실패: " + error.message }, { status: 500 });
+  }
+
   return NextResponse.json({ token, url: `/profile/${token}` });
 }
 
@@ -24,15 +40,27 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   if (!token) return NextResponse.json({ error: "토큰 필요" }, { status: 400 });
 
-  const link = getProfileLinkByToken(token);
-  if (!link) return NextResponse.json({ error: "유효하지 않은 링크" }, { status: 404 });
-  if (new Date(link.expiresAt) < new Date()) return NextResponse.json({ error: "만료된 링크" }, { status: 410 });
-  if (link.accessCount >= link.maxAccess) return NextResponse.json({ error: "접근 횟수 초과" }, { status: 429 });
+  const service = await createServiceClient();
 
-  incrementLinkAccess(token);
-  const user = getUser(link.userId);
+  const { data: link, error } = await service
+    .from("profile_links")
+    .select("*")
+    .eq("token", token)
+    .single();
+
+  if (error || !link) return NextResponse.json({ error: "유효하지 않은 링크" }, { status: 404 });
+  if (new Date(link.expires_at) < new Date()) return NextResponse.json({ error: "만료된 링크" }, { status: 410 });
+  if (link.access_count >= link.max_access) return NextResponse.json({ error: "접근 횟수 초과" }, { status: 429 });
+
+  // 접근 횟수 증가
+  await service
+    .from("profile_links")
+    .update({ access_count: link.access_count + 1 })
+    .eq("token", token);
+
+  const user = await getUserById(link.user_id);
   if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
 
-  const { phone, email, ...safeUser } = user;
+  const { phone: _phone, email: _email, ...safeUser } = user;
   return NextResponse.json(safeUser);
 }

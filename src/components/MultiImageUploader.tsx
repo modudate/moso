@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useImperativeHandle, forwardRef, useEffect } from "react";
+import { useState, useRef, useCallback, useImperativeHandle, forwardRef, useEffect, useId } from "react";
 import ImageCropperModal from "./ImageCropperModal";
 
 interface ImageSlot {
@@ -64,6 +64,7 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
     const pendingUploads = useRef<Map<number, Promise<{ path: string; url: string } | null>>>(new Map());
     const slotIdCounter = useRef(0);
     const inputRef = useRef<HTMLInputElement>(null);
+    const inputId = useId();
     // 크롭 대기열: 한 번에 한 파일씩 크롭 모달에서 처리
     const [cropQueue, setCropQueue] = useState<File[]>([]);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -93,24 +94,6 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       const clean = next.filter(s => !s.failed && s.serverUrl && !s.serverUrl.startsWith("blob:"));
       const urls = clean.map(s => s.serverUrl as string);
       const paths = clean.map(s => s.serverPath).filter((p): p is string => p !== null);
-      // [DEBUG] photo_urls 유실 추적: 빈 배열 emit 시 어디서 호출됐는지 stack 출력
-      console.log("[MultiImageUploader] emitChange", {
-        nextSlots: next.length,
-        cleanSlots: clean.length,
-        urls,
-      });
-      if (urls.length === 0 && next.length > 0) {
-        console.warn("[MultiImageUploader] ⚠️ 빈 배열 emit (slots 있음)", {
-          slotDetails: next.map(s => ({
-            serverUrl: s.serverUrl,
-            uploading: s.uploading,
-            failed: s.failed,
-          })),
-        });
-      }
-      if (urls.length === 0) {
-        console.trace("[MultiImageUploader] emitChange 빈 배열 stack");
-      }
       onChanged?.(paths, urls);
     }, [onChanged]);
 
@@ -171,16 +154,15 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
       const toAdd = files.slice(0, remaining);
       if (toAdd.length === 0) return;
 
-      setCropQueue((prev) => {
-        const already = prev.length > 0 || cropSrc !== null;
-        const merged = [...prev, ...toAdd];
-        if (!already) {
-          // 대기열이 비어 있었으면 첫 파일로 크롭 모달 열기
-          openCropFor(toAdd[0]);
-        }
-        return merged;
-      });
-    }, [slots.length, maxCount, cropSrc, openCropFor]);
+      // cropSrc / cropQueue 상태는 클로저로 읽어 side-effect 없이 판단
+      const shouldOpen = cropSrc === null && cropQueue.length === 0;
+      setCropQueue((prev) => [...prev, ...toAdd]);
+      // openCropFor(setCropSrc)는 상태 업데이터 밖에서 호출해야 한다.
+      // 업데이터 내부에서 호출하면 React Concurrent Mode에서 중복 실행·묵살될 수 있다.
+      if (shouldOpen) {
+        openCropFor(toAdd[0]);
+      }
+    }, [slots.length, maxCount, cropSrc, cropQueue.length, openCropFor]);
 
     const handleCropConfirm = useCallback((blob: Blob) => {
       const currentFile = cropQueue[0];
@@ -198,15 +180,17 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
         failed: false,
       };
 
-      setSlots((prev) => {
-        const slotIndex = prev.length;
-        const updated = [...prev, newSlot];
-        const uploadId = slotIdCounter.current++;
-        // 이미 9:16 으로 크롭 + 1080x1920 해상도이므로 추가 리사이즈 생략
-        const promise = uploadFile(croppedFile, slotIndex, uploadId, true);
-        pendingUploads.current.set(uploadId, promise);
-        return updated;
-      });
+      // slotIndex / uploadId / uploadFile 호출은 상태 업데이터 밖에서 수행해야
+      // React Concurrent Mode에서 중복 실행되지 않는다.
+      const slotIndex = slotsRef.current.length;
+      const uploadId = slotIdCounter.current++;
+      const updated = [...slotsRef.current, newSlot];
+      slotsRef.current = updated;
+      setSlots(updated);
+
+      // 이미 9:16 으로 크롭 + 1080x1920 해상도이므로 추가 리사이즈 생략
+      const promise = uploadFile(croppedFile, slotIndex, uploadId, true);
+      pendingUploads.current.set(uploadId, promise);
 
       // 큐에서 처리한 파일 제거 후, 다음 파일 있으면 이어서 크롭
       const next = cropQueue.slice(1);
@@ -419,24 +403,25 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
             );
           })}
           {slotsLeft > 0 && (
-            <button
-              onClick={() => inputRef.current?.click()}
+            <label
+              htmlFor={inputId}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className="w-20 aspect-[9/16] rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-[#ff8a3d] hover:text-[#ff8a3d] transition-colors flex-shrink-0"
+              className="w-20 aspect-[9/16] rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-[#ff8a3d] hover:text-[#ff8a3d] transition-colors flex-shrink-0 cursor-pointer"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
               <span className="text-[10px] mt-1">{slotsLeft > 1 ? `${slotsLeft}장 추가` : "추가"}</span>
-            </button>
+            </label>
           )}
         </div>
         <p className="text-xs text-gray-400 mt-1">{slots.length}/{maxCount}장 · 9:16 비율로 영역 조정 가능 · 길게 눌러 드래그하면 순서 변경</p>
         <input
           ref={inputRef}
+          id={inputId}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/*"
           multiple
           className="hidden"
           onChange={handleChange}

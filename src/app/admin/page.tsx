@@ -216,8 +216,22 @@ export default function AdminPage() {
   }, [loading]);
 
   const patchStatus = (id: string, updates: Record<string, unknown>) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } as User : u));
-    fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
+    const prev = users.find(u => u.id === id);
+    setUsers(list => list.map(u => u.id === id ? { ...u, ...updates } as User : u));
+    fetch("/api/profiles", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert("저장 실패: " + (data.error || res.statusText));
+          // 낙관적 업데이트 롤백
+          if (prev) setUsers(list => list.map(u => u.id === id ? prev : u));
+        }
+      })
+      .catch((err) => {
+        alert("네트워크 오류로 저장에 실패했습니다. 다시 시도해주세요.");
+        if (prev) setUsers(list => list.map(u => u.id === id ? prev : u));
+        console.error("[patchStatus] 저장 실패", err);
+      });
   };
 
   const handleApprove = (id: string) => {

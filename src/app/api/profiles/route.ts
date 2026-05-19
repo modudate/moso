@@ -48,15 +48,9 @@ export async function GET(req: NextRequest) {
 
     if (!admin) {
       // 일반 사용자: status=active 만 + 본인 반대 성별만
-      // role=female → 호출자는 male 이어야 함, role=male → 호출자는 female 이어야 함
-      // (cart/요청결과 등 일부 페이지는 status 없이 호출하지만, 비-active 데이터가 회원에게 노출되면 안 됨)
-      const me = result.find((u: { id: string }) => u.id === userAuth.userId);
-      // 호출자 본인이 같은 role 인 경우는 "내 반대 성별" 호출이 맞는지 검증
-      // (간단 정책: 일반 사용자는 자기 반대 성별의 active 만 받게 강제)
       result = result.filter((u: { status: string }) => u.status === "active");
-
-      // 자기 자신은 응답에 포함될 필요 없음 (혹시 role 미스매치로 들어와도 제외)
-      void me;
+      // 전화번호·이메일은 일반 회원 목록에서 제거 (개인정보 보호)
+      result = result.map(({ phone: _p, email: _e, ...safe }: { phone: unknown; email: unknown; [key: string]: unknown }) => safe);
     }
 
     const cacheable = !!role && status === "active" && !admin;

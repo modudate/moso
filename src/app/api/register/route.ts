@@ -105,11 +105,10 @@ export async function POST(req: NextRequest) {
 
   if (body.idealType) {
     const it = body.idealType;
-    // 다중 선택 우선, 단일값은 호환을 위해 첫 번째 값으로 채움
     const ageRanges: string[] = Array.isArray(it.idealAgeRanges) && it.idealAgeRanges.length > 0
       ? it.idealAgeRanges
       : (it.idealAge ? [it.idealAge] : []);
-    await service.from("ideal_types").insert({
+    const { error: idealError } = await service.from("ideal_types").insert({
       user_id: user.id,
       ideal_age_range: ageRanges[0] ?? it.idealAge ?? null,
       ideal_age_ranges: ageRanges,
@@ -124,6 +123,13 @@ export async function POST(req: NextRequest) {
       ideal_mbti: it.idealMbti || [],
       top_priorities: it.topPriorities || [],
     });
+
+    if (idealError) {
+      // 이상형 저장 실패 시 users/profiles 모두 롤백
+      await service.from("profiles").delete().eq("user_id", user.id);
+      await service.from("users").delete().eq("id", user.id);
+      return NextResponse.json({ error: "이상형 정보 저장에 실패했습니다. 다시 시도해주세요." }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });
