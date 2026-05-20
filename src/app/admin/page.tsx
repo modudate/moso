@@ -351,7 +351,7 @@ export default function AdminPage() {
     idealActiveCount > 0;
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background overflow-x-hidden">
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -480,7 +480,7 @@ export default function AdminPage() {
         </aside>
 
         {/* ── 회원 목록 ── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 w-full">
           <div className="space-y-3">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -504,51 +504,51 @@ export default function AdminPage() {
                 return (
                   <div
                     key={u.id}
-                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
+                    className={`flex items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
                     onClick={() => {
                       try { sessionStorage.setItem("admin_scroll_y", String(window.scrollY)); } catch {}
                       router.push(`/admin/${u.id}`);
                     }}
                   >
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="w-14 h-14 sm:w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                         {u.photoUrls[0] ? (
                           <img src={u.photoUrls[0]} alt={u.nickname} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>
+                          <div className="w-full h-full flex items-center justify-center text-lg sm:text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-base">{u.realName}</h3>
-                          <span className="text-sm text-muted-fg">({u.nickname})</span>
-                          {isNew(u.createdAt) && <span className="text-xs font-bold text-white bg-primary px-2 py-0.5 rounded-md">NEW</span>}
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <h3 className="font-bold text-sm sm:text-base truncate max-w-[100px] sm:max-w-none">{u.realName}</h3>
+                          <span className="text-xs sm:text-sm text-muted-fg truncate max-w-[80px] sm:max-w-none">({u.nickname})</span>
+                          {isNew(u.createdAt) && <span className="text-[10px] sm:text-xs font-bold text-white bg-primary px-1.5 sm:px-2 py-0.5 rounded-md">NEW</span>}
                           {mdIds.has(u.id) && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
+                            <span className="text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
                               MD {mdCountMap.get(u.id) ?? ""}
                             </span>
                           )}
-                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
-                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
+                          <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
+                          <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
                             {u.role === "male" ? "남성" : "여성"}
                           </span>
                           {ms && ms.total > 0 && (
-                            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
+                            <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
                               매칭 {ms.total}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-fg mt-1 truncate">
+                        <p className="text-xs sm:text-sm text-muted-fg mt-1 truncate">
                           {u.birthYear}년생 · {u.height}cm · {regionLabel(u.city, u.district)} · {u.workplace} · {u.mbti}
                         </p>
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
                           {u.expiresAt && (
-                            <p className={`text-xs ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>
+                            <p className={`text-[10px] sm:text-xs ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>
                               만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}
                             </p>
                           )}
                           {ms && ms.total > 0 && (
-                            <p className="text-xs text-muted-fg">
+                            <p className="text-[10px] sm:text-xs text-muted-fg">
                               {ms.pending > 0 && <span className="text-warning">대기 {ms.pending}</span>}
                               {ms.pending > 0 && (ms.approved > 0 || ms.rejected > 0) && " · "}
                               {ms.approved > 0 && <span className="text-success">수락 {ms.approved}</span>}
@@ -559,21 +559,21 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0 self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
                       {u.status === "pending" && (
                         <>
-                          <button onClick={() => handleApprove(u.id)} className="px-4 py-2 bg-success text-white text-sm font-semibold rounded-lg hover:bg-success/80 transition-colors whitespace-nowrap">승인</button>
-                          <button onClick={() => openRejectModal(u)} className="px-4 py-2 bg-danger text-white text-sm font-semibold rounded-lg hover:bg-danger/80 transition-colors whitespace-nowrap">반려</button>
+                          <button onClick={() => handleApprove(u.id)} className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-success text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-success/80 transition-colors whitespace-nowrap">승인</button>
+                          <button onClick={() => openRejectModal(u)} className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-danger text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-danger/80 transition-colors whitespace-nowrap">반려</button>
                         </>
                       )}
                       {u.status === "active" && (
-                        <button onClick={() => handleBlock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-danger/10 hover:text-danger transition-colors whitespace-nowrap">차단</button>
+                        <button onClick={() => handleBlock(u.id)} className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-danger/10 hover:text-danger transition-colors whitespace-nowrap">차단</button>
                       )}
                       {u.status === "blocked" && (
-                        <button onClick={() => handleUnblock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-success/10 hover:text-success transition-colors whitespace-nowrap">해제</button>
+                        <button onClick={() => handleUnblock(u.id)} className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-success/10 hover:text-success transition-colors whitespace-nowrap">해제</button>
                       )}
                       {u.status === "rejected" && (
-                        <button onClick={() => handleUnreject(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors whitespace-nowrap">반려 취소</button>
+                        <button onClick={() => handleUnreject(u.id)} className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors whitespace-nowrap">반려 취소</button>
                       )}
                     </div>
                   </div>
