@@ -11,7 +11,6 @@ import {
 } from "@/lib/options";
 import MultiImageUploader, { type MultiImageUploaderHandle } from "@/components/MultiImageUploader";
 import ImageUploader, { type ImageUploaderHandle } from "@/components/ImageUploader";
-import { createPortal } from "react-dom";
 import {
   validateNickname, sanitizeNicknameInput, NICKNAME_MAX,
   validateIntroText, INTRO_MIN, INTRO_MAX,
