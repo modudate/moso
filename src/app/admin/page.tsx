@@ -67,6 +67,7 @@ export default function AdminPage() {
   const [page, setPage] = useState<number>(initialFilters?.page ?? 1);
   const [rejectTarget, setRejectTarget] = useState<User | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
   const infoJobRef = useRef<HTMLDivElement | null>(null);
 
   // 필터 상태가 바뀌면 sessionStorage 동기화
@@ -362,9 +363,9 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* ── 필터 사이드바 ── */}
-        <aside className="w-72 shrink-0 sticky top-[84px] self-start max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl border border-border bg-white shadow-sm">
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-[84px] self-start max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl border border-border bg-white shadow-sm">
           <div className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-foreground">검색 · 필터</h2>
@@ -503,60 +504,62 @@ export default function AdminPage() {
                 return (
                   <div
                     key={u.id}
-                    className={`flex items-center gap-4 p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
                     onClick={() => {
                       try { sessionStorage.setItem("admin_scroll_y", String(window.scrollY)); } catch {}
                       router.push(`/admin/${u.id}`);
                     }}
                   >
-                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                      {u.photoUrls[0] ? (
-                        <img src={u.photoUrls[0]} alt={u.nickname} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-base">{u.realName}</h3>
-                        <span className="text-sm text-muted-fg">({u.nickname})</span>
-                        {isNew(u.createdAt) && <span className="text-xs font-bold text-white bg-primary px-2 py-0.5 rounded-md">NEW</span>}
-                        {mdIds.has(u.id) && (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
-                            MD {mdCountMap.get(u.id) ?? ""}
-                          </span>
-                        )}
-                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
-                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
-                          {u.role === "male" ? "남성" : "여성"}
-                        </span>
-                        {ms && ms.total > 0 && (
-                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
-                            매칭 {ms.total}
-                          </span>
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                        {u.photoUrls[0] ? (
+                          <img src={u.photoUrls[0]} alt={u.nickname} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>
                         )}
                       </div>
-                      <p className="text-sm text-muted-fg mt-1 truncate">
-                        {u.birthYear}년생 · {u.height}cm · {regionLabel(u.city, u.district)} · {u.workplace} · {u.mbti}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1 flex-wrap">
-                        {u.expiresAt && (
-                          <p className={`text-xs ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>
-                            만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}
-                          </p>
-                        )}
-                        {ms && ms.total > 0 && (
-                          <p className="text-xs text-muted-fg">
-                            {ms.pending > 0 && <span className="text-warning">대기 {ms.pending}</span>}
-                            {ms.pending > 0 && (ms.approved > 0 || ms.rejected > 0) && " · "}
-                            {ms.approved > 0 && <span className="text-success">수락 {ms.approved}</span>}
-                            {ms.approved > 0 && ms.rejected > 0 && " · "}
-                            {ms.rejected > 0 && <span className="text-danger">거절 {ms.rejected}</span>}
-                          </p>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-base">{u.realName}</h3>
+                          <span className="text-sm text-muted-fg">({u.nickname})</span>
+                          {isNew(u.createdAt) && <span className="text-xs font-bold text-white bg-primary px-2 py-0.5 rounded-md">NEW</span>}
+                          {mdIds.has(u.id) && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
+                              MD {mdCountMap.get(u.id) ?? ""}
+                            </span>
+                          )}
+                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
+                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
+                            {u.role === "male" ? "남성" : "여성"}
+                          </span>
+                          {ms && ms.total > 0 && (
+                            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
+                              매칭 {ms.total}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-fg mt-1 truncate">
+                          {u.birthYear}년생 · {u.height}cm · {regionLabel(u.city, u.district)} · {u.workplace} · {u.mbti}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          {u.expiresAt && (
+                            <p className={`text-xs ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>
+                              만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}
+                            </p>
+                          )}
+                          {ms && ms.total > 0 && (
+                            <p className="text-xs text-muted-fg">
+                              {ms.pending > 0 && <span className="text-warning">대기 {ms.pending}</span>}
+                              {ms.pending > 0 && (ms.approved > 0 || ms.rejected > 0) && " · "}
+                              {ms.approved > 0 && <span className="text-success">수락 {ms.approved}</span>}
+                              {ms.approved > 0 && ms.rejected > 0 && " · "}
+                              {ms.rejected > 0 && <span className="text-danger">거절 {ms.rejected}</span>}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-2 flex-shrink-0 self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
                       {u.status === "pending" && (
                         <>
                           <button onClick={() => handleApprove(u.id)} className="px-4 py-2 bg-success text-white text-sm font-semibold rounded-lg hover:bg-success/80 transition-colors whitespace-nowrap">승인</button>
@@ -871,6 +874,162 @@ export default function AdminPage() {
             </div>
           </>
         )}
+
+      {/* ── 모바일 전용 플로팅 필터 버튼 ── */}
+      <button
+        onClick={() => setShowMobileFilter(true)}
+        className={`fixed bottom-6 right-6 lg:hidden z-40 p-4 rounded-full shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2 font-bold ${
+          hasAnyFilter
+            ? "bg-[#7c5cfc] text-white hover:bg-violet-600"
+            : "bg-[#ff8a3d] text-white hover:bg-orange-600"
+        }`}
+      >
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+        </svg>
+        <span className="text-sm">
+          {hasAnyFilter ? "필터 적용 중" : "필터"} ({filtered.length}명)
+        </span>
+      </button>
+
+      {/* ── 모바일 필터 모달/드로어 ── */}
+      {showMobileFilter && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-[55] lg:hidden"
+            onClick={() => setShowMobileFilter(false)}
+          />
+          <div className="fixed inset-0 z-[56] flex items-center justify-center p-4 pointer-events-none lg:hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col pointer-events-auto animate-scaleIn">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h3 className="text-lg font-bold text-foreground">검색 · 필터 ({filtered.length}명)</h3>
+                <button onClick={() => setShowMobileFilter(false)} className="text-muted-fg hover:text-foreground transition-colors">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1 text-left">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  placeholder="이름/전화번호 (2글자+)"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+
+                <div className="space-y-2.5">
+                  <FilterSelect label="상태" value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1); }} options={[
+                    { value: "", label: "전체 상태" },
+                    { value: "pending", label: "승인대기" },
+                    { value: "active", label: "활성" },
+                    { value: "blocked", label: "차단" },
+                    { value: "rejected", label: "반려" },
+                  ]} />
+
+                  <FilterSelect label="성별" value={genderFilter} onChange={(v) => { setGenderFilter(v); setPage(1); }} options={[
+                    { value: "", label: "전체 성별" },
+                    { value: "male", label: "남성" },
+                    { value: "female", label: "여성" },
+                  ]} />
+
+                  <FilterSelect label="매칭" value={matchFilter} onChange={(v) => { setMatchFilter(v); setPage(1); }} options={[
+                    { value: "", label: "전체 매칭" },
+                    { value: "has_match", label: "매칭 있음" },
+                    { value: "has_approved", label: "매칭 확정 있음" },
+                    { value: "has_pending", label: "대기중 있음" },
+                    { value: "has_rejected", label: "거절 있음" },
+                    { value: "no_match", label: "매칭 없음" },
+                  ]} />
+
+                  <FilterSelect label="MD 추천" value={mdFilter} onChange={(v) => { setMdFilter(v); setPage(1); }} options={[
+                    { value: "", label: "전체 MD 추천" },
+                    { value: "has_md", label: "MD 추천 이력 있음" },
+                    { value: "no_md", label: "MD 추천 이력 없음" },
+                    { value: "md_approved", label: "MD 추천 수락 있음" },
+                    { value: "md_rejected", label: "MD 추천 거절 있음" },
+                    { value: "md_pending", label: "MD 추천 대기중 있음" },
+                  ]} />
+                </div>
+
+                <div className="pt-3 border-t border-border space-y-2">
+                  <button
+                    onClick={openInfoFilters}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      infoActiveCount > 0
+                        ? "bg-[#ff8a3d]/10 border-[#ff8a3d]/30 text-[#ff8a3d]"
+                        : "bg-white border-border hover:border-[#ff8a3d]/30"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                      </svg>
+                      정보 필터
+                    </span>
+                    {infoActiveCount > 0 && (
+                      <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#ff8a3d" }}>
+                        {infoActiveCount}
+                      </span>
+                    )}
+                  </button>
+                  {infoActiveCount > 0 && (
+                    <button onClick={() => { setInfoFilters({}); setPage(1); }} className="w-full text-xs text-danger hover:underline text-left px-1">
+                      정보 필터 초기화
+                    </button>
+                  )}
+
+                  <button
+                    onClick={openIdealFilters}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      idealActiveCount > 0
+                        ? "bg-[#7c5cfc]/10 border-[#7c5cfc]/40 text-[#7c5cfc]"
+                        : "bg-white border-border hover:border-[#7c5cfc]/40"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                      </svg>
+                      이상형 필터
+                    </span>
+                    {idealActiveCount > 0 && (
+                      <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#7c5cfc" }}>
+                        {idealActiveCount}
+                      </span>
+                    )}
+                  </button>
+                  {idealActiveCount > 0 && (
+                    <button onClick={() => { setIdealFilters({}); setPage(1); }} className="w-full text-xs text-danger hover:underline text-left px-1">
+                      이상형 필터 초기화
+                    </button>
+                  )}
+                </div>
+
+                {hasAnyFilter && (
+                  <button
+                    onClick={resetAllFilters}
+                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-muted-fg border border-border hover:bg-muted/40 transition-colors"
+                  >
+                    전체 필터 초기화
+                  </button>
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-border">
+                <button
+                  onClick={() => setShowMobileFilter(false)}
+                  className="w-full py-3.5 rounded-xl text-white font-bold text-base transition-colors"
+                  style={{ backgroundColor: "#ff8a3d" }}
+                >
+                  결과 보기 ({filtered.length}명)
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <style jsx>{`
         @keyframes scaleIn {
