@@ -8,6 +8,9 @@ import {
   getMdRecsForMale,
 } from "@/lib/db";
 import { requireAdmin, requireUser, requireSelfOrAdmin, isAdmin } from "@/lib/auth-guard";
+import type { User } from "@/lib/types";
+
+type PublicUser = Omit<User, "phone" | "email">;
 
 export const dynamic = "force-dynamic";
 
@@ -48,13 +51,14 @@ export async function GET(req: NextRequest) {
 
     if (!admin) {
       // 일반 사용자: status=active 만 + 본인 반대 성별만
-      result = result.filter((u: { status: string }) => u.status === "active");
-      // 전화번호·이메일은 일반 회원 목록에서 제거 (개인정보 보호)
-      result = result.map(({ phone: _p, email: _e, ...safe }: { phone: unknown; email: unknown; [key: string]: unknown }) => safe);
+      result = result.filter((u) => u.status === "active");
     }
 
+    const payload: User[] | PublicUser[] = !admin
+      ? result.map(({ phone: _p, email: _e, ...safe }) => safe)
+      : result;
     const cacheable = !!role && status === "active" && !admin;
-    return NextResponse.json(result, {
+    return NextResponse.json(payload, {
       headers: cacheable
         ? { "Cache-Control": "private, max-age=30" }
         : { "Cache-Control": "no-store" },
