@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "모두의 소개팅 - 프로필 매칭 관리",
   description: "모두의 소개팅 프로필 매칭 서비스",
+  verification: {
+    google: "6mJIcC3OgtWv-N3Rp0YyRX5nHsOu341p-N00u_Cr3IY",
+  },
 };
 
 export default function RootLayout({

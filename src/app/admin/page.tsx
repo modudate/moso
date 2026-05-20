@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation, IdealType } from "@/lib/types";
 import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES, JOBS } from "@/lib/options";
@@ -304,6 +305,26 @@ export default function AdminPage() {
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
+  const resetAllFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setGenderFilter("");
+    setMatchFilter("");
+    setMdFilter("");
+    setInfoFilters({});
+    setIdealFilters({});
+    setPage(1);
+  };
+
+  const hasAnyFilter =
+    search.length >= 2 ||
+    !!statusFilter ||
+    !!genderFilter ||
+    !!matchFilter ||
+    !!mdFilter ||
+    infoActiveCount > 0 ||
+    idealActiveCount > 0;
+
   return (
     <main className="min-h-screen bg-background">
       <header className="sticky top-0 z-50" style={{ backgroundColor: "#ff8a3d" }}>
@@ -316,181 +337,236 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
-        <div className="flex flex-wrap gap-3 items-center">
-          <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="이름/전화번호 검색 (2글자 이상)"
-            className="px-4 py-2.5 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-primary/30 w-64" />
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2.5 rounded-xl border border-border bg-white text-base">
-            <option value="">전체 상태</option>
-            <option value="pending">승인대기</option>
-            <option value="active">활성</option>
-            <option value="blocked">차단</option>
-            <option value="rejected">반려</option>
-          </select>
-          <select value={genderFilter} onChange={(e) => { setGenderFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2.5 rounded-xl border border-border bg-white text-base">
-            <option value="">전체 성별</option>
-            <option value="male">남성</option>
-            <option value="female">여성</option>
-          </select>
-          <select value={matchFilter} onChange={(e) => { setMatchFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2.5 rounded-xl border border-border bg-white text-base">
-            <option value="">전체 매칭</option>
-            <option value="has_match">매칭 있음</option>
-            <option value="has_approved">매칭 확정 있음</option>
-            <option value="has_pending">대기중 있음</option>
-            <option value="has_rejected">거절 있음</option>
-            <option value="no_match">매칭 없음</option>
-          </select>
-          <select value={mdFilter} onChange={(e) => { setMdFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2.5 rounded-xl border border-border bg-white text-base">
-            <option value="">전체 MD 추천</option>
-            <option value="has_md">MD 추천 이력 있음</option>
-            <option value="no_md">MD 추천 이력 없음</option>
-          </select>
-          <button
-            onClick={openInfoFilters}
-            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-              infoActiveCount > 0
-                ? "bg-[#ff8a3d]/10 border-[#ff8a3d]/30 text-[#ff8a3d]"
-                : "bg-white border-border hover:border-[#ff8a3d]/30"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-            </svg>
-            정보 필터
-            {infoActiveCount > 0 && (
-              <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "#ff8a3d" }}>
-                {infoActiveCount}
-              </span>
-            )}
-          </button>
-          {infoActiveCount > 0 && (
-            <button
-              onClick={() => { setInfoFilters({}); setPage(1); }}
-              className="text-xs text-danger hover:underline"
-            >
-              정보 초기화
-            </button>
-          )}
-          <button
-            onClick={openIdealFilters}
-            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-              idealActiveCount > 0
-                ? "bg-[#7c5cfc]/10 border-[#7c5cfc]/40 text-[#7c5cfc]"
-                : "bg-white border-border hover:border-[#7c5cfc]/40"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-            </svg>
-            이상형 필터
-            {idealActiveCount > 0 && (
-              <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "#7c5cfc" }}>
-                {idealActiveCount}
-              </span>
-            )}
-          </button>
-          {idealActiveCount > 0 && (
-            <button
-              onClick={() => { setIdealFilters({}); setPage(1); }}
-              className="text-xs text-danger hover:underline"
-            >
-              이상형 초기화
-            </button>
-          )}
-          <span className="text-base text-muted-fg font-medium">{filtered.length}명</span>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex gap-6 items-start">
+        {/* ── 필터 사이드바 ── */}
+        <aside className="w-72 shrink-0 sticky top-[84px] self-start max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl border border-border bg-white shadow-sm">
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-foreground">검색 · 필터</h2>
+              <span className="text-sm font-semibold text-primary">{filtered.length}명</span>
+            </div>
 
-        {loading ? (
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="이름/전화번호 (2글자+)"
+              className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+
+            <div className="space-y-2.5">
+              <FilterSelect label="상태" value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1); }} options={[
+                { value: "", label: "전체 상태" },
+                { value: "pending", label: "승인대기" },
+                { value: "active", label: "활성" },
+                { value: "blocked", label: "차단" },
+                { value: "rejected", label: "반려" },
+              ]} />
+
+              <FilterSelect label="성별" value={genderFilter} onChange={(v) => { setGenderFilter(v); setPage(1); }} options={[
+                { value: "", label: "전체 성별" },
+                { value: "male", label: "남성" },
+                { value: "female", label: "여성" },
+              ]} />
+
+              <FilterSelect label="매칭" value={matchFilter} onChange={(v) => { setMatchFilter(v); setPage(1); }} options={[
+                { value: "", label: "전체 매칭" },
+                { value: "has_match", label: "매칭 있음" },
+                { value: "has_approved", label: "매칭 확정 있음" },
+                { value: "has_pending", label: "대기중 있음" },
+                { value: "has_rejected", label: "거절 있음" },
+                { value: "no_match", label: "매칭 없음" },
+              ]} />
+
+              <FilterSelect label="MD 추천" value={mdFilter} onChange={(v) => { setMdFilter(v); setPage(1); }} options={[
+                { value: "", label: "전체 MD 추천" },
+                { value: "has_md", label: "MD 추천 이력 있음" },
+                { value: "no_md", label: "MD 추천 이력 없음" },
+              ]} />
+            </div>
+
+            <div className="pt-3 border-t border-border space-y-2">
+              <button
+                onClick={openInfoFilters}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                  infoActiveCount > 0
+                    ? "bg-[#ff8a3d]/10 border-[#ff8a3d]/30 text-[#ff8a3d]"
+                    : "bg-white border-border hover:border-[#ff8a3d]/30"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                  </svg>
+                  정보 필터
+                </span>
+                {infoActiveCount > 0 && (
+                  <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#ff8a3d" }}>
+                    {infoActiveCount}
+                  </span>
+                )}
+              </button>
+              {infoActiveCount > 0 && (
+                <button onClick={() => { setInfoFilters({}); setPage(1); }} className="w-full text-xs text-danger hover:underline text-left px-1">
+                  정보 필터 초기화
+                </button>
+              )}
+
+              <button
+                onClick={openIdealFilters}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                  idealActiveCount > 0
+                    ? "bg-[#7c5cfc]/10 border-[#7c5cfc]/40 text-[#7c5cfc]"
+                    : "bg-white border-border hover:border-[#7c5cfc]/40"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                  </svg>
+                  이상형 필터
+                </span>
+                {idealActiveCount > 0 && (
+                  <span className="text-white text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#7c5cfc" }}>
+                    {idealActiveCount}
+                  </span>
+                )}
+              </button>
+              {idealActiveCount > 0 && (
+                <button onClick={() => { setIdealFilters({}); setPage(1); }} className="w-full text-xs text-danger hover:underline text-left px-1">
+                  이상형 필터 초기화
+                </button>
+              )}
+            </div>
+
+            {hasAnyFilter && (
+              <button
+                onClick={resetAllFilters}
+                className="w-full py-2 rounded-xl text-xs font-semibold text-muted-fg border border-border hover:bg-muted/40 transition-colors"
+              >
+                전체 필터 초기화
+              </button>
+            )}
+          </div>
+        </aside>
+
+        {/* ── 회원 목록 ── */}
+        <div className="flex-1 min-w-0">
           <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 p-5 bg-card rounded-2xl border border-border animate-pulse">
-                <div className="w-16 h-16 rounded-xl bg-gray-200 flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/3 bg-gray-200 rounded" />
-                  <div className="h-3 w-2/3 bg-gray-200 rounded" />
-                  <div className="h-3 w-1/4 bg-gray-200 rounded" />
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-5 bg-card rounded-2xl border border-border animate-pulse">
+                  <div className="w-16 h-16 rounded-xl bg-gray-200 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-1/3 bg-gray-200 rounded" />
+                    <div className="h-3 w-2/3 bg-gray-200 rounded" />
+                    <div className="h-3 w-1/4 bg-gray-200 rounded" />
+                  </div>
+                  <div className="w-16 h-9 bg-gray-200 rounded-lg flex-shrink-0" />
                 </div>
-                <div className="w-16 h-8 bg-gray-200 rounded-lg flex-shrink-0" />
+              ))
+            ) : paged.length === 0 ? (
+              <div className="py-16 text-center text-sm text-muted-fg">조건에 맞는 회원이 없습니다.</div>
+            ) : (
+              paged.map((u) => {
+                const st = statusLabel(u.status);
+                const expired = u.expiresAt && new Date(u.expiresAt) < new Date();
+                const ms = matchMap.get(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    className={`flex items-center gap-4 p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
+                    onClick={() => {
+                      try { sessionStorage.setItem("admin_scroll_y", String(window.scrollY)); } catch {}
+                      router.push(`/admin/${u.id}`);
+                    }}
+                  >
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                      {u.photoUrls[0] ? (
+                        <img src={u.photoUrls[0]} alt={u.nickname} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-base">{u.realName}</h3>
+                        <span className="text-sm text-muted-fg">({u.nickname})</span>
+                        {isNew(u.createdAt) && <span className="text-xs font-bold text-white bg-primary px-2 py-0.5 rounded-md">NEW</span>}
+                        {mdIds.has(u.id) && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
+                            MD {mdCountMap.get(u.id) ?? ""}
+                          </span>
+                        )}
+                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
+                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
+                          {u.role === "male" ? "남성" : "여성"}
+                        </span>
+                        {ms && ms.total > 0 && (
+                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
+                            매칭 {ms.total}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-fg mt-1 truncate">
+                        {u.birthYear}년생 · {u.height}cm · {regionLabel(u.city, u.district)} · {u.workplace} · {u.mbti}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        {u.expiresAt && (
+                          <p className={`text-xs ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>
+                            만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}
+                          </p>
+                        )}
+                        {ms && ms.total > 0 && (
+                          <p className="text-xs text-muted-fg">
+                            {ms.pending > 0 && <span className="text-warning">대기 {ms.pending}</span>}
+                            {ms.pending > 0 && (ms.approved > 0 || ms.rejected > 0) && " · "}
+                            {ms.approved > 0 && <span className="text-success">수락 {ms.approved}</span>}
+                            {ms.approved > 0 && ms.rejected > 0 && " · "}
+                            {ms.rejected > 0 && <span className="text-danger">거절 {ms.rejected}</span>}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {u.status === "pending" && (
+                        <>
+                          <button onClick={() => handleApprove(u.id)} className="px-4 py-2 bg-success text-white text-sm font-semibold rounded-lg hover:bg-success/80 transition-colors whitespace-nowrap">승인</button>
+                          <button onClick={() => openRejectModal(u)} className="px-4 py-2 bg-danger text-white text-sm font-semibold rounded-lg hover:bg-danger/80 transition-colors whitespace-nowrap">반려</button>
+                        </>
+                      )}
+                      {u.status === "active" && (
+                        <button onClick={() => handleBlock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-danger/10 hover:text-danger transition-colors whitespace-nowrap">차단</button>
+                      )}
+                      {u.status === "blocked" && (
+                        <button onClick={() => handleUnblock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-success/10 hover:text-success transition-colors whitespace-nowrap">해제</button>
+                      )}
+                      {u.status === "rejected" && (
+                        <button onClick={() => handleUnreject(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors whitespace-nowrap">반려 취소</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 pt-4">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button key={i} onClick={() => setPage(i + 1)}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${page === i + 1 ? "bg-primary text-white" : "bg-white border border-border hover:border-primary/30"}`}>
+                    {i + 1}
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        ) : (
-          <div className="space-y-3">
-            {paged.map((u) => {
-              const st = statusLabel(u.status);
-              const expired = u.expiresAt && new Date(u.expiresAt) < new Date();
-              const ms = matchMap.get(u.id);
-              return (
-                <div key={u.id} className={`flex items-center gap-4 p-5 bg-card rounded-2xl border border-border hover:shadow-md transition-all cursor-pointer ${expired ? "border-danger/30 bg-danger/5" : ""}`}
-                  onClick={() => {
-                    // 뒤로가기 시 스크롤 위치 복원용
-                    try { sessionStorage.setItem("admin_scroll_y", String(window.scrollY)); } catch {}
-                    router.push(`/admin/${u.id}`);
-                  }}>
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                    {u.photoUrls[0] ? <img src={u.photoUrls[0]} alt={u.nickname} className="w-full h-full object-cover" /> :
-                      <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary/20">{u.nickname?.[0]}</div>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-base">{u.realName}</h3>
-                      <span className="text-sm text-muted-fg">({u.nickname})</span>
-                      {isNew(u.createdAt) && <span className="text-xs font-bold text-white bg-primary px-2 py-0.5 rounded-md">NEW</span>}
-                      {mdIds.has(u.id) && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: "#7c5cfc" }}>
-                          MD {mdCountMap.get(u.id) ?? ""}
-                        </span>
-                      )}
-                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
-                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${u.role === "male" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>{u.role === "male" ? "남성" : "여성"}</span>
-                      {ms && ms.total > 0 && (
-                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${ms.approved > 0 ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
-                          매칭 {ms.total}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-fg mt-1 truncate">{u.birthYear}년생 · {u.height}cm · {regionLabel(u.city, u.district)} · {u.workplace} · {u.mbti}</p>
-                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                      {u.expiresAt && <p className={`text-xs ${expired ? "text-danger font-semibold" : "text-muted-fg"}`}>만료: {new Date(u.expiresAt).toLocaleDateString("ko-KR")}</p>}
-                      {ms && ms.total > 0 && (
-                        <p className="text-xs text-muted-fg">
-                          {ms.pending > 0 && <span className="text-warning">대기 {ms.pending}</span>}
-                          {ms.pending > 0 && (ms.approved > 0 || ms.rejected > 0) && " · "}
-                          {ms.approved > 0 && <span className="text-success">수락 {ms.approved}</span>}
-                          {ms.approved > 0 && ms.rejected > 0 && " · "}
-                          {ms.rejected > 0 && <span className="text-danger">거절 {ms.rejected}</span>}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {u.status === "pending" && (
-                      <>
-                        <button onClick={() => handleApprove(u.id)} className="px-4 py-2 bg-success text-white text-sm font-semibold rounded-lg hover:bg-success/80 transition-colors">승인</button>
-                        <button onClick={() => openRejectModal(u)} className="px-4 py-2 bg-danger text-white text-sm font-semibold rounded-lg hover:bg-danger/80 transition-colors">반려</button>
-                      </>
-                    )}
-                    {u.status === "active" && (
-                      <button onClick={() => handleBlock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-danger/10 hover:text-danger transition-colors">차단</button>
-                    )}
-                    {u.status === "blocked" && (
-                      <button onClick={() => handleUnblock(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-muted text-muted-fg hover:bg-success/10 hover:text-success transition-colors">해제</button>
-                    )}
-                    {u.status === "rejected" && (
-                      <button onClick={() => handleUnreject(u.id)} className="px-4 py-2 text-sm font-semibold rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors">반려 취소</button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        </div>
+        </div>
+      </div>
 
-        {showInfoFilters && (
+      {showInfoFilters && (
           <>
             <div
               className="fixed inset-0 bg-black/40 z-[60]"
@@ -715,18 +791,7 @@ export default function AdminPage() {
           );
         })()}
 
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 pt-4">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button key={i} onClick={() => setPage(i + 1)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${page === i + 1 ? "bg-primary text-white" : "bg-white border border-border hover:border-primary/30"}`}>
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {rejectTarget && (
+      {rejectTarget && (
           <>
             <div className="fixed inset-0 bg-black/40 z-[60]" onClick={closeRejectModal} />
             <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
@@ -779,15 +844,150 @@ export default function AdminPage() {
             </div>
           </>
         )}
-      </div>
 
       <style jsx>{`
         @keyframes scaleIn {
           from { opacity: 0; transform: scale(0.96); }
           to { opacity: 1; transform: scale(1); }
         }
+        @keyframes filterDropIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         .animate-scaleIn { animation: scaleIn 0.18s ease-out; }
+        .animate-filterDropIn { animation: filterDropIn 0.15s ease-out; }
       `}</style>
     </main>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const selected = options.find((o) => o.value === value) ?? options[0];
+  const isActive = value !== "";
+
+  const updateMenuPos = useCallback(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setMenuPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateMenuPos();
+    const onReposition = () => updateMenuPos();
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    return () => {
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+    };
+  }, [open, updateMenuPos]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const dropdown =
+    open && menuPos && typeof document !== "undefined"
+      ? createPortal(
+          <ul
+            ref={menuRef}
+            role="listbox"
+            style={{ position: "fixed", top: menuPos.top, left: menuPos.left, width: menuPos.width, zIndex: 200 }}
+            className="py-1.5 rounded-xl border border-border bg-white shadow-lg shadow-black/10 overflow-hidden animate-filterDropIn"
+          >
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <li key={opt.value || "__all"} role="option" aria-selected={isSelected}>
+                  <button
+                    type="button"
+                    onClick={() => { onChange(opt.value); setOpen(false); }}
+                    className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-sm text-left transition-colors ${
+                      isSelected
+                        ? "bg-[#ff8a3d]/10 text-[#ff8a3d] font-semibold"
+                        : "text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {isSelected && (
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div ref={rootRef}>
+      <button
+        ref={btnRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((v) => {
+            if (!v) updateMenuPos();
+            return !v;
+          });
+        }}
+        className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+          open
+            ? "border-[#ff8a3d]/50 bg-[#ff8a3d]/5 ring-2 ring-[#ff8a3d]/20"
+            : isActive
+              ? "border-[#ff8a3d]/30 bg-[#ff8a3d]/8 text-[#ff8a3d]"
+              : "border-border bg-[#fafafa] text-foreground hover:border-[#ff8a3d]/25 hover:bg-white"
+        }`}
+      >
+        <span className="flex flex-col items-start min-w-0">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-fg/80 leading-none mb-0.5">{label}</span>
+          <span className="truncate">{selected.label}</span>
+        </span>
+        <svg
+          className={`w-4 h-4 shrink-0 text-muted-fg transition-transform ${open ? "rotate-180 text-[#ff8a3d]" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {dropdown}
+    </div>
   );
 }
