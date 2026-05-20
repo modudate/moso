@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/lib/options";
 import MultiImageUploader, { type MultiImageUploaderHandle } from "@/components/MultiImageUploader";
 import ImageUploader, { type ImageUploaderHandle } from "@/components/ImageUploader";
+import { createPortal } from "react-dom";
 import {
   validateNickname, sanitizeNicknameInput, NICKNAME_MAX,
   validateIntroText, INTRO_MIN, INTRO_MAX,
@@ -367,10 +369,12 @@ export default function RegisterPage() {
             </Field>
 
             <Field label="출생년도" id="birthYear">
-              <select value={birthYear} onChange={(e) => setBirthYear(e.target.value)} className="input-field">
-                <option value="">선택해주세요</option>
-                {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+              <RegisterDropdown
+                value={birthYear}
+                onChange={setBirthYear}
+                placeholder="선택해주세요"
+                options={BIRTH_YEARS.map(y => ({ value: y, label: y }))}
+              />
             </Field>
 
             <Field label="키 (cm)" id="height">
@@ -386,54 +390,72 @@ export default function RegisterPage() {
 
             <Field label="거주지" id="city">
               <div className="flex gap-3">
-                <select value={city} onChange={(e) => { setCity(e.target.value); setDistrict(""); }} className="input-field flex-1">
-                  <option value="">시/도 선택</option>
-                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <div className="flex-1">
+                  <RegisterDropdown
+                    value={city}
+                    onChange={(v) => { setCity(v); setDistrict(""); }}
+                    placeholder="시/도 선택"
+                    options={CITIES.map(c => ({ value: c, label: c }))}
+                  />
+                </div>
                 {districtOptions.length > 0 && (
-                  <select value={district} onChange={(e) => setDistrict(e.target.value)} className="input-field flex-1">
-                    <option value="">구/군/시 선택</option>
-                    {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <div className="flex-1">
+                    <RegisterDropdown
+                      value={district}
+                      onChange={setDistrict}
+                      placeholder="구/군/시 선택"
+                      options={districtOptions.map(d => ({ value: d, label: d }))}
+                    />
+                  </div>
                 )}
               </div>
             </Field>
 
             <Field label="직장" id="workplace">
-              <select value={workplace} onChange={(e) => { setWorkplace(e.target.value); setJob(""); }} className="input-field">
-                <option value="">선택해주세요</option>
-                {WORKPLACES.map(w => <option key={w} value={w}>{w}</option>)}
-              </select>
+              <RegisterDropdown
+                value={workplace}
+                onChange={(v) => { setWorkplace(v); setJob(""); }}
+                placeholder="선택해주세요"
+                options={WORKPLACES.map(w => ({ value: w, label: w }))}
+              />
             </Field>
 
             {jobOptions.length > 0 && (
               <Field label="직업" id="job">
-                <select value={job} onChange={(e) => setJob(e.target.value)} className="input-field">
-                  <option value="">선택해주세요</option>
-                  {jobOptions.map(j => <option key={j} value={j}>{j}</option>)}
-                </select>
+                <RegisterDropdown
+                  value={job}
+                  onChange={setJob}
+                  placeholder="선택해주세요"
+                  options={jobOptions.map(j => ({ value: j, label: j }))}
+                />
               </Field>
             )}
 
             <Field label="근무패턴" id="workPattern">
-              <select value={workPattern} onChange={(e) => setWorkPattern(e.target.value)} className="input-field">
-                <option value="">선택해주세요</option>
-                {WORK_PATTERNS.map(w => <option key={w} value={w}>{w}</option>)}
-              </select>
+              <RegisterDropdown
+                value={workPattern}
+                onChange={setWorkPattern}
+                placeholder="선택해주세요"
+                options={WORK_PATTERNS.map(w => ({ value: w, label: w }))}
+              />
             </Field>
 
             <Field label="연봉" id="salary">
-              <select value={salary} onChange={(e) => setSalary(e.target.value)} className="input-field">
-                <option value="">선택해주세요</option>
-                {SALARIES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <RegisterDropdown
+                value={salary}
+                onChange={setSalary}
+                placeholder="선택해주세요"
+                options={SALARIES.map(s => ({ value: s, label: s }))}
+              />
             </Field>
 
             <Field label="학력" id="education">
-              <select value={education} onChange={(e) => setEducation(e.target.value)} className="input-field">
-                <option value="">선택해주세요</option>
-                {EDUCATIONS.map(e => <option key={e} value={e}>{e}</option>)}
-              </select>
+              <RegisterDropdown
+                value={education}
+                onChange={setEducation}
+                placeholder="선택해주세요"
+                options={EDUCATIONS.map(e => ({ value: e, label: e }))}
+              />
             </Field>
 
             <Field label="흡연" id="smoking">
@@ -842,6 +864,134 @@ function ConsentRow({
           전체보기
         </Link>
       )}
+    </div>
+  );
+}
+
+function RegisterDropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+
+  const selected = options.find((o) => o.value === value);
+
+  const updateMenuPos = useCallback(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setMenuPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateMenuPos();
+    const onReposition = () => updateMenuPos();
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    return () => {
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+    };
+  }, [open, updateMenuPos]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const dropdown =
+    open && menuPos && typeof document !== "undefined"
+      ? createPortal(
+          <ul
+            ref={menuRef}
+            role="listbox"
+            style={{ position: "fixed", top: menuPos.top, left: menuPos.left, width: menuPos.width, zIndex: 10000 }}
+            className="py-1.5 rounded-xl border border-border bg-white shadow-lg shadow-black/10 overflow-hidden animate-filterDropIn max-h-[240px] overflow-y-auto"
+          >
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <li key={opt.value} role="option" aria-selected={isSelected}>
+                  <button
+                    type="button"
+                    onClick={() => { onChange(opt.value); setOpen(false); }}
+                    className={`w-full flex items-center justify-between gap-2 px-4 py-3 text-sm text-left transition-colors ${
+                      isSelected
+                        ? "bg-orange-50 text-[#ff8a3d] font-semibold"
+                        : "text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {isSelected && (
+                      <svg className="w-4 h-4 shrink-0 text-[#ff8a3d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div ref={rootRef} className="relative w-full">
+      <button
+        ref={btnRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((v) => {
+            if (!v) updateMenuPos();
+            return !v;
+          });
+        }}
+        className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+          open
+            ? "border-[#ff8a3d]/50 bg-white ring-2 ring-[#ff8a3d]/20"
+            : value
+              ? "border-gray-300 bg-white text-foreground"
+              : "border-gray-200 bg-white text-gray-400 hover:border-gray-300"
+        }`}
+      >
+        <span className="truncate">{selected ? selected.label : placeholder}</span>
+        <svg
+          className={`w-4 h-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180 text-[#ff8a3d]" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {dropdown}
     </div>
   );
 }
