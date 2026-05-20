@@ -69,7 +69,9 @@ export default function FemaleDetailPage() {
     if (status === "approved") {
       const message = isRevert
         ? "거절했던 매칭을 수락으로 번복하시겠습니까?\n\n수락 후에는 다시 거절로 되돌릴 수 없습니다."
-        : "이 여성 회원에게 매칭요청을 보내시겠습니까?\n\n여성분이 수락하면 매칭이 완료됩니다.\n한 번 보낸 매칭요청은 취소할 수 없습니다.";
+        : source === "match"
+          ? "여성분의 호감 표시를 수락하시겠습니까?\n\n수락하시면 매칭이 완료됩니다.\n수락 후에는 취소할 수 없습니다."
+          : "이 여성 회원에게 매칭요청을 보내시겠습니까?\n\n여성분이 수락하면 매칭이 완료됩니다.\n한 번 보낸 매칭요청은 취소할 수 없습니다.";
       const ok = window.confirm(message);
       if (!ok) return;
     }
@@ -96,8 +98,10 @@ export default function FemaleDetailPage() {
         kind: status === "approved" ? "success" : "info",
         msg: status === "approved"
           ? (isRevert
-              ? "거절을 수락으로 번복했습니다. 매칭요청이 전달되었습니다."
-              : "여성분에게 매칭요청이 전달되었습니다. 여성분이 수락 시 매칭이 완료됩니다.")
+              ? "거절을 수락으로 번복했습니다. 매칭이 완료되었습니다!"
+              : source === "match"
+                ? "매칭이 성사되었어요! 곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요!"
+                : "여성분에게 매칭요청이 전달되었습니다. 여성분이 수락 시 매칭이 완료됩니다.")
           : "거절 처리되었습니다. (7일 내 수락으로 번복할 수 있습니다)",
       });
     } catch (err) {
@@ -235,7 +239,7 @@ export default function FemaleDetailPage() {
                 style={{ backgroundColor: "#ff8a3d" }}
               >
                 {submitting === "approved" && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                매칭 요청
+                {source === "match" ? "수락" : "매칭 요청"}
               </button>
               <button
                 onClick={() => handleAction("rejected")}
@@ -249,8 +253,14 @@ export default function FemaleDetailPage() {
           )}
           {matchStatus === "approved" && (
             <div className="py-4 rounded-2xl text-center bg-green-50">
-              <p className="text-green-600 font-bold text-base">매칭요청을 보냈습니다</p>
-              <p className="text-green-700/80 text-xs mt-1">여성분이 수락하면 매칭이 완료됩니다 · 번복 불가</p>
+              <p className="text-green-600 font-bold text-base">
+                {source === "match" ? "매칭 성공! 🎉" : "매칭요청을 보냈습니다"}
+              </p>
+              <p className="text-green-700/80 text-xs mt-1">
+                {source === "match"
+                  ? "곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요."
+                  : "여성분이 수락하면 매칭이 완료됩니다 · 번복 불가"}
+              </p>
             </div>
           )}
           {matchStatus === "rejected" && (

@@ -35,6 +35,9 @@ export default function AdminPage() {
   const [matchMap, setMatchMap] = useState<Map<string, MatchSummary>>(new Map());
   const [mdCountMap, setMdCountMap] = useState<Map<string, number>>(new Map());
   const [mdIds, setMdIds] = useState<Set<string>>(new Set());
+  const [mdApprovedIds, setMdApprovedIds] = useState<Set<string>>(new Set());
+  const [mdRejectedIds, setMdRejectedIds] = useState<Set<string>>(new Set());
+  const [mdPendingIds, setMdPendingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   // 필터 상태를 sessionStorage 에 저장해 회원 상세 → 뒤로가기 시 복원
   // (운영팀 요청: 같은 필터로 회원 여러 명을 연속 확인할 때 매번 다시 거는 게 번거롭다)
@@ -186,17 +189,35 @@ export default function AdminPage() {
 
     const mdMap = new Map<string, number>();
     const mdSet = new Set<string>();
+    const mdApprovedSet = new Set<string>();
+    const mdRejectedSet = new Set<string>();
+    const mdPendingSet = new Set<string>();
+
     for (const md of mdData) {
       mdSet.add(md.maleProfileId);
       mdSet.add(md.femaleProfileId);
       mdMap.set(md.maleProfileId, (mdMap.get(md.maleProfileId) || 0) + 1);
       mdMap.set(md.femaleProfileId, (mdMap.get(md.femaleProfileId) || 0) + 1);
+
+      if (md.status === "approved") {
+        mdApprovedSet.add(md.maleProfileId);
+        mdApprovedSet.add(md.femaleProfileId);
+      } else if (md.status === "rejected") {
+        mdRejectedSet.add(md.maleProfileId);
+        mdRejectedSet.add(md.femaleProfileId);
+      } else if (md.status === "pending") {
+        mdPendingSet.add(md.maleProfileId);
+        mdPendingSet.add(md.femaleProfileId);
+      }
     }
 
     setUsers(uData);
     setMatchMap(mm);
     setMdCountMap(mdMap);
     setMdIds(mdSet);
+    setMdApprovedIds(mdApprovedSet);
+    setMdRejectedIds(mdRejectedSet);
+    setMdPendingIds(mdPendingSet);
     setLoading(false);
   };
 
@@ -294,6 +315,9 @@ export default function AdminPage() {
     }
     if (mdFilter === "has_md" && !mdIds.has(u.id)) return false;
     if (mdFilter === "no_md" && mdIds.has(u.id)) return false;
+    if (mdFilter === "md_approved" && !mdApprovedIds.has(u.id)) return false;
+    if (mdFilter === "md_rejected" && !mdRejectedIds.has(u.id)) return false;
+    if (mdFilter === "md_pending" && !mdPendingIds.has(u.id)) return false;
     if (!matchInfoFilter(u)) return false;
     if (!matchIdealFilter(u)) return false;
     return true;
@@ -383,6 +407,9 @@ export default function AdminPage() {
                 { value: "", label: "전체 MD 추천" },
                 { value: "has_md", label: "MD 추천 이력 있음" },
                 { value: "no_md", label: "MD 추천 이력 없음" },
+                { value: "md_approved", label: "MD 추천 수락 있음" },
+                { value: "md_rejected", label: "MD 추천 거절 있음" },
+                { value: "md_pending", label: "MD 추천 대기중 있음" },
               ]} />
             </div>
 

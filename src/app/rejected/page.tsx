@@ -9,6 +9,15 @@ export default function RejectedPage() {
 
   useEffect(() => {
     let cancelled = false;
+    
+    // URL에 reason 쿼리 스트링이 있으면 샘플로 사용
+    const params = new URLSearchParams(window.location.search);
+    const sampleReason = params.get("reason");
+    if (sampleReason) {
+      setReason(sampleReason);
+      return;
+    }
+
     (async () => {
       try {
         const meRes = await fetch("/api/me", { cache: "no-store" });
@@ -52,11 +61,21 @@ export default function RejectedPage() {
             자세한 내용은 카카오톡 채널로 문의해주세요.
           </p>
         )}
-        <button onClick={() => router.push("/")}
-          className="w-full py-3.5 rounded-2xl text-white font-bold text-base shadow-md"
-          style={{ backgroundColor: "#ff8a3d" }}>
-          홈으로
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => router.push("/")}
+            className="flex-1 py-3.5 rounded-2xl text-white font-bold text-base shadow-md"
+            style={{ backgroundColor: "#ff8a3d" }}>
+            홈으로
+          </button>
+          <a
+            href="http://pf.kakao.com/_ZxmKZX"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 py-3.5 rounded-2xl font-bold text-base shadow-md border text-center flex items-center justify-center transition-colors hover:bg-orange-50"
+            style={{ borderColor: "#ff8a3d", color: "#ff8a3d", backgroundColor: "#ffffff" }}>
+            프로필 수정하기
+          </a>
+        </div>
       </div>
     </main>
   );

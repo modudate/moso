@@ -59,13 +59,16 @@ export async function updateSession(request: NextRequest) {
   }
 
   // 역할(성별/관리자) 기반 접근 제어
-  const [{ data: adminRow }, { data: userRow }] = await Promise.all([
+  const [{ data: adminRow }, { data: userRow }, { data: profileRow }] = await Promise.all([
     supabase.from("admins").select("id").eq("id", user.id).maybeSingle(),
     supabase.from("users").select("role, status").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("expires_at").eq("user_id", user.id).maybeSingle(),
   ]);
 
   const isAdmin = !!adminRow;
   const gender = (userRow?.role as "male" | "female" | undefined) ?? null;
+  const isExpired =
+    !!profileRow?.expires_at && new Date(profileRow.expires_at) < new Date();
 
   // 관리자 페이지는 admins 테이블에 있어야만 허용
   if (required === "admin") {
@@ -83,8 +86,8 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // 미승인 회원은 메인으로
-  if (userRow?.status !== "active") {
+  // 미승인/차단/만료 회원은 메인으로
+  if (userRow?.status !== "active" || isExpired) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.searchParams.set("message", "pending_or_blocked");

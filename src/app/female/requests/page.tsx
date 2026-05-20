@@ -360,7 +360,7 @@ function StatusMessage({ req }: { req: RequestCardData }) {
           <p className="text-sm font-bold text-emerald-800">매칭이 성사되었어요!</p>
         </div>
         <p className="text-[12px] text-emerald-700/90 leading-relaxed">
-          곧 운영진을 통해 카카오톡으로 연락처를 전달드릴게요.
+          곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요.
         </p>
         <div className="flex items-center justify-between pt-1 text-[11px] text-emerald-700/80">
           <span>요청 {formatRelative(req.requestedAt)}</span>

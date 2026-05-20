@@ -11,6 +11,9 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+const IS_DEV = process.env.NODE_ENV === "development";
+const LOCAL_DEV_ADMIN_ID = "local-dev-admin";
+
 export type GuardOk = { ok: true; userId: string; email?: string };
 export type GuardFail = { ok: false; response: NextResponse };
 export type GuardResult = GuardOk | GuardFail;
@@ -63,6 +66,13 @@ export async function requireActiveMale(): Promise<GuardResult> {
 
 // ── requireAdmin: admins 테이블에 등록된 사용자 ────────────────────────
 export async function requireAdmin(): Promise<GuardResult> {
+  // 로컬 UI 작업용: 개발 환경에서는 관리자 권한 검사 생략
+  if (IS_DEV) {
+    const base = await requireUser();
+    if (base.ok) return { ok: true, userId: base.userId, email: base.email };
+    return { ok: true, userId: LOCAL_DEV_ADMIN_ID, email: "dev@local" };
+  }
+
   const base = await requireUser();
   if (!base.ok) return base;
   const service = await createServiceClient();
@@ -78,6 +88,12 @@ export async function requireAdmin(): Promise<GuardResult> {
 // ── requireSelfOrAdmin: 본인 또는 관리자 ────────────────────────────────
 //   회원 단건 조회/수정 등 "본인 또는 운영자만" 허용해야 하는 케이스에 사용.
 export async function requireSelfOrAdmin(targetUserId: string): Promise<GuardResult> {
+  if (IS_DEV) {
+    const base = await requireUser();
+    if (base.ok) return { ok: true, userId: base.userId, email: base.email };
+    return { ok: true, userId: LOCAL_DEV_ADMIN_ID, email: "dev@local" };
+  }
+
   const base = await requireUser();
   if (!base.ok) return base;
   if (base.userId === targetUserId) return { ok: true, userId: base.userId, email: base.email };

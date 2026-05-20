@@ -215,7 +215,7 @@ export default function MalePage() {
                     {c.hasMd && <span className={`${badgeCls} bg-accent`}>MD 추천</span>}
                     {/* 상태 뱃지 */}
                     {c.status === "pending" && <span className={`${badgeCls} bg-warning`}>관심도착</span>}
-                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭요청 보냄</span>}
+                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>{c.source === "match" ? "매칭 성공" : "매칭요청 보냄"}</span>}
                     {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
                   </div>
                   <div className={`absolute bottom-0 left-0 right-0 ${big ? "p-5 space-y-2.5" : "p-3 space-y-1.5"}`}>

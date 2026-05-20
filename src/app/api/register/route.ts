@@ -23,6 +23,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 가입된 계정입니다" }, { status: 409 });
   }
 
+  // 전화번호 중복 검증
+  const { data: phoneCheckUser } = await service
+    .from("users")
+    .select("id")
+    .eq("phone", body.phone)
+    .maybeSingle();
+
+  if (phoneCheckUser) {
+    return NextResponse.json({ error: "이미 가입된 휴대폰 번호입니다" }, { status: 409 });
+  }
+
   // 닉네임 검증 (특수문자/이모티콘 금지, 2~10자) + 중복체크
   const nickCheck = validateNickname(typeof body.nickname === "string" ? body.nickname : "");
   if (!nickCheck.ok) {
@@ -71,6 +82,9 @@ export async function POST(req: NextRequest) {
   });
 
   if (userError) {
+    if (userError.message.includes("users_phone_key") || userError.message.includes("duplicate key")) {
+      return NextResponse.json({ error: "이미 가입된 휴대폰 번호입니다" }, { status: 409 });
+    }
     return NextResponse.json({ error: userError.message }, { status: 500 });
   }
 
