@@ -213,9 +213,9 @@ export default function MalePage() {
                   <div className={`absolute ${big ? "top-4 left-4 gap-2" : "top-3 left-3 gap-1.5"} flex flex-wrap`}>
                     {/* 출처 뱃지 — 두 출처 모두 있으면 둘 다 표시 (정책: 합치되 양쪽 노출) */}
                     {c.hasMd && <span className={`${badgeCls} bg-accent`}>MD 추천</span>}
-                    {/* 상태 뱃지 */}
-                    {c.status === "pending" && <span className={`${badgeCls} bg-warning`}>관심도착</span>}
-                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>{c.source === "match" ? "매칭 성공" : "매칭요청 보냄"}</span>}
+                    {/* 상태 뱃지 — 관심도착은 여성이 직접 선택한 경우(hasMatch)에만 표시 */}
+                    {c.hasMatch && c.status === "pending" && <span className={`${badgeCls} bg-warning`}>관심도착</span>}
+                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭 성공</span>}
                     {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
                   </div>
                   <div className={`absolute bottom-0 left-0 right-0 ${big ? "p-5 space-y-2.5" : "p-3 space-y-1.5"}`}>
