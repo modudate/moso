@@ -28,6 +28,7 @@ type RequestCardData = {
   status: RequestStatus;
   requestedAt: string;
   respondedAt: string | null;
+  completedAt: string | null;
 };
 
 type Tab = "all" | RequestStatus;
@@ -111,6 +112,7 @@ export default function MatchRequestResultPage() {
             status: (m.status as RequestStatus) ?? "pending",
             requestedAt: m.requestedAt,
             respondedAt: m.respondedAt ?? null,
+            completedAt: m.completedAt ?? null,
           };
         })
         .filter((x): x is RequestCardData => x !== null)
@@ -353,14 +355,19 @@ function StatusMessage({ req }: { req: RequestCardData }) {
   }
 
   if (req.status === "approved") {
+    const isCompleted = !!req.completedAt;
     return (
       <div className="border-t border-border bg-emerald-50/50 px-4 py-3.5 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-base">🎉</span>
-          <p className="text-sm font-bold text-emerald-800">매칭이 성사되었어요!</p>
+          <span className="text-base">{isCompleted ? "✅" : "🎉"}</span>
+          <p className="text-sm font-bold text-emerald-800">
+            {isCompleted ? "매칭이 완료되었어요!" : "매칭이 성사되었어요!"}
+          </p>
         </div>
         <p className="text-[12px] text-emerald-700/90 leading-relaxed">
-          곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요.
+          {isCompleted
+            ? "좋은 인연이 되시길 응원해요!"
+            : "곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요."}
         </p>
         <div className="flex items-center justify-between pt-1 text-[11px] text-emerald-700/80">
           <span>요청 {formatRelative(req.requestedAt)}</span>

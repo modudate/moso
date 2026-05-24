@@ -405,25 +405,60 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
               {matches.map(m => {
                 const otherId = m.femaleProfileId === userId ? m.maleProfileId : m.femaleProfileId;
                 const other = getUser(otherId);
+                const needsComplete = m.status === "approved" && !m.completedAt;
                 return (
-                  <div key={m.id} className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl">
-                    {other?.photoUrls[0] ? (
-                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(other.photoUrls[0])}>
-                        <img src={other.photoUrls[0]} alt={other.nickname} className="w-full h-full object-cover" />
+                  <div key={m.id} className={`p-4 rounded-xl transition-all ${needsComplete ? "bg-orange-50 border border-orange-200" : "bg-muted/40"}`}>
+                    <div className="flex items-center gap-4">
+                      {other?.photoUrls[0] ? (
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setLightbox(other.photoUrls[0])}>
+                          <img src={other.photoUrls[0]} alt={other.nickname} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-primary/30">{other?.nickname?.[0] || "?"}</div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold truncate">{other ? `${other.realName} (${other.nickname})` : otherId}</p>
+                        <p className="text-sm text-muted-fg">{other?.role === "male" ? "남성" : "여성"} · {other?.birthYear}년생 · {other ? regionLabel(other.city, other.district) : ""}</p>
                       </div>
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-primary/30">{other?.nickname?.[0] || "?"}</div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${m.status === "approved" ? "bg-success/10 text-success" : m.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
+                          {m.status === "approved" ? "수락" : m.status === "pending" ? "대기중" : "거절"}
+                        </span>
+                        <span className="text-xs text-muted-fg">{new Date(m.requestedAt).toLocaleDateString("ko-KR")}</span>
+                        {m.completedAt && (
+                          <span className="text-xs text-emerald-600 font-medium">완료 {new Date(m.completedAt).toLocaleDateString("ko-KR")}</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* 매칭마무리 필요: 수락됐지만 아직 완료처리 안 된 경우 */}
+                    {needsComplete && (
+                      <div className="mt-3 pt-3 border-t border-orange-200 flex items-center justify-between gap-3">
+                        <p className="text-xs text-orange-700 font-medium">
+                          카카오톡 채팅방에 초대 후 매칭완료를 눌러주세요
+                        </p>
+                        <button
+                          onClick={async () => {
+                            if (!confirm("카카오톡 채팅방 초대를 완료하셨나요?\n확인을 누르면 매칭완료 처리됩니다.")) return;
+                            const res = await fetch("/api/admin/match-complete", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ matchId: m.id }),
+                            });
+                            if (res.ok) {
+                              const { completedAt } = await res.json();
+                              setMatches(prev => prev.map(x => x.id === m.id ? { ...x, completedAt } : x));
+                            } else {
+                              const data = await res.json().catch(() => ({}));
+                              alert(data.error || "완료 처리에 실패했습니다.");
+                            }
+                          }}
+                          className="flex-shrink-0 px-3.5 py-1.5 text-xs font-bold text-white rounded-lg transition-colors"
+                          style={{ backgroundColor: "#ff8a3d" }}
+                        >
+                          매칭완료
+                        </button>
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold truncate">{other ? `${other.realName} (${other.nickname})` : otherId}</p>
-                      <p className="text-sm text-muted-fg">{other?.role === "male" ? "남성" : "여성"} · {other?.birthYear}년생 · {other ? regionLabel(other.city, other.district) : ""}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${m.status === "approved" ? "bg-success/10 text-success" : m.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
-                        {m.status === "approved" ? "수락" : m.status === "pending" ? "대기중" : "거절"}
-                      </span>
-                      <span className="text-xs text-muted-fg">{new Date(m.requestedAt).toLocaleDateString("ko-KR")}</span>
-                    </div>
                   </div>
                 );
               })}

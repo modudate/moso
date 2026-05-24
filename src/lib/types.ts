@@ -57,6 +57,7 @@ export interface MatchRequest {
   status: MatchAction;
   requestedAt: string;
   respondedAt: string | null;
+  completedAt: string | null;
 }
 
 export interface CartItem {

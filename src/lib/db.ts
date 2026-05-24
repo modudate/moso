@@ -448,6 +448,7 @@ function mapMatchRequest(row: any) {
     status: row.status,
     requestedAt: row.requested_at,
     respondedAt: row.responded_at,
+    completedAt: row.completed_at ?? null,
   };
 }
 

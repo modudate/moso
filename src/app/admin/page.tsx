@@ -38,6 +38,7 @@ export default function AdminPage() {
   const [mdApprovedIds, setMdApprovedIds] = useState<Set<string>>(new Set());
   const [mdRejectedIds, setMdRejectedIds] = useState<Set<string>>(new Set());
   const [mdPendingIds, setMdPendingIds] = useState<Set<string>>(new Set());
+  const [needCompleteIds, setNeedCompleteIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   // 필터 상태를 sessionStorage 에 저장해 회원 상세 → 뒤로가기 시 복원
   // (운영팀 요청: 같은 필터로 회원 여러 명을 연속 확인할 때 매번 다시 거는 게 번거롭다)
@@ -212,6 +213,15 @@ export default function AdminPage() {
       }
     }
 
+    // 매칭마무리필요: approved 이지만 completed_at 이 없는 건이 1건 이상 있는 유저
+    const needCompleteSet = new Set<string>();
+    for (const m of mData) {
+      if (m.status === "approved" && !m.completedAt) {
+        needCompleteSet.add(m.femaleProfileId);
+        needCompleteSet.add(m.maleProfileId);
+      }
+    }
+
     setUsers(uData);
     setMatchMap(mm);
     setMdCountMap(mdMap);
@@ -219,6 +229,7 @@ export default function AdminPage() {
     setMdApprovedIds(mdApprovedSet);
     setMdRejectedIds(mdRejectedSet);
     setMdPendingIds(mdPendingSet);
+    setNeedCompleteIds(needCompleteSet);
     setLoading(false);
   };
 
@@ -313,6 +324,7 @@ export default function AdminPage() {
       if (matchFilter === "has_pending" && (!ms || ms.pending === 0)) return false;
       if (matchFilter === "has_rejected" && (!ms || ms.rejected === 0)) return false;
       if (matchFilter === "no_match" && ms && ms.total > 0) return false;
+      if (matchFilter === "need_complete" && !needCompleteIds.has(u.id)) return false;
     }
     if (mdFilter === "has_md" && !mdIds.has(u.id)) return false;
     if (mdFilter === "no_md" && mdIds.has(u.id)) return false;
@@ -402,6 +414,7 @@ export default function AdminPage() {
                 { value: "has_pending", label: "대기중 있음" },
                 { value: "has_rejected", label: "거절 있음" },
                 { value: "no_match", label: "매칭 없음" },
+                { value: "need_complete", label: "매칭마무리필요" },
               ]} />
 
               <FilterSelect label="MD 추천" value={mdFilter} onChange={(v) => { setMdFilter(v); setPage(1); }} options={[
@@ -941,6 +954,7 @@ export default function AdminPage() {
                     { value: "has_pending", label: "대기중 있음" },
                     { value: "has_rejected", label: "거절 있음" },
                     { value: "no_match", label: "매칭 없음" },
+                    { value: "need_complete", label: "매칭마무리필요" },
                   ]} />
 
                   <FilterSelect label="MD 추천" value={mdFilter} onChange={(v) => { setMdFilter(v); setPage(1); }} options={[
