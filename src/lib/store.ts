@@ -179,15 +179,15 @@ const SEED_IDEAL_TYPES: IdealType[] = [
 ];
 
 const SEED_MATCH_REQUESTS: MatchRequest[] = [
-  { id: "mr-001", femaleProfileId: "f-001", maleProfileId: "m-001", status: "approved", requestedAt: "2026-03-11T15:00:00.000Z", respondedAt: "2026-03-11T16:00:00.000Z" },
-  { id: "mr-002", femaleProfileId: "f-001", maleProfileId: "m-002", status: "pending", requestedAt: "2026-03-12T10:00:00.000Z", respondedAt: null },
-  { id: "mr-003", femaleProfileId: "f-001", maleProfileId: "m-003", status: "rejected", requestedAt: "2026-03-10T12:00:00.000Z", respondedAt: "2026-03-11T09:00:00.000Z" },
-  { id: "mr-004", femaleProfileId: "f-002", maleProfileId: "m-004", status: "approved", requestedAt: "2026-03-10T16:00:00.000Z", respondedAt: "2026-03-10T17:00:00.000Z" },
-  { id: "mr-005", femaleProfileId: "f-002", maleProfileId: "m-001", status: "pending", requestedAt: "2026-03-12T11:00:00.000Z", respondedAt: null },
-  { id: "mr-006", femaleProfileId: "f-003", maleProfileId: "m-001", status: "pending", requestedAt: "2026-03-12T14:00:00.000Z", respondedAt: null },
-  { id: "mr-007", femaleProfileId: "f-003", maleProfileId: "m-002", status: "pending", requestedAt: "2026-03-12T14:30:00.000Z", respondedAt: null },
-  { id: "mr-008", femaleProfileId: "f-003", maleProfileId: "m-004", status: "approved", requestedAt: "2026-03-11T10:00:00.000Z", respondedAt: "2026-03-11T11:00:00.000Z" },
-  { id: "mr-009", femaleProfileId: "f-004", maleProfileId: "m-003", status: "pending", requestedAt: "2026-03-12T16:00:00.000Z", respondedAt: null },
+  { id: "mr-001", femaleProfileId: "f-001", maleProfileId: "m-001", status: "approved", requestedAt: "2026-03-11T15:00:00.000Z", respondedAt: "2026-03-11T16:00:00.000Z", completedAt: null },
+  { id: "mr-002", femaleProfileId: "f-001", maleProfileId: "m-002", status: "pending", requestedAt: "2026-03-12T10:00:00.000Z", respondedAt: null, completedAt: null },
+  { id: "mr-003", femaleProfileId: "f-001", maleProfileId: "m-003", status: "rejected", requestedAt: "2026-03-10T12:00:00.000Z", respondedAt: "2026-03-11T09:00:00.000Z", completedAt: null },
+  { id: "mr-004", femaleProfileId: "f-002", maleProfileId: "m-004", status: "approved", requestedAt: "2026-03-10T16:00:00.000Z", respondedAt: "2026-03-10T17:00:00.000Z", completedAt: null },
+  { id: "mr-005", femaleProfileId: "f-002", maleProfileId: "m-001", status: "pending", requestedAt: "2026-03-12T11:00:00.000Z", respondedAt: null, completedAt: null },
+  { id: "mr-006", femaleProfileId: "f-003", maleProfileId: "m-001", status: "pending", requestedAt: "2026-03-12T14:00:00.000Z", respondedAt: null, completedAt: null },
+  { id: "mr-007", femaleProfileId: "f-003", maleProfileId: "m-002", status: "pending", requestedAt: "2026-03-12T14:30:00.000Z", respondedAt: null, completedAt: null },
+  { id: "mr-008", femaleProfileId: "f-003", maleProfileId: "m-004", status: "approved", requestedAt: "2026-03-11T10:00:00.000Z", respondedAt: "2026-03-11T11:00:00.000Z", completedAt: null },
+  { id: "mr-009", femaleProfileId: "f-004", maleProfileId: "m-003", status: "pending", requestedAt: "2026-03-12T16:00:00.000Z", respondedAt: null, completedAt: null },
 ];
 
 const SEED_CART: CartItem[] = [
