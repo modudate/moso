@@ -178,17 +178,7 @@ const SEED_IDEAL_TYPES: IdealType[] = [
   { userId: "m-lonely", idealAge: "1996년~1994년", idealAgeRanges: ["1996년~1994년"], idealMinHeight: 160, idealMaxHeight: 175, idealCities: ["서울"], idealWorkplaces: ["대기업", "전문직", "공기업 / 공공기관"], idealJobs: [], idealSalaries: ["4,000 ~ 6,000만원"], idealEducation: ["4년제 대학 졸업"], idealSmoking: false, idealMbti: ["ENFP", "ISFJ", "ESFJ"], topPriorities: ["키", "MBTI", "학력", "거주지"] },
 ];
 
-const SEED_MATCH_REQUESTS: MatchRequest[] = [
-  { id: "mr-001", femaleProfileId: "f-001", maleProfileId: "m-001", status: "approved", requestedAt: "2026-03-11T15:00:00.000Z", respondedAt: "2026-03-11T16:00:00.000Z", completedAt: null },
-  { id: "mr-002", femaleProfileId: "f-001", maleProfileId: "m-002", status: "pending", requestedAt: "2026-03-12T10:00:00.000Z", respondedAt: null, completedAt: null },
-  { id: "mr-003", femaleProfileId: "f-001", maleProfileId: "m-003", status: "rejected", requestedAt: "2026-03-10T12:00:00.000Z", respondedAt: "2026-03-11T09:00:00.000Z", completedAt: null },
-  { id: "mr-004", femaleProfileId: "f-002", maleProfileId: "m-004", status: "approved", requestedAt: "2026-03-10T16:00:00.000Z", respondedAt: "2026-03-10T17:00:00.000Z", completedAt: null },
-  { id: "mr-005", femaleProfileId: "f-002", maleProfileId: "m-001", status: "pending", requestedAt: "2026-03-12T11:00:00.000Z", respondedAt: null, completedAt: null },
-  { id: "mr-006", femaleProfileId: "f-003", maleProfileId: "m-001", status: "pending", requestedAt: "2026-03-12T14:00:00.000Z", respondedAt: null, completedAt: null },
-  { id: "mr-007", femaleProfileId: "f-003", maleProfileId: "m-002", status: "pending", requestedAt: "2026-03-12T14:30:00.000Z", respondedAt: null, completedAt: null },
-  { id: "mr-008", femaleProfileId: "f-003", maleProfileId: "m-004", status: "approved", requestedAt: "2026-03-11T10:00:00.000Z", respondedAt: "2026-03-11T11:00:00.000Z", completedAt: null },
-  { id: "mr-009", femaleProfileId: "f-004", maleProfileId: "m-003", status: "pending", requestedAt: "2026-03-12T16:00:00.000Z", respondedAt: null, completedAt: null },
-];
+const SEED_MATCH_REQUESTS: MatchRequest[] = [];
 
 const SEED_CART: CartItem[] = [
   { femaleProfileId: "f-001", maleProfileId: "m-004", addedAt: "2026-03-12T12:00:00.000Z" },
