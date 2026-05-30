@@ -24,6 +24,10 @@ type FemaleCard = {
   requestedAt: string;        // 정렬용 — 더 이른 시점 (먼저 들어온 행위 기준)
   hasMatch: boolean;          // 여성의 직접 매칭요청이 있는가
   hasMd: boolean;             // 관리자의 MD 추천이 있는가
+  // MD추천(남성 선픽) 운영 진행 결과 — 관리자가 기록 (남성 수락 후)
+  mdFemaleApprovedAt: string | null; // 여성수락
+  mdFemaleRejectedAt: string | null; // 여성거절
+  mdCompletedAt: string | null;      // 매칭완료
 };
 
 export default function MalePage() {
@@ -104,6 +108,9 @@ export default function MalePage() {
           requestedAt: base.requestedAt,
           hasMatch: base.source === "match",
           hasMd: base.source === "md",
+          mdFemaleApprovedAt: null,
+          mdFemaleRejectedAt: null,
+          mdCompletedAt: null,
         });
         return;
       }
@@ -127,6 +134,9 @@ export default function MalePage() {
         requestedAt: earlier,
         hasMatch: existing.hasMatch || base.source === "match",
         hasMd: existing.hasMd || base.source === "md",
+        mdFemaleApprovedAt: existing.mdFemaleApprovedAt,
+        mdFemaleRejectedAt: existing.mdFemaleRejectedAt,
+        mdCompletedAt: existing.mdCompletedAt,
       });
     };
 
@@ -135,6 +145,16 @@ export default function MalePage() {
     }
     for (const md of mdRecs) {
       upsert(md.femaleProfileId, { matchId: md.id, status: md.status, source: "md", requestedAt: md.createdAt });
+    }
+
+    // MD추천 운영 진행 결과(여성수락/거절/매칭완료)를 카드에 부착
+    for (const md of mdRecs) {
+      const card = merged.get(md.femaleProfileId);
+      if (card) {
+        card.mdFemaleApprovedAt = md.femaleApprovedAt;
+        card.mdFemaleRejectedAt = md.femaleRejectedAt;
+        card.mdCompletedAt = md.completedAt;
+      }
     }
 
     const result = Array.from(merged.values()).sort(
@@ -203,9 +223,18 @@ export default function MalePage() {
               const big = gridCols === 1;
               const badgeCls = `${big ? "text-xs px-2.5 py-1.5" : "text-[10px] px-2 py-1"} font-bold text-white rounded-lg shadow-md`;
               const chipCls = `${big ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]"} bg-white/20 backdrop-blur-sm text-white font-medium rounded-full`;
+              // MD추천 운영 결과 (여성수락/거절/매칭완료) — 일반 상태 뱃지보다 우선
+              const mdOutcome = c.mdCompletedAt
+                ? "completed"
+                : c.mdFemaleApprovedAt
+                ? "approved"
+                : c.mdFemaleRejectedAt
+                ? "rejected"
+                : null;
+              const dimmed = c.status === "rejected" || mdOutcome === "rejected";
               return (
               <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId, c.source)}
-                className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${c.status === "rejected" ? "opacity-60" : ""}`}>
+                className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${dimmed ? "opacity-60" : ""}`}>
                 <div className="relative aspect-[9/16] bg-muted overflow-hidden">
                   {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
                     <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{c.user.nickname?.[0]}</div>}
@@ -213,10 +242,21 @@ export default function MalePage() {
                   <div className={`absolute ${big ? "top-4 left-4 gap-2" : "top-3 left-3 gap-1.5"} flex flex-wrap`}>
                     {/* 출처 뱃지 — 두 출처 모두 있으면 둘 다 표시 (정책: 합치되 양쪽 노출) */}
                     {c.hasMd && <span className={`${badgeCls} bg-accent`}>MD 추천</span>}
-                    {/* 상태 뱃지 — 관심도착은 여성이 직접 선택한 경우(hasMatch)에만 표시 */}
-                    {c.hasMatch && c.status === "pending" && <span className={`${badgeCls} bg-warning`}>관심도착</span>}
-                    {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭 성공</span>}
-                    {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
+                    {/* MD추천 운영 결과 뱃지 (관리자 기록) — 있으면 일반 상태 뱃지 대체 */}
+                    {mdOutcome === "completed" ? (
+                      <span className={`${badgeCls} bg-success`}>매칭완료</span>
+                    ) : mdOutcome === "approved" ? (
+                      <span className={`${badgeCls} bg-success`}>수락완료</span>
+                    ) : mdOutcome === "rejected" ? (
+                      <span className={`${badgeCls} bg-muted-fg`}>거절</span>
+                    ) : (
+                      <>
+                        {/* 상태 뱃지 — 관심도착은 여성이 직접 선택한 경우(hasMatch)에만 표시 */}
+                        {c.hasMatch && c.status === "pending" && <span className={`${badgeCls} bg-warning`}>관심도착</span>}
+                        {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭 성공</span>}
+                        {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
+                      </>
+                    )}
                   </div>
                   <div className={`absolute bottom-0 left-0 right-0 ${big ? "p-5 space-y-2.5" : "p-3 space-y-1.5"}`}>
                     <h3 className={`text-white font-bold drop-shadow-lg ${big ? "text-2xl" : "text-base"}`}>{c.user.nickname}</h3>

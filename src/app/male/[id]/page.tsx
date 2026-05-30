@@ -12,6 +12,7 @@ export default function FemaleDetailPage() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [matchStatus, setMatchStatus] = useState<string>("pending");
+  const [mdRec, setMdRec] = useState<MdRecommendation | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<"approved" | "rejected" | null>(null);
   const [toast, setToast] = useState<{ kind: "success" | "info" | "error"; msg: string } | null>(null);
@@ -35,11 +36,11 @@ export default function FemaleDetailPage() {
     setLoading(true);
     // 프로필 + 내 매칭 상태를 함께 조회.
     // 같은 여성 프로필을 다시 열었을 때도 이미 응답한 상태(approved/rejected)가 정확히 반영되도록.
-    const profilePromise = fetch(`/api/profiles?role=female&status=active`);
+    const profilePromise = fetch(`/api/profiles?id=${encodeURIComponent(femaleId)}`);
     const mePromise = fetch(`/api/me`, { cache: "no-store" });
     const [profileRes, meRes] = await Promise.all([profilePromise, mePromise]);
-    const females: User[] = await profileRes.json();
-    setUser(females.find(f => f.id === femaleId) || null);
+    const profileData: { user: User | null } = await profileRes.json();
+    setUser(profileData.user || null);
 
     // 매칭 상태는 현재 로그인 남성 기준으로 조회 (버그 수정: 화면 재진입 시 pending 으로 초기화되는 문제)
     try {
@@ -50,6 +51,7 @@ export default function FemaleDetailPage() {
         const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();
         const m = matches.find((x) => x.femaleProfileId === femaleId);
         const md = mdRecs.find((x) => x.femaleProfileId === femaleId);
+        setMdRec(md ?? null);
         // 진입 경로(source)에 해당하는 row 를 우선 — MD 추천 응답이 항상 404 나던 버그 수정
         const found = source === "md" ? (md ?? m) : (m ?? md);
         if (found) setMatchStatus(found.status);
@@ -116,6 +118,17 @@ export default function FemaleDetailPage() {
   if (!user) return <div className="min-h-screen flex items-center justify-center text-muted-fg">프로필을 찾을 수 없습니다</div>;
 
   const age = new Date().getFullYear() - user.birthYear + 1;
+
+  // MD추천(남성 선픽) 운영 결과 — 관리자가 기록한 여성 응답/매칭완료
+  const mdOutcome = mdRec
+    ? mdRec.completedAt
+      ? "completed"
+      : mdRec.femaleApprovedAt
+      ? "approved"
+      : mdRec.femaleRejectedAt
+      ? "rejected"
+      : null
+    : null;
 
   return (
     <main className="min-h-screen bg-white mx-auto max-w-[430px] relative pb-32">
@@ -228,6 +241,28 @@ export default function FemaleDetailPage() {
           className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 bg-white border-t border-border px-4 pt-4"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2.5rem)" }}
         >
+          {/* MD추천 운영 결과가 있으면 일반 상태 UI 대체 */}
+          {mdOutcome === "completed" ? (
+            <div className="py-4 rounded-2xl text-center bg-green-50">
+              <p className="text-green-600 font-bold text-base">매칭완료 ✅</p>
+              <p className="text-green-700/80 text-xs mt-1">좋은 인연이 되시길 응원해요!</p>
+            </div>
+          ) : mdOutcome === "approved" ? (
+            <div className="py-4 rounded-2xl text-center bg-green-50">
+              <p className="text-green-600 font-bold text-base">수락완료 🎉</p>
+              <p className="text-green-700/80 text-xs mt-1">
+                곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요.
+              </p>
+            </div>
+          ) : mdOutcome === "rejected" ? (
+            <div className="py-4 rounded-2xl text-center bg-gray-100">
+              <p className="text-gray-600 font-bold text-base">거절</p>
+              <p className="text-gray-500 text-xs mt-1">
+                아쉽지만 이번 인연은 이어지지 못했어요. 더 좋은 분을 만나실 거예요!
+              </p>
+            </div>
+          ) : (
+          <>
           {matchStatus === "pending" && (
             <div className="flex gap-3">
               <button
@@ -272,6 +307,8 @@ export default function FemaleDetailPage() {
                 거절 후 7일 내에는 수락으로 번복할 수 있습니다
               </p>
             </div>
+          )}
+          </>
           )}
         </div>
       )}

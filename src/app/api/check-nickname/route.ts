@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { isNicknameTaken } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { validateNickname } from "@/lib/validation";
+import { rateLimit, getClientIp, tooMany } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  // 입력 중 호출되는 엔드포인트 — IP 기준 분당 60회로 연타 방어
+  const rl = rateLimit(`nick:${getClientIp(req)}`, 60, 60_000);
+  if (!rl.ok) return tooMany(rl.retryAfter);
+
   const raw = req.nextUrl.searchParams.get("nickname") ?? "";
   const v = validateNickname(raw);
   if (!v.ok) {

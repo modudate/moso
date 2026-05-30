@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { nanoid } from "nanoid";
 import sharp from "sharp";
+import { rateLimit, getClientIp, tooMany } from "@/lib/rate-limit";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -9,6 +10,10 @@ const BUCKET = "profile-photos";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 export async function POST(req: NextRequest) {
+  // 이미지 처리(sharp)는 CPU 비용이 크므로 업로드 연타 방어 — IP 기준 분당 40회
+  const rl = rateLimit(`upload:${getClientIp(req)}`, 40, 60_000);
+  if (!rl.ok) return tooMany(rl.retryAfter);
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

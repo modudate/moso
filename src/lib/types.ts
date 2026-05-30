@@ -73,6 +73,11 @@ export interface MdRecommendation {
   status: MatchAction;
   createdAt: string;
   respondedAt: string | null;
+  // MD추천(남성 선픽) 운영 진행 단계 (관리자가 버튼으로 기록)
+  linkSentAt: string | null;       // 링크전달완료
+  femaleApprovedAt: string | null; // 여성수락
+  femaleRejectedAt: string | null; // 여성거절
+  completedAt: string | null;      // 매칭완료
 }
 
 export interface AdminNote {

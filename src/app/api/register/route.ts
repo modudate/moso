@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isNicknameTaken } from "@/lib/db";
 import { validateNickname, validateIntroText } from "@/lib/validation";
+import { rateLimit, getClientIp, tooMany } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  // 가입 재시도/봇 연타 억제 — IP 기준 분당 8회
+  const rl = rateLimit(`register:${getClientIp(req)}`, 8, 60_000);
+  if (!rl.ok) return tooMany(rl.retryAfter);
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

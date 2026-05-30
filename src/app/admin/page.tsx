@@ -39,33 +39,50 @@ export default function AdminPage() {
   const [mdRejectedIds, setMdRejectedIds] = useState<Set<string>>(new Set());
   const [mdPendingIds, setMdPendingIds] = useState<Set<string>>(new Set());
   const [needCompleteIds, setNeedCompleteIds] = useState<Set<string>>(new Set());
+  const [needLinkIds, setNeedLinkIds] = useState<Set<string>>(new Set());
+  const [needMdCompleteIds, setNeedMdCompleteIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   // 필터 상태를 sessionStorage 에 저장해 회원 상세 → 뒤로가기 시 복원
   // (운영팀 요청: 같은 필터로 회원 여러 명을 연속 확인할 때 매번 다시 거는 게 번거롭다)
+  // 주의: SSR 하이드레이션 불일치를 피하기 위해 초기값은 항상 기본값으로 두고,
+  //       sessionStorage 복원은 마운트 후 useEffect 에서 수행한다.
   const FILTER_KEY = "admin_filter_state_v1";
-  const initialFilters = (() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = sessionStorage.getItem(FILTER_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  })();
+  const hydratedRef = useRef(false);
 
-  const [search, setSearch] = useState<string>(initialFilters?.search ?? "");
-  const [statusFilter, setStatusFilter] = useState<string>(initialFilters?.statusFilter ?? "");
-  const [genderFilter, setGenderFilter] = useState<string>(initialFilters?.genderFilter ?? "");
-  const [matchFilter, setMatchFilter] = useState<string>(initialFilters?.matchFilter ?? "");
-  const [mdFilter, setMdFilter] = useState<string>(initialFilters?.mdFilter ?? "");
-  const [infoFilters, setInfoFilters] = useState<MultiFilters>(initialFilters?.infoFilters ?? {});
+  const [search, setSearch] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [genderFilter, setGenderFilter] = useState<string>("");
+  const [matchFilter, setMatchFilter] = useState<string>("");
+  const [mdFilter, setMdFilter] = useState<string>("");
+  const [infoFilters, setInfoFilters] = useState<MultiFilters>({});
   const [tempInfoFilters, setTempInfoFilters] = useState<MultiFilters>({});
   const [showInfoFilters, setShowInfoFilters] = useState(false);
   const [idealMap, setIdealMap] = useState<Map<string, IdealType>>(new Map());
-  const [idealFilters, setIdealFilters] = useState<MultiFilters>(initialFilters?.idealFilters ?? {});
+  const [idealFilters, setIdealFilters] = useState<MultiFilters>({});
   const [tempIdealFilters, setTempIdealFilters] = useState<MultiFilters>({});
   const [showIdealFilters, setShowIdealFilters] = useState(false);
-  const [page, setPage] = useState<number>(initialFilters?.page ?? 1);
+  const [page, setPage] = useState<number>(1);
+
+  // 마운트 후 sessionStorage 에서 필터 복원 (하이드레이션 이후라 불일치 없음)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(FILTER_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.search) setSearch(s.search);
+        if (s.statusFilter) setStatusFilter(s.statusFilter);
+        if (s.genderFilter) setGenderFilter(s.genderFilter);
+        if (s.matchFilter) setMatchFilter(s.matchFilter);
+        if (s.mdFilter) setMdFilter(s.mdFilter);
+        if (s.infoFilters) setInfoFilters(s.infoFilters);
+        if (s.idealFilters) setIdealFilters(s.idealFilters);
+        if (s.page) setPage(s.page);
+      }
+    } catch {
+      /* ignore */
+    }
+    hydratedRef.current = true;
+  }, []);
   const [rejectTarget, setRejectTarget] = useState<User | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showMobileFilter, setShowMobileFilter] = useState(false);
@@ -74,6 +91,8 @@ export default function AdminPage() {
   // 필터 상태가 바뀌면 sessionStorage 동기화
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // 복원 전(마운트 직후 기본값)에는 저장하지 않음 → 저장된 필터를 기본값으로 덮어쓰는 것 방지
+    if (!hydratedRef.current) return;
     try {
       sessionStorage.setItem(
         FILTER_KEY,
@@ -194,6 +213,10 @@ export default function AdminPage() {
     const mdApprovedSet = new Set<string>();
     const mdRejectedSet = new Set<string>();
     const mdPendingSet = new Set<string>();
+    // 링크전달필요: MD추천 수락(approved) 됐지만 링크전달 안 한 건이 1건 이상
+    const needLinkSet = new Set<string>();
+    // 매칭마무리필요(MD): 여성수락 됐지만 매칭완료 안 한 건이 1건 이상
+    const needMdCompleteSet = new Set<string>();
 
     for (const md of mdData) {
       mdSet.add(md.maleProfileId);
@@ -210,6 +233,17 @@ export default function AdminPage() {
       } else if (md.status === "pending") {
         mdPendingSet.add(md.maleProfileId);
         mdPendingSet.add(md.femaleProfileId);
+      }
+
+      // 남성이 수락했으나 아직 링크 전달 안 함
+      if (md.status === "approved" && !md.linkSentAt) {
+        needLinkSet.add(md.maleProfileId);
+        needLinkSet.add(md.femaleProfileId);
+      }
+      // 여성수락까지 됐으나 아직 매칭완료 안 함
+      if (md.femaleApprovedAt && !md.completedAt) {
+        needMdCompleteSet.add(md.maleProfileId);
+        needMdCompleteSet.add(md.femaleProfileId);
       }
     }
 
@@ -230,6 +264,8 @@ export default function AdminPage() {
     setMdRejectedIds(mdRejectedSet);
     setMdPendingIds(mdPendingSet);
     setNeedCompleteIds(needCompleteSet);
+    setNeedLinkIds(needLinkSet);
+    setNeedMdCompleteIds(needMdCompleteSet);
     setLoading(false);
   };
 
@@ -331,6 +367,8 @@ export default function AdminPage() {
     if (mdFilter === "md_approved" && !mdApprovedIds.has(u.id)) return false;
     if (mdFilter === "md_rejected" && !mdRejectedIds.has(u.id)) return false;
     if (mdFilter === "md_pending" && !mdPendingIds.has(u.id)) return false;
+    if (mdFilter === "need_link" && !needLinkIds.has(u.id)) return false;
+    if (mdFilter === "need_md_complete" && !needMdCompleteIds.has(u.id)) return false;
     if (!matchInfoFilter(u)) return false;
     if (!matchIdealFilter(u)) return false;
     return true;
@@ -424,6 +462,8 @@ export default function AdminPage() {
                 { value: "md_approved", label: "MD 추천 수락 있음" },
                 { value: "md_rejected", label: "MD 추천 거절 있음" },
                 { value: "md_pending", label: "MD 추천 대기중 있음" },
+                { value: "need_link", label: "링크전달필요" },
+                { value: "need_md_complete", label: "매칭마무리필요" },
               ]} />
             </div>
 
@@ -964,6 +1004,8 @@ export default function AdminPage() {
                     { value: "md_approved", label: "MD 추천 수락 있음" },
                     { value: "md_rejected", label: "MD 추천 거절 있음" },
                     { value: "md_pending", label: "MD 추천 대기중 있음" },
+                    { value: "need_link", label: "링크전달필요" },
+                    { value: "need_md_complete", label: "매칭마무리필요" },
                   ]} />
                 </div>
 

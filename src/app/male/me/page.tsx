@@ -22,9 +22,9 @@ export default function MaleMyProfilePage() {
       setLoading(false);
       return;
     }
-    const profileRes = await fetch(`/api/profiles?role=male&status=active`);
-    const list: User[] = await profileRes.json();
-    setUser(list.find((u) => u.id === me.id) || null);
+    const profileRes = await fetch(`/api/profiles?id=${encodeURIComponent(me.id)}`);
+    const data: { user: User | null } = await profileRes.json();
+    setUser(data.user || null);
     setLoading(false);
   };
 

@@ -28,6 +28,50 @@ export async function getUserById(id: string) {
   return data ? mapUserWithProfile(data) : null;
 }
 
+// ── 갤러리 목록 (active + role 서버 필터 + 카드용 컬럼만) ──────────────
+// 갤러리/카트/요청함 등 "이성 active 목록"이 필요한 화면 전용.
+// 전체 users 를 풀스캔하던 getAllUsers 대신, DB 에서 role+status 로 필터하고
+// 카드 렌더/필터에 필요한 컬럼만 가져온다. (charm/datingStyle/추가사진 등 무거운 필드 제외)
+// 사진은 카드에 첫 장만 쓰이므로 photo_urls 도 첫 장만 내려보낸다.
+const PROFILE_CARD_SELECT =
+  "id, role, status, profiles!inner(nickname, birth_year, height, city, district, workplace, job, work_pattern, salary, education, smoking, mbti, photo_urls)";
+
+export async function getActiveProfilesByRole(role: "male" | "female") {
+  const db = await getDb();
+  const { data } = await db
+    .from("users")
+    .select(PROFILE_CARD_SELECT)
+    .eq("role", role)
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+  return (data || []).map(mapProfileCard);
+}
+
+// ── 공개 프로필 단건 조회 ────────────────────────────────────────────
+// 상세 페이지(이성 1명 보기)/내 프로필 미리보기에서 사용.
+// 전체 목록을 받아 find 하던 패턴을 제거하기 위한 단건 조회.
+// 민감 필드(phone/email/realName/반려사유)는 제외하고 반환한다.
+export async function getPublicProfileById(id: string) {
+  const db = await getDb();
+  const { data } = await db
+    .from("users")
+    .select("id, role, status, profiles!inner(*)")
+    .eq("id", id)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!data) return null;
+  const full = mapUserWithProfile(data);
+  const {
+    phone: _phone,
+    email: _email,
+    realName: _realName,
+    rejectionReason: _rejectionReason,
+    ...pub
+  } = full;
+  void _phone; void _email; void _realName; void _rejectionReason;
+  return pub;
+}
+
 export async function updateProfile(userId: string, updates: Record<string, unknown>) {
   const db = await getDb();
   const dbUpdates: Record<string, unknown> = {};
@@ -79,16 +123,26 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
 // ── Nickname 중복 체크 ─────────────────────────────────────────────
 // 대소문자/앞뒤 공백 무시. excludeUserId 가 주어지면 본인 닉네임은 제외하고 검사.
 export async function isNicknameTaken(nickname: string, excludeUserId?: string): Promise<boolean> {
-  const normalized = nickname.trim().toLowerCase();
-  if (!normalized) return false;
+  const trimmed = nickname.trim();
+  if (!trimmed) return false;
   const db = await getDb();
-  let query = db
+
+  // 1) 인덱스를 타는 RPC 우선 사용 (migration 008 의 is_nickname_taken).
+  //    lower(trim(nickname)) 표현식 인덱스(idx_profiles_nickname_normalized)를 활용한다.
+  const { data, error } = await db.rpc("is_nickname_taken", {
+    p_nickname: trimmed,
+    p_exclude: excludeUserId ?? null,
+  });
+  if (!error) return !!data;
+
+  // 2) RPC 미적용(마이그레이션 전) 환경 폴백 — 기존 방식
+  const normalized = trimmed.toLowerCase();
+  const { data: rows } = await db
     .from("profiles")
-    .select("user_id, nickname");
-  query = query.ilike("nickname", normalized);
-  const { data } = await query;
-  if (!data) return false;
-  return data.some((row: { user_id: string; nickname: string }) => {
+    .select("user_id, nickname")
+    .ilike("nickname", normalized);
+  if (!rows) return false;
+  return rows.some((row: { user_id: string; nickname: string }) => {
     if (row.nickname.trim().toLowerCase() !== normalized) return false;
     if (excludeUserId && row.user_id === excludeUserId) return false;
     return true;
@@ -188,6 +242,71 @@ export async function addMdRecommendation(maleProfileId: string, femaleProfileId
 export async function deleteMdRecommendation(id: string) {
   const db = await getDb();
   const { error } = await db.from("md_recommendations").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function getMdRecById(id: string) {
+  const db = await getDb();
+  const { data, error } = await db
+    .from("md_recommendations")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error || !data) return null;
+  return mapMdRec(data);
+}
+
+// MD추천 진행 단계 컬럼 업데이트 (관리자 전용)
+export async function updateMdProgress(
+  id: string,
+  patch: Partial<{
+    link_sent_at: string | null;
+    female_approved_at: string | null;
+    female_rejected_at: string | null;
+    completed_at: string | null;
+  }>,
+) {
+  const db = await getDb();
+  const { data, error } = await db
+    .from("md_recommendations")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !data) throw error ?? new Error("MD추천 업데이트 실패");
+  return mapMdRec(data);
+}
+
+// ── Profile Links (프로필 공유 링크) ───────────────────────────────
+
+export async function getProfileLinksByUser(userId: string) {
+  const db = await getDb();
+  const { data } = await db
+    .from("profile_links")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  type ProfileLinkRow = {
+    token: string;
+    user_id: string;
+    created_at: string;
+    expires_at: string;
+    access_count: number;
+    max_access: number;
+  };
+  return ((data as ProfileLinkRow[]) || []).map((l) => ({
+    token: l.token,
+    userId: l.user_id,
+    createdAt: l.created_at,
+    expiresAt: l.expires_at,
+    accessCount: l.access_count,
+    maxAccess: l.max_access,
+  }));
+}
+
+export async function deleteProfileLink(token: string) {
+  const db = await getDb();
+  const { error } = await db.from("profile_links").delete().eq("token", token);
   if (error) throw error;
 }
 
@@ -407,6 +526,31 @@ export async function incrementShareLinkAccess(token: string) {
 // ── Mappers ────────────────────────────────────────────────────────
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// 갤러리 카드용 경량 매퍼 (PROFILE_CARD_SELECT 와 짝)
+function mapProfileCard(row: any) {
+  const p = row.profiles?.[0] || row.profiles || {};
+  const photos: string[] = Array.isArray(p.photo_urls) ? p.photo_urls : [];
+  return {
+    id: row.id,
+    role: row.role,
+    status: row.status,
+    nickname: p.nickname || "",
+    birthYear: p.birth_year || 0,
+    height: p.height || 0,
+    city: p.city || "",
+    district: p.district || "",
+    workplace: p.workplace || "",
+    job: p.job || "",
+    workPattern: p.work_pattern || "",
+    salary: p.salary || "",
+    education: p.education || "",
+    smoking: p.smoking || false,
+    mbti: p.mbti || "",
+    // 카드에는 대표 사진 1장만 필요 → 페이로드 절감
+    photoUrls: photos.length > 0 ? [photos[0]] : [],
+  };
+}
+
 function mapUserWithProfile(row: any) {
   const p = row.profiles?.[0] || row.profiles || {};
   return {
@@ -460,5 +604,9 @@ function mapMdRec(row: any) {
     status: row.status,
     createdAt: row.created_at,
     respondedAt: row.responded_at,
+    linkSentAt: row.link_sent_at ?? null,
+    femaleApprovedAt: row.female_approved_at ?? null,
+    femaleRejectedAt: row.female_rejected_at ?? null,
+    completedAt: row.completed_at ?? null,
   };
 }

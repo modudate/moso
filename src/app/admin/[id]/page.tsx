@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, IdealType, AdminNote, MdRecommendation, MatchRequest } from "@/lib/types";
+import { User, IdealType, AdminNote, MdRecommendation, MatchRequest, ProfileLink } from "@/lib/types";
 import { regionLabel, smokingLabel, EDUCATIONS, WORKPLACES, JOBS, WORK_PATTERNS, SALARIES, SMOKING_OPTIONS, MBTI_TYPES, BIRTH_YEARS, CITIES, DISTRICTS } from "@/lib/options";
 import MultiImageUploader from "@/components/MultiImageUploader";
 import ImageUploader from "@/components/ImageUploader";
@@ -31,28 +31,98 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
   const [mdPage, setMdPage] = useState(1);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [profileLinks, setProfileLinks] = useState<ProfileLink[]>([]);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [mdBusy, setMdBusy] = useState<string | null>(null);
   useEffect(() => { fetchData(); }, [userId]);
 
   const fetchData = async () => {
     setLoading(true);
     // cache: "no-store" 로 항상 신선한 데이터 가져오기 (방금 저장한 사진이 즉시 반영되도록)
-    const [detailRes, matchRes, usersRes] = await Promise.all([
+    const [detailRes, matchRes, usersRes, linksRes] = await Promise.all([
       fetch(`/api/profiles?id=${userId}`, { cache: "no-store" }),
       fetch(`/api/match?all=true`, { cache: "no-store" }),
       fetch("/api/profiles", { cache: "no-store" }),
+      fetch(`/api/profiles/link?userId=${userId}`, { cache: "no-store" }),
     ]);
     const detail = await detailRes.json();
     const allMatches: MatchRequest[] = await matchRes.json();
     const users: User[] = await usersRes.json();
+    const linksData = await linksRes.json().catch(() => ({ links: [] }));
 
     setUser(detail.user);
     setIdealType(detail.idealType || null);
     setNotes(detail.notes || []);
     setMdRecs(detail.mdRecs || []);
     setAllUsers(users);
+    setProfileLinks(linksData.links || []);
     const userMatches = allMatches.filter(m => m.femaleProfileId === userId || m.maleProfileId === userId);
     setMatches(userMatches);
     setLoading(false);
+  };
+
+  // 프로필 링크 생성 (남/녀 공통)
+  const createProfileLink = async () => {
+    if (creatingLink) return;
+    setCreatingLink(true);
+    try {
+      const res = await fetch("/api/profiles/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.link) {
+        setProfileLinks(prev => [data.link, ...prev]);
+      } else {
+        alert(data.error || "링크 생성에 실패했습니다.");
+      }
+    } finally {
+      setCreatingLink(false);
+    }
+  };
+
+  const deleteProfileLinkHandler = async (token: string) => {
+    if (!confirm("이 프로필 링크를 삭제하시겠습니까?\n삭제 후에는 해당 링크로 접속할 수 없습니다.")) return;
+    const prev = profileLinks;
+    setProfileLinks(p => p.filter(l => l.token !== token));
+    const res = await fetch(`/api/profiles/link?token=${encodeURIComponent(token)}`, { method: "DELETE" });
+    if (!res.ok) {
+      setProfileLinks(prev);
+      alert("링크 삭제에 실패했습니다.");
+    }
+  };
+
+  const copyProfileLink = async (token: string) => {
+    const url = `${window.location.origin}/profile/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("프로필 링크가 복사되었습니다.\n" + url);
+    } catch {
+      window.prompt("아래 링크를 복사하세요", url);
+    }
+  };
+
+  // MD추천 진행 단계 처리 (링크전달완료 / 여성수락 / 여성거절 / 매칭완료)
+  const doMdProgress = async (mdId: string, action: "link_sent" | "female_approve" | "female_reject" | "complete", confirmMsg: string) => {
+    if (mdBusy) return;
+    if (!confirm(confirmMsg)) return;
+    setMdBusy(mdId);
+    try {
+      const res = await fetch("/api/admin/md-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mdId, action }),
+      });
+      const data = await res.json();
+      if (res.ok && data.mdRec) {
+        setMdRecs(prev => prev.map(m => m.id === mdId ? data.mdRec : m));
+      } else {
+        alert(data.error || "처리에 실패했습니다.");
+      }
+    } finally {
+      setMdBusy(null);
+    }
   };
 
   // 필드별 PATCH 큐: 같은 필드의 빠른 연속 호출은 마지막 값만 보내고, 항상 직전 요청 종료 후 다음을 보냄.
@@ -541,33 +611,38 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
                 {mdRecs.map(md => {
                   const female = getUser(md.femaleProfileId);
                   return (
-                    <div key={md.id} className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl">
-                      {female?.photoUrls[0] ? (
-                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-accent transition-all" onClick={() => setLightbox(female.photoUrls[0])}>
-                          <img src={female.photoUrls[0]} alt={female.nickname} className="w-full h-full object-cover" />
+                    <div key={md.id} className="p-4 bg-accent/5 rounded-xl">
+                      <div className="flex items-center gap-4">
+                        {female?.photoUrls[0] ? (
+                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-accent transition-all" onClick={() => setLightbox(female.photoUrls[0])}>
+                            <img src={female.photoUrls[0]} alt={female.nickname} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-accent/30">{female?.nickname?.[0] || "?"}</div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white px-2 py-0.5 rounded" style={{ backgroundColor: "#7c5cfc" }}>MD</span>
+                            <p className="text-base font-semibold truncate">{female ? `${female.realName} (${female.nickname})` : md.femaleProfileId}</p>
+                          </div>
+                          <p className="text-sm text-muted-fg mt-0.5">{female?.birthYear}년생 · {female ? regionLabel(female.city, female.district) : ""}</p>
                         </div>
-                      ) : (
-                        <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-accent/30">{female?.nickname?.[0] || "?"}</div>
+                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${md.status === "approved" ? "bg-success/10 text-success" : md.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
+                            {md.status === "approved" ? "수락" : md.status === "pending" ? "대기중" : "거절"}
+                          </span>
+                          <span className="text-xs text-muted-fg">{new Date(md.createdAt).toLocaleDateString("ko-KR")}</span>
+                          <button
+                            onClick={() => cancelMdRecommendation(md.id)}
+                            className="text-xs px-2.5 py-1 rounded-lg border border-danger/30 text-danger hover:bg-danger/10 transition-colors"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                      {md.status === "approved" && (
+                        <MdProgress md={md} busy={mdBusy === md.id} onAction={doMdProgress} />
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white px-2 py-0.5 rounded" style={{ backgroundColor: "#7c5cfc" }}>MD</span>
-                          <p className="text-base font-semibold truncate">{female ? `${female.realName} (${female.nickname})` : md.femaleProfileId}</p>
-                        </div>
-                        <p className="text-sm text-muted-fg mt-0.5">{female?.birthYear}년생 · {female ? regionLabel(female.city, female.district) : ""}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${md.status === "approved" ? "bg-success/10 text-success" : md.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
-                          {md.status === "approved" ? "수락" : md.status === "pending" ? "대기중" : "거절"}
-                        </span>
-                        <span className="text-xs text-muted-fg">{new Date(md.createdAt).toLocaleDateString("ko-KR")}</span>
-                        <button
-                          onClick={() => cancelMdRecommendation(md.id)}
-                          className="text-xs px-2.5 py-1 rounded-lg border border-danger/30 text-danger hover:bg-danger/10 transition-colors"
-                        >
-                          취소
-                        </button>
-                      </div>
                     </div>
                   );
                 })}
@@ -575,6 +650,62 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </section>
         )}
+
+        {/* 프로필 링크 (남/녀 공통) */}
+        <section className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-lg">프로필 링크 ({profileLinks.length}건)</h2>
+            <button
+              onClick={createProfileLink}
+              disabled={creatingLink}
+              className="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+              style={{ backgroundColor: "#7c5cfc" }}
+            >
+              {creatingLink && <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+              + 링크 생성
+            </button>
+          </div>
+          <p className="text-xs text-muted-fg mb-3">
+            공유 링크는 생성 시점부터 5일간 유효하며 최대 10회까지 열람할 수 있어요. 외부에 프로필을 공유할 때 사용하세요.
+          </p>
+          {profileLinks.length === 0 ? (
+            <p className="text-base text-muted-fg">생성된 프로필 링크가 없습니다.</p>
+          ) : (
+            <div className="space-y-2">
+              {profileLinks.map(link => {
+                const expired = new Date(link.expiresAt) < new Date();
+                const usedUp = link.accessCount >= link.maxAccess;
+                return (
+                  <div key={link.token} className={`p-3 rounded-xl border ${expired || usedUp ? "border-danger/30 bg-danger/5" : "border-border bg-muted/30"}`}>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 min-w-0 text-sm font-mono truncate">/profile/{link.token}</code>
+                      <button
+                        onClick={() => copyProfileLink(link.token)}
+                        className="text-xs px-2.5 py-1 rounded-lg border border-border bg-white text-muted-fg hover:border-accent/40 hover:text-accent transition-colors flex-shrink-0"
+                      >
+                        복사
+                      </button>
+                      <button
+                        onClick={() => deleteProfileLinkHandler(link.token)}
+                        className="text-xs px-2.5 py-1 rounded-lg border border-danger/30 text-danger hover:bg-danger/10 transition-colors flex-shrink-0"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-fg">
+                      <span className={expired ? "text-danger font-semibold" : ""}>
+                        만료 {new Date(link.expiresAt).toLocaleString("ko-KR")}
+                      </span>
+                      <span className={usedUp ? "text-danger font-semibold" : ""}>
+                        열람 {link.accessCount}/{link.maxAccess}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
         {/* 관리자 메모 */}
         <section className="bg-card rounded-2xl border border-border p-6">
@@ -809,6 +940,128 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         </>
       )}
     </main>
+  );
+}
+
+function MdProgress({
+  md,
+  busy,
+  onAction,
+}: {
+  md: MdRecommendation;
+  busy: boolean;
+  onAction: (
+    mdId: string,
+    action: "link_sent" | "female_approve" | "female_reject" | "complete",
+    confirmMsg: string,
+  ) => void;
+}) {
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString("ko-KR");
+  const linkSent = !!md.linkSentAt;
+  const approved = !!md.femaleApprovedAt;
+  const rejected = !!md.femaleRejectedAt;
+  const completed = !!md.completedAt;
+
+  const stepBtn = "px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-50";
+  const doneChip = "inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700";
+
+  return (
+    <div className="mt-3 pt-3 border-t border-accent/20 space-y-2.5">
+      <p className="text-[11px] font-semibold text-accent">매칭 진행 단계</p>
+
+      {/* 1) 링크전달완료 */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-fg">① 링크 전달</span>
+        {linkSent ? (
+          <span className={doneChip}>링크전달완료 · {fmt(md.linkSentAt!)}</span>
+        ) : (
+          <button
+            disabled={busy}
+            onClick={() =>
+              onAction(
+                md.id,
+                "link_sent",
+                "여성에게 남성 프로필 링크를 전달하셨나요?\n확인을 누르면 '링크전달완료'로 기록됩니다.",
+              )
+            }
+            className={`${stepBtn} text-white`}
+            style={{ backgroundColor: "#7c5cfc" }}
+          >
+            링크전달완료
+          </button>
+        )}
+      </div>
+
+      {/* 2) 여성 응답 (수락/거절 상호배타) */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-fg">② 여성 응답</span>
+        {rejected ? (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-danger/10 text-danger">
+            여성거절 · {fmt(md.femaleRejectedAt!)}
+          </span>
+        ) : approved ? (
+          <span className={doneChip}>여성수락 · {fmt(md.femaleApprovedAt!)}</span>
+        ) : linkSent ? (
+          <div className="flex gap-2">
+            <button
+              disabled={busy}
+              onClick={() =>
+                onAction(
+                  md.id,
+                  "female_approve",
+                  "여성이 승낙(수락)하셨나요?\n확인을 누르면 '여성수락'으로 기록되며, 남성 화면에 수락완료가 표시됩니다.",
+                )
+              }
+              className={`${stepBtn} bg-success text-white`}
+            >
+              여성수락
+            </button>
+            <button
+              disabled={busy}
+              onClick={() =>
+                onAction(
+                  md.id,
+                  "female_reject",
+                  "여성이 거절하셨나요?\n확인을 누르면 '여성거절'로 기록되며, 남성 화면에 거절이 표시됩니다.",
+                )
+              }
+              className={`${stepBtn} bg-white border border-danger/40 text-danger hover:bg-danger/10`}
+            >
+              여성거절
+            </button>
+          </div>
+        ) : (
+          <span className="text-[11px] text-muted-fg/70">링크 전달 후 진행</span>
+        )}
+      </div>
+
+      {/* 3) 매칭완료 (여성수락 후) */}
+      {!rejected && (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-fg">③ 매칭 마무리</span>
+          {completed ? (
+            <span className={doneChip}>매칭완료 · {fmt(md.completedAt!)}</span>
+          ) : approved ? (
+            <button
+              disabled={busy}
+              onClick={() =>
+                onAction(
+                  md.id,
+                  "complete",
+                  "연락처 교환 / 카카오톡 채팅방 개설을 완료하셨나요?\n확인을 누르면 '매칭완료'로 기록됩니다.",
+                )
+              }
+              className={`${stepBtn} text-white`}
+              style={{ backgroundColor: "#ff8a3d" }}
+            >
+              매칭완료
+            </button>
+          ) : (
+            <span className="text-[11px] text-muted-fg/70">여성수락 후 진행</span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

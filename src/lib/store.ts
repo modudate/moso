@@ -189,8 +189,8 @@ const SEED_REJECTION_LOGS: RejectionLog[] = [
 ];
 
 const SEED_MD_RECOMMENDATIONS: MdRecommendation[] = [
-  { id: "md-001", maleProfileId: "m-lonely", femaleProfileId: "f-003", status: "pending", createdAt: "2026-03-12T16:00:00.000Z", respondedAt: null },
-  { id: "md-002", maleProfileId: "m-001", femaleProfileId: "f-004", status: "pending", createdAt: "2026-03-13T10:00:00.000Z", respondedAt: null },
+  { id: "md-001", maleProfileId: "m-lonely", femaleProfileId: "f-003", status: "pending", createdAt: "2026-03-12T16:00:00.000Z", respondedAt: null, linkSentAt: null, femaleApprovedAt: null, femaleRejectedAt: null, completedAt: null },
+  { id: "md-002", maleProfileId: "m-001", femaleProfileId: "f-004", status: "pending", createdAt: "2026-03-13T10:00:00.000Z", respondedAt: null, linkSentAt: null, femaleApprovedAt: null, femaleRejectedAt: null, completedAt: null },
 ];
 
 const SEED_ADMIN_NOTES: AdminNote[] = [

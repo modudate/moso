@@ -4,10 +4,10 @@ import {
   getMatchRequests,
   getMdRecsForMale,
   getDb,
-  findExistingMatch,
 } from "@/lib/db";
 import { isVisibleNow } from "@/lib/visibility";
 import { requireAdmin, requireUser, requireActiveFemale, requireActiveMale, isAdmin } from "@/lib/auth-guard";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -46,13 +46,19 @@ export async function GET(req: NextRequest) {
       getMdRecsForMale(maleId),
     ]);
     const matches = allMatches.filter(isVisibleNow);
-    const mdRecs = allMdRecs.filter((r) =>
-      isVisibleNow({
+    const mdRecs = allMdRecs.filter((r) => {
+      // 관리자 진행 이벤트(여성수락/거절/매칭완료)가 있으면 그 시각 기준으로 7일 노출 연장
+      const latestOutcome =
+        [r.femaleRejectedAt, r.femaleApprovedAt, r.completedAt, r.respondedAt]
+          .filter((x): x is string => !!x)
+          .sort()
+          .pop() ?? r.respondedAt;
+      return isVisibleNow({
         status: r.status,
         requestedAt: r.createdAt,
-        respondedAt: r.respondedAt,
-      }),
-    );
+        respondedAt: latestOutcome,
+      });
+    });
     return NextResponse.json({ matches, mdRecs });
   }
 
@@ -78,6 +84,10 @@ export async function POST(req: NextRequest) {
   const auth = await requireActiveFemale();
   if (!auth.ok) return auth.response;
 
+  // 매칭요청 일괄 전송 연타 방어 — 본인(userId) 기준 분당 20회
+  const rl = rateLimit(`match:${auth.userId}`, 20, 60_000);
+  if (!rl.ok) return tooMany(rl.retryAfter);
+
   const { femaleProfileId, maleProfileIds } = (await req.json()) as {
     femaleProfileId: string;
     maleProfileIds: string[];
@@ -93,19 +103,54 @@ export async function POST(req: NextRequest) {
   const created: string[] = [];
   const blocked: { maleId: string; reason: "pending" | "approved" | "rejected" }[] = [];
 
+  // 기존 매칭 이력을 한 번의 쿼리로 조회 (기존 maleId 마다 1쿼리씩 돌던 N+1 제거)
+  const { data: existingRows } = await db
+    .from("match_requests")
+    .select("male_profile_id, status")
+    .eq("female_profile_id", femaleProfileId)
+    .in("male_profile_id", maleProfileIds);
+  const existingStatus = new Map<string, "pending" | "approved" | "rejected">(
+    (existingRows || []).map((r) => [
+      r.male_profile_id as string,
+      r.status as "pending" | "approved" | "rejected",
+    ]),
+  );
+
+  const toInsert: string[] = [];
   for (const maleId of maleProfileIds) {
-    const existing = await findExistingMatch(femaleProfileId, maleId);
-    if (existing) {
-      blocked.push({ maleId, reason: existing.status });
-      continue;
+    const st = existingStatus.get(maleId);
+    if (st) blocked.push({ maleId, reason: st });
+    else toInsert.push(maleId);
+  }
+
+  if (toInsert.length > 0) {
+    // 일괄 insert (가장 빠른 경로)
+    const { data: inserted, error } = await db
+      .from("match_requests")
+      .insert(
+        toInsert.map((maleId) => ({
+          female_profile_id: femaleProfileId,
+          male_profile_id: maleId,
+          status: "pending",
+        })),
+      )
+      .select("male_profile_id");
+
+    if (!error && inserted) {
+      for (const r of inserted) created.push(r.male_profile_id as string);
+    } else {
+      // 동시성으로 일부 UNIQUE 충돌 시 배열 insert 는 전체 롤백되므로,
+      // 개별 insert 로 폴백하여 가능한 건만 생성한다.
+      for (const maleId of toInsert) {
+        const { error: e2 } = await db.from("match_requests").insert({
+          female_profile_id: femaleProfileId,
+          male_profile_id: maleId,
+          status: "pending",
+        });
+        if (!e2) created.push(maleId);
+        else blocked.push({ maleId, reason: "pending" });
+      }
     }
-    const { error } = await db.from("match_requests").insert({
-      female_profile_id: femaleProfileId,
-      male_profile_id: maleId,
-      status: "pending",
-    });
-    if (!error) created.push(maleId);
-    else blocked.push({ maleId, reason: "pending" });
   }
 
   await db

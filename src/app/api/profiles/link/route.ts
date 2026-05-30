@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { createServiceClient } from "@/lib/supabase/server";
-import { getUserById } from "@/lib/db";
+import { getUserById, getProfileLinksByUser, deleteProfileLink } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +33,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "링크 생성 실패: " + error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ token, url: `/profile/${token}` });
+  return NextResponse.json({
+    token,
+    url: `/profile/${token}`,
+    link: {
+      token,
+      userId,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      accessCount: 0,
+      maxAccess: 10,
+    },
+  });
 }
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
+  const userId = req.nextUrl.searchParams.get("userId");
+
+  // 관리자: 특정 회원의 발급된 프로필 링크 목록 조회
+  if (userId) {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+    const links = await getProfileLinksByUser(userId);
+    return NextResponse.json({ links });
+  }
+
   if (!token) return NextResponse.json({ error: "토큰 필요" }, { status: 400 });
 
   const service = await createServiceClient();
@@ -63,4 +84,20 @@ export async function GET(req: NextRequest) {
 
   const { phone: _phone, email: _email, ...safeUser } = user;
   return NextResponse.json(safeUser);
+}
+
+// DELETE /api/profiles/link?token=...  (관리자 전용 — 발급된 링크 삭제)
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
+  const token = req.nextUrl.searchParams.get("token");
+  if (!token) return NextResponse.json({ error: "토큰 필요" }, { status: 400 });
+
+  try {
+    await deleteProfileLink(token);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: "링크 삭제 실패: " + String(err) }, { status: 500 });
+  }
 }

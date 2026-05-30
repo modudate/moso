@@ -31,7 +31,7 @@ export default function MaleDetailPage() {
     setMyStatus(status);
 
     const tasks: [Promise<Response>, Promise<Response> | null, Promise<Response> | null] = [
-      fetch(`/api/profiles?role=male&status=active`),
+      fetch(`/api/profiles?id=${encodeURIComponent(maleId)}`),
       uid && status === "active"
         ? fetch(`/api/cart?femaleId=${encodeURIComponent(uid)}`)
         : null,
@@ -40,8 +40,8 @@ export default function MaleDetailPage() {
         : null,
     ];
     const [profileRes, cartRes, matchRes] = await Promise.all(tasks);
-    const males: User[] = await profileRes.json();
-    setUser(males.find(m => m.id === maleId) || null);
+    const profileData: { user: User | null } = await profileRes.json();
+    setUser(profileData.user || null);
     if (cartRes) {
       const cartData: { maleProfileId: string }[] = await cartRes.json();
       setInCart(cartData.some(c => c.maleProfileId === maleId));
