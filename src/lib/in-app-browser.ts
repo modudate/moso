@@ -9,13 +9,45 @@ export type InAppKind = "kakaotalk" | "facebook" | "instagram" | "line" | "naver
 export function detectInAppBrowser(ua: string = typeof navigator !== "undefined" ? navigator.userAgent : ""): InAppKind {
   if (!ua) return null;
   const u = ua.toLowerCase();
+
+  // ── 1) 앱별로 식별 가능한 인앱 (외부 열기 스킴이 앱마다 달라 종류 구분이 필요) ──
   if (u.includes("kakaotalk")) return "kakaotalk";
   if (u.includes("fban") || u.includes("fbav") || u.includes("fb_iab")) return "facebook";
   if (u.includes("instagram")) return "instagram";
-  if (u.includes("line/")) return "line";
+  if (/\bline\//.test(u)) return "line";
   if (u.includes("naver")) return "naver";
-  // 기타 인앱 휴리스틱: webview 토큰
-  if (u.includes("; wv)")) return "other";
+
+  // ── 2) 기타 알려진 인앱 브라우저 (구분 없이 차단만; 종류는 other) ──
+  //   네이버밴드/다음/위챗/스냅챗/트위터(X)/링크드인/틱톡/웨일앱/에브리타임/잘로 등.
+  //   오픈 시 링크가 다양한 메신저·커뮤니티 앱으로 공유되므로 폭넓게 포함.
+  if (
+    /(daumapps|inappbrowser|\bband\b|micromessenger|wechat|snapchat|twitter|linkedinapp|musical_ly|tiktok|whale|everytimeapp|zalo|kakaostory)/.test(u)
+  ) {
+    return "other";
+  }
+
+  // ── 3) 안드로이드 WebView 휴리스틱 (앱 토큰이 없어도 WebView 면 차단) ──
+  //   Google 공식 문서 기준:
+  //     · "; wv"            → Lollipop+ WebView 표준 마커 ("; wv)" 형태가 아닐 수 있어 정규식 사용)
+  //     · Android + Version/X.X + Chrome → KitKat~ WebView 의 Version/ 토큰
+  //       (일반 Chrome for Android / 삼성인터넷 정상 UA 에는 Version/ 토큰이 없음 → 오탐 없음)
+  if (/android/.test(u)) {
+    if (/;\s*wv\b/.test(u)) return "other";
+    if (/\bversion\/\d+\.\d+/.test(u) && /chrome\//.test(u)) return "other";
+  }
+
+  // ── 4) iOS WebView 휴리스틱 (WKWebView 는 "Safari" 토큰이 없음) ──
+  //   정상 iOS 브라우저(Safari/Chrome(CriOS)/Firefox(FxiOS)/Edge(EdgiOS))는 모두 "safari" 토큰을 포함.
+  //   → "safari" 가 없는 iOS WebKit 은 인앱 WebView 로 간주.
+  if (
+    /(iphone|ipod|ipad)/.test(u) &&
+    /applewebkit/.test(u) &&
+    !/safari/.test(u) &&
+    !/(crios|fxios|edgios)/.test(u)
+  ) {
+    return "other";
+  }
+
   return null;
 }
 
