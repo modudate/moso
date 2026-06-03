@@ -95,11 +95,13 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
       if (val !== "rejected" && updates.rejectionReason === undefined) {
         userPatch.rejection_reason = null;
       }
-      await db.from("users").update(userPatch).eq("id", userId);
+      const { error } = await db.from("users").update(userPatch).eq("id", userId);
+      if (error) throw new Error(`status 업데이트 실패: ${error.message}`);
       continue;
     }
     if (key === "rejectionReason") {
-      await db.from("users").update({ rejection_reason: val }).eq("id", userId);
+      const { error } = await db.from("users").update({ rejection_reason: val }).eq("id", userId);
+      if (error) throw new Error(`rejectionReason 업데이트 실패: ${error.message}`);
       continue;
     }
     const dbKey = fieldMap[key];
@@ -116,7 +118,8 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
   }
 
   if (Object.keys(dbUpdates).length > 0) {
-    await db.from("profiles").update(dbUpdates).eq("user_id", userId);
+    const { error } = await db.from("profiles").update(dbUpdates).eq("user_id", userId);
+    if (error) throw new Error(`프로필 업데이트 실패: ${error.message}`);
   }
 }
 

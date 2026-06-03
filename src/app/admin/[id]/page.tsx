@@ -137,6 +137,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
     q.running = true;
     inflight.current += 1;
     setSavingField(prev => new Set(prev).add(key));
+    let failed = false;
     try {
       while (fieldQueue.current.has(key)) {
         const entry = fieldQueue.current.get(key)!;
@@ -152,6 +153,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         if (!res.ok) {
           const msg = await res.text().catch(() => "");
           alert(`저장 실패 (${key}): ${msg || res.status}`);
+          failed = true;
           break;
         }
         // 서버가 돌려준 최신 user 로 동기화 → DB 가 실제로 받은 값을 화면에 반영
@@ -168,6 +170,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
       }
     } catch (err) {
       alert(`저장 중 오류 (${key}): ${err instanceof Error ? err.message : String(err)}`);
+      failed = true;
     } finally {
       const q2 = fieldQueue.current.get(key);
       if (q2) q2.running = false;
@@ -177,6 +180,10 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
         next.delete(key);
         return next;
       });
+      // 저장 실패 시 서버에서 최신 데이터를 다시 불러와 UI 동기화
+      if (failed) {
+        fetchData();
+      }
     }
   };
 

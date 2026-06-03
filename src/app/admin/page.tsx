@@ -305,9 +305,7 @@ export default function AdminPage() {
   };
 
   const handleApprove = (id: string) => {
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30);
-    patchStatus(id, { status: "active", expiresAt: expires.toISOString() });
+    patchStatus(id, { status: "active" });
   };
 
   const openRejectModal = (u: User) => {
