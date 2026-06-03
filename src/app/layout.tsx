@@ -2,8 +2,19 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "모두의 소개팅 - 프로필 매칭 관리",
+  title: "사람을 만나야 하는 모든 순간, 모두의소개팅",
   description: "모두의 소개팅 프로필 매칭 서비스",
+  openGraph: {
+    title: "사람을 만나야 하는 모든 순간, 모두의소개팅",
+    description: "모두의 소개팅 프로필 매칭 서비스",
+    images: ["/og.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "사람을 만나야 하는 모든 순간, 모두의소개팅",
+    description: "모두의 소개팅 프로필 매칭 서비스",
+    images: ["/og.png"],
+  },
   verification: {
     google: "6mJIcC3OgtWv-N3Rp0YyRX5nHsOu341p-N00u_Cr3IY",
   },
