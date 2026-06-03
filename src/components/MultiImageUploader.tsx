@@ -304,15 +304,12 @@ const MultiImageUploader = forwardRef<MultiImageUploaderHandle, MultiImageUpload
     const handlePointerUp = (e: React.PointerEvent) => {
       if (activePointerId.current !== e.pointerId) return;
       if (dragIndex !== null && hoverIndex !== null && dragIndex !== hoverIndex) {
-        let updated: ImageSlot[] = [];
-        setSlots(prev => {
-          const arr = [...prev];
-          const [moved] = arr.splice(dragIndex, 1);
-          arr.splice(hoverIndex, 0, moved);
-          updated = arr;
-          return arr;
-        });
-        emitChange(updated);
+        const arr = [...slotsRef.current];
+        const [moved] = arr.splice(dragIndex, 1);
+        arr.splice(hoverIndex, 0, moved);
+        slotsRef.current = arr;
+        setSlots(arr);
+        emitChange(arr);
       }
       cleanupDrag();
     };

@@ -87,18 +87,20 @@ export default function ImageCropperModal({ src, aspect = 9 / 16, onCancel, onCo
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+    <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-2 sm:p-4">
+      {/* max-h-[100dvh]로 동적 viewport 높이 사용, overflow-y-auto로 작은 화면에서 스크롤 가능 */}
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-[100dvh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 sm:py-4 border-b border-border flex-shrink-0">
           <h3 className="text-base font-bold">{title}</h3>
-          <button onClick={onCancel} className="text-muted-fg hover:text-foreground" aria-label="닫기">
+          <button onClick={onCancel} className="text-muted-fg hover:text-foreground p-1" aria-label="닫기">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="relative bg-black" style={{ height: "min(70vh, 560px)" }}>
+        {/* 크롭 영역: 모바일에서 더 작게, dvh 사용 */}
+        <div className="relative bg-black flex-shrink-0" style={{ height: "min(55dvh, 480px)" }}>
           <Cropper
             image={src}
             crop={crop}
@@ -113,7 +115,7 @@ export default function ImageCropperModal({ src, aspect = 9 / 16, onCancel, onCo
           />
         </div>
 
-        <div className="px-5 py-4 space-y-3">
+        <div className="px-5 py-3 space-y-2 flex-shrink-0">
           <div>
             <label className="text-xs text-muted-fg mb-1 block">확대</label>
             <input
@@ -127,11 +129,12 @@ export default function ImageCropperModal({ src, aspect = 9 / 16, onCancel, onCo
             />
           </div>
           <p className="text-[11px] text-muted-fg">
-            드래그해서 위치를 조정하고, 슬라이더 또는 마우스 휠로 확대할 수 있어요. 9:16 비율로 잘립니다.
+            드래그하여 위치 조정, 슬라이더로 확대. 9:16 비율로 잘립니다.
           </p>
         </div>
 
-        <div className="px-5 py-4 border-t border-border flex gap-3">
+        {/* 버튼 영역: safe-area-inset-bottom 적용으로 홈 인디케이터 영역 확보 */}
+        <div className="px-5 py-3 sm:py-4 border-t border-border flex gap-3 flex-shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
           <button
             onClick={onCancel}
             disabled={saving}

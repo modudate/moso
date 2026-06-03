@@ -245,7 +245,7 @@ export default function RegisterPage() {
           idealJobs: [],
           idealSalaries,
           idealEducation,
-          idealSmoking: idealSmoking === "상관없음" ? null : idealSmoking === "비흡연",
+          idealSmoking: idealSmoking === "상관없음" ? null : idealSmoking === "흡연",
           idealMbti,
           topPriorities,
         },
