@@ -14,7 +14,7 @@ export async function getAllUsers() {
   const { data } = await db
     .from("users")
     .select("*, profiles(*)")
-    .order("created_at", { ascending: false });
+    .order("approved_at", { ascending: false, nullsFirst: false });
   return (data || []).map(mapUserWithProfile);
 }
 
@@ -43,7 +43,7 @@ export async function getActiveProfilesByRole(role: "male" | "female") {
     .select(PROFILE_CARD_SELECT)
     .eq("role", role)
     .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .order("approved_at", { ascending: false, nullsFirst: false });
   return (data || []).map(mapProfileCard);
 }
 
@@ -94,6 +94,10 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
       // 반려가 아닌 상태로 전환할 때는 사유 초기화
       if (val !== "rejected" && updates.rejectionReason === undefined) {
         userPatch.rejection_reason = null;
+      }
+      // 승인(active) 시 approved_at 기록 (신규 가입자 정렬용)
+      if (val === "active") {
+        userPatch.approved_at = new Date().toISOString();
       }
       const { error } = await db.from("users").update(userPatch).eq("id", userId);
       if (error) throw new Error(`status 업데이트 실패: ${error.message}`);
