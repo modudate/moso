@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isNicknameTaken } from "@/lib/db";
-import { validateNickname, validateIntroText } from "@/lib/validation";
+import { validateNickname, validateIntroTextOptional } from "@/lib/validation";
 import { rateLimit, getClientIp, tooMany } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -48,32 +48,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이미 사용 중인 닉네임입니다" }, { status: 409 });
   }
 
-  // 소개글 글자수 검증 (100~200자)
-  const charmCheck = validateIntroText(typeof body.charm === "string" ? body.charm : "", "저의 매력은");
+  // 소개글 글자수 검증 — 선택 항목이므로 작성 시 최대 길이만 제한
+  const charmCheck = validateIntroTextOptional(typeof body.charm === "string" ? body.charm : "", "저의 매력은");
   if (!charmCheck.ok) {
     return NextResponse.json({ error: charmCheck.reason }, { status: 400 });
   }
-  const dateCheck = validateIntroText(typeof body.datingStyle === "string" ? body.datingStyle : "", "연인이 생기면 하고 싶은 일은");
+  const dateCheck = validateIntroTextOptional(typeof body.datingStyle === "string" ? body.datingStyle : "", "연인이 생기면 하고 싶은 일은");
   if (!dateCheck.ok) {
     return NextResponse.json({ error: dateCheck.reason }, { status: 400 });
   }
 
-  // 사진 필수 검증 (클라이언트 우회 방지용 서버측 가드)
+  // 대표 사진만 필수 (클라이언트 우회 방지용 서버측 가드) — 매력/데이트 사진은 선택
   const validPhotoUrls = Array.isArray(body.photoUrls)
     ? body.photoUrls.filter((u: unknown): u is string => typeof u === "string" && !!u && !u.startsWith("blob:"))
     : [];
   if (validPhotoUrls.length < 2) {
     return NextResponse.json({ error: "대표 사진을 최소 2장 등록해주세요" }, { status: 400 });
-  }
-  const validCharm =
-    typeof body.charmPhotoUrl === "string" && !!body.charmPhotoUrl && !body.charmPhotoUrl.startsWith("blob:");
-  if (!validCharm) {
-    return NextResponse.json({ error: "'저의 매력은' 사진을 등록해주세요" }, { status: 400 });
-  }
-  const validDate =
-    typeof body.datePhotoUrl === "string" && !!body.datePhotoUrl && !body.datePhotoUrl.startsWith("blob:");
-  if (!validDate) {
-    return NextResponse.json({ error: "'연인이 생기면' 사진을 등록해주세요" }, { status: 400 });
   }
 
   const role = body.gender === "남" ? "male" : "female";

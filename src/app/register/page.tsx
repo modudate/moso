@@ -13,7 +13,7 @@ import MultiImageUploader, { type MultiImageUploaderHandle } from "@/components/
 import ImageUploader, { type ImageUploaderHandle } from "@/components/ImageUploader";
 import {
   validateNickname, sanitizeNicknameInput, NICKNAME_MAX,
-  validateIntroText, INTRO_MIN, INTRO_MAX,
+  validateIntroTextOptional, INTRO_MAX,
 } from "@/lib/validation";
 
 type Step = 1 | 2;
@@ -154,16 +154,16 @@ export default function RegisterPage() {
     if (!education) return { msg: "학력을 선택해주세요", key: "education" };
     if (!smoking) return { msg: "흡연 여부를 선택해주세요", key: "smoking" };
     if (!mbti) return { msg: "MBTI를 선택해주세요", key: "mbti" };
-    const cv = validateIntroText(charm, "저의 매력은");
+    // '저의 매력은' / '연인이 생기면' 글은 선택 항목 — 작성 시 최대 길이만 검증
+    const cv = validateIntroTextOptional(charm, "저의 매력은");
     if (!cv.ok) return { msg: cv.reason, key: "charm" };
-    const dv = validateIntroText(datingStyle, "연인이 생기면 하고 싶은 일은");
+    const dv = validateIntroTextOptional(datingStyle, "연인이 생기면 하고 싶은 일은");
     if (!dv.ok) return { msg: dv.reason, key: "datingStyle" };
 
-    // 사진 필수 검증 (업로드 중인 blob: URL 은 제외하고 실제 저장된 URL 만 카운트)
+    // 대표 사진만 필수 (업로드 중인 blob: URL 은 제외하고 실제 저장된 URL 만 카운트)
     const validPhotos = photoUrls.filter((u) => typeof u === "string" && u && !u.startsWith("blob:"));
     if (validPhotos.length < 2) return { msg: "대표 사진을 최소 2장 등록해주세요", key: "photoUrls" };
-    if (!charmPhotoUrl || charmPhotoUrl.startsWith("blob:")) return { msg: "'저의 매력은' 사진을 등록해주세요", key: "charmPhotoUrl" };
-    if (!datePhotoUrl || datePhotoUrl.startsWith("blob:")) return { msg: "'연인이 생기면' 사진을 등록해주세요", key: "datePhotoUrl" };
+    // 매력/데이트 사진은 선택 항목
     return null;
   };
 
@@ -318,7 +318,7 @@ export default function RegisterPage() {
         {step === 1 && (
           <div className="space-y-5">
             <h2 className="text-xl font-bold">프로필 기본 정보</h2>
-            <p className="text-sm text-muted-fg -mt-3">모든 항목 필수 입력</p>
+            <p className="text-sm text-muted-fg -mt-3">‘(선택)’ 표시 항목 외에는 모두 필수 입력</p>
 
             <Field label="본명" id="realName">
               <input type="text" value={realName} onChange={(e) => setRealName(e.target.value)} placeholder="실명을 입력해주세요"
@@ -481,7 +481,7 @@ export default function RegisterPage() {
               </div>
             </Field>
 
-            <Field label="저의 매력은" id="charm">
+            <Field label="저의 매력은 (선택)" id="charm">
               <textarea value={charm}
                 onChange={(e) => {
                   if (charmComposingRef.current || e.target.value.length <= INTRO_MAX) {
@@ -494,14 +494,14 @@ export default function RegisterPage() {
                   const v = e.currentTarget.value;
                   setCharm(v.length > INTRO_MAX ? v.slice(0, INTRO_MAX) : v);
                 }}
-                placeholder={`저의 매력을 자유롭게 적어주세요 (최소 ${INTRO_MIN}자)`} rows={5} maxLength={INTRO_MAX}
+                placeholder="저의 매력을 자유롭게 적어주세요 (선택)" rows={5} maxLength={INTRO_MAX}
                 className="input-field resize-none" />
-              <span className={`text-xs ${charm.trim().length < INTRO_MIN ? "text-red-500" : "text-muted-fg"}`}>
-                {charm.length}/{INTRO_MAX}자 {charm.trim().length < INTRO_MIN && `(최소 ${INTRO_MIN}자)`}
+              <span className="text-xs text-muted-fg">
+                {charm.length}/{INTRO_MAX}자
               </span>
             </Field>
 
-            <Field label="연인이 생기면 하고 싶은 일은" id="datingStyle">
+            <Field label="연인이 생기면 하고 싶은 일은 (선택)" id="datingStyle">
               <textarea value={datingStyle}
                 onChange={(e) => {
                   if (datingComposingRef.current || e.target.value.length <= INTRO_MAX) {
@@ -514,17 +514,17 @@ export default function RegisterPage() {
                   const v = e.currentTarget.value;
                   setDatingStyle(v.length > INTRO_MAX ? v.slice(0, INTRO_MAX) : v);
                 }}
-                placeholder={`연인이 생기면 함께 하고 싶은 일을 적어주세요 (최소 ${INTRO_MIN}자)`} rows={5} maxLength={INTRO_MAX}
+                placeholder="연인이 생기면 함께 하고 싶은 일을 적어주세요 (선택)" rows={5} maxLength={INTRO_MAX}
                 className="input-field resize-none" />
-              <span className={`text-xs ${datingStyle.trim().length < INTRO_MIN ? "text-red-500" : "text-muted-fg"}`}>
-                {datingStyle.length}/{INTRO_MAX}자 {datingStyle.trim().length < INTRO_MIN && `(최소 ${INTRO_MIN}자)`}
+              <span className="text-xs text-muted-fg">
+                {datingStyle.length}/{INTRO_MAX}자
               </span>
             </Field>
 
             <div className="pt-4 space-y-6 border-t border-gray-200">
               <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-2.5 text-[12px] text-orange-900 leading-relaxed">
                 <b>📸 사진 안내</b><br />
-                아래 3종의 사진은 모두 <b>필수 항목</b>입니다. 사진은 매칭 성사율에 가장 큰 영향을 주므로, 각 사진의 의도에 맞춰 정성껏 등록해주세요.
+                <b>대표 사진</b>은 필수, 나머지 2종은 <b>선택 항목</b>입니다. 사진은 매칭 성사율에 가장 큰 영향을 주므로, 각 사진의 의도에 맞춰 정성껏 등록해주세요.
               </div>
 
               <div id="field-photoUrls" className="rounded-2xl p-1 -m-1 transition-shadow space-y-2">
@@ -551,7 +551,7 @@ export default function RegisterPage() {
               <div id="field-charmPhotoUrl" className="rounded-2xl p-1 -m-1 transition-shadow space-y-2">
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    2. 저의 매력 사진 <span className="text-[#ff8a3d]">(필수 · 1장)</span>
+                    2. 저의 매력 사진 <span className="text-[#ff8a3d]">(선택 · 1장)</span>
                   </p>
                   <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">
                     위에 적으신 <b>‘저의 매력은’</b> 내용을 가장 잘 보여주는 사진을 등록해주세요.<br />
@@ -573,7 +573,7 @@ export default function RegisterPage() {
               <div id="field-datePhotoUrl" className="rounded-2xl p-1 -m-1 transition-shadow space-y-2">
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    3. 연인이 생기면 하고 싶은 일 사진 <span className="text-[#ff8a3d]">(필수 · 1장)</span>
+                    3. 연인이 생기면 하고 싶은 일 사진 <span className="text-[#ff8a3d]">(선택 · 1장)</span>
                   </p>
                   <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">
                     위에 적으신 <b>‘연인이 생기면 하고 싶은 일’</b>을 시각적으로 보여주는 사진이에요.<br />

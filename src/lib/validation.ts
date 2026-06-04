@@ -33,6 +33,14 @@ export function validateIntroText(value: string, label: string): { ok: true } | 
   return { ok: true };
 }
 
+// 선택 입력용 소개글 검증 — 비워두면 통과, 작성 시 최대 길이만 제한
+export function validateIntroTextOptional(value: string, label: string): { ok: true } | { ok: false; reason: string } {
+  const v = value.trim();
+  if (v.length === 0) return { ok: true };
+  if (v.length > INTRO_MAX) return { ok: false, reason: `${label}은(는) 최대 ${INTRO_MAX}자까지 가능합니다` };
+  return { ok: true };
+}
+
 // 전화번호 정규화 — 하이픈/공백/괄호 제거하여 숫자만 남김
 export function normalizePhone(value: string): string {
   return value.replace(/[^0-9]/g, "");

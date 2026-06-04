@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { User, MatchRequest, MdRecommendation } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 import Sidebar from "@/components/Sidebar";
@@ -42,6 +43,8 @@ export default function MalePage() {
   const [allFemales, setAllFemales] = useState<User[]>([]);
   const [adminCatalog, setAdminCatalog] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // 뒤로가기 시 복원할 스크롤 위치 (페이징 카드가 충분히 렌더된 뒤 적용)
+  const pendingScrollRef = useRef<number | null>(null);
 
   const inCatalog = isAdmin && adminCatalog;
 
@@ -61,13 +64,28 @@ export default function MalePage() {
     return () => io.disconnect();
   }, [loading, cards.length, inCatalog, allFemales.length]);
 
-  useEffect(() => {
+  // 저장된 스크롤 위치 + 펼쳐둔 카드 수(visible)를 읽어와 먼저 visible 을 복구
+  useLayoutEffect(() => {
+    if (loading) return;
     const saved = sessionStorage.getItem(SCROLL_KEY);
-    if (saved) {
-      setTimeout(() => window.scrollTo(0, parseInt(saved)), 100);
-      sessionStorage.removeItem(SCROLL_KEY);
-    }
+    if (!saved) return;
+    sessionStorage.removeItem(SCROLL_KEY);
+    const [y, v] = saved.split("|").map(Number);
+    pendingScrollRef.current = Number.isFinite(y) ? y : 0;
+    if (Number.isFinite(v) && v > 0) setVisible((cur) => Math.max(cur, v));
   }, [loading]);
+
+  // 카드가 렌더되어 페이지 높이가 충분해지면 저장된 위치로 스크롤 (visible 증가에 따라 재시도)
+  useLayoutEffect(() => {
+    const y = pendingScrollRef.current;
+    if (y == null) return;
+    const total = inCatalog ? allFemales.length : cards.length;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (maxScroll >= y || visible >= total) {
+      window.scrollTo(0, y);
+      pendingScrollRef.current = null;
+    }
+  }, [visible, loading, inCatalog, cards.length, allFemales.length]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -174,7 +192,7 @@ export default function MalePage() {
   };
 
   const handleCardClick = (id: string, matchId: string, source: "match" | "md") => {
-    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    sessionStorage.setItem(SCROLL_KEY, `${window.scrollY}|${visible}`);
     router.push(`/male/${id}?matchId=${matchId}&source=${source}`);
   };
 
@@ -249,11 +267,11 @@ export default function MalePage() {
                 return (
                   <div
                     key={f.id}
-                    onClick={() => { sessionStorage.setItem(SCROLL_KEY, String(window.scrollY)); router.push(`/male/${f.id}`); }}
+                    onClick={() => { sessionStorage.setItem(SCROLL_KEY, `${window.scrollY}|${visible}`); router.push(`/male/${f.id}`); }}
                     className="group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative"
                   >
                     <div className="relative aspect-[9/16] bg-muted overflow-hidden">
-                      {f.photoUrls[0] ? <img src={f.photoUrls[0]} alt={f.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
+                      {f.photoUrls[0] ? <Image src={f.photoUrls[0]} alt={f.nickname} fill sizes={gridCols === 1 ? "(max-width: 430px) 100vw, 430px" : "(max-width: 430px) 50vw, 215px"} quality={82} className="object-cover group-hover:scale-105 transition-transform duration-500" /> :
                         <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{f.nickname?.[0]}</div>}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                       <div className={`absolute ${big ? "bottom-0 left-0 right-0 p-5 space-y-2.5" : "bottom-0 left-0 right-0 p-3 space-y-1.5"}`}>
@@ -309,7 +327,7 @@ export default function MalePage() {
               <div key={c.matchId || c.user.id} onClick={() => handleCardClick(c.user.id, c.matchId, c.source)}
                 className={`group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${dimmed ? "opacity-60" : ""}`}>
                 <div className="relative aspect-[9/16] bg-muted overflow-hidden">
-                  {c.user.photoUrls[0] ? <img src={c.user.photoUrls[0]} alt={c.user.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
+                  {c.user.photoUrls[0] ? <Image src={c.user.photoUrls[0]} alt={c.user.nickname} fill sizes={gridCols === 1 ? "(max-width: 430px) 100vw, 430px" : "(max-width: 430px) 50vw, 215px"} quality={82} className="object-cover group-hover:scale-105 transition-transform duration-500" /> :
                     <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{c.user.nickname?.[0]}</div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                   <div className={`absolute ${big ? "top-4 left-4 gap-2" : "top-3 left-3 gap-1.5"} flex flex-wrap`}>
