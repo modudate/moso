@@ -450,7 +450,7 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           <section className="bg-card rounded-2xl border border-border p-6">
             <h2 className="font-bold text-lg mb-4">이상형 정보</h2>
             <div className="grid grid-cols-2 gap-5 text-base">
-              <InfoDisplay label="선호 나이" value={idealType.idealAge} />
+              <InfoDisplay label="선호 나이" value={idealType.idealAgeRanges.join(", ") || idealType.idealAge || "-"} />
               <InfoDisplay label="선호 키" value={`${idealType.idealMinHeight}cm ~ ${idealType.idealMaxHeight}cm`} />
               <InfoDisplay label="선호 거주지" value={idealType.idealCities.join(", ") || "-"} />
               <InfoDisplay label="선호 직장" value={idealType.idealWorkplaces.join(", ") || "-"} />

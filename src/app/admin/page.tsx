@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { User, MatchRequest, MdRecommendation, IdealType } from "@/lib/types";
-import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES, JOBS } from "@/lib/options";
+import { regionLabel, FILTER_ITEMS, CITIES, EDUCATIONS, WORKPLACES, SALARIES, MBTI_TYPES, JOBS, AGE_RANGES } from "@/lib/options";
 import LogoutButton from "@/components/LogoutButton";
 import {
   type MultiFilters, activeCount, toggleFilterValue, setFilterAll, clearFilterKey,
@@ -774,6 +774,7 @@ export default function AdminPage() {
 
         {showIdealFilters && (() => {
           const idealItems: { key: string; label: string; options: readonly string[] }[] = [
+            { key: "idealAgeRanges", label: "선호 나이", options: AGE_RANGES },
             { key: "idealCities", label: "선호 지역", options: CITIES },
             { key: "idealEducation", label: "선호 학력", options: EDUCATIONS },
             { key: "idealWorkplaces", label: "선호 직장", options: WORKPLACES },
