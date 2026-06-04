@@ -16,6 +16,17 @@ const SHARE_URL_FALLBACK = "https://ourmo.kr";
 export default function Sidebar({ open, onClose, gender }: Props) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // 관리자 여부 확인 (관리자에게만 남↔여 전환 메뉴 노출)
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setIsAdmin(!!d?.user?.isAdmin); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -116,6 +127,23 @@ export default function Sidebar({ open, onClose, gender }: Props) {
           </div>
 
           <nav className="flex-1 overflow-y-auto py-2">
+
+            {isAdmin && (
+              <>
+                <div className="px-5 pt-1 pb-1.5 text-[11px] font-bold tracking-wide" style={{ color: "#7c5cfc" }}>
+                  관리자 전용
+                </div>
+                <MenuItem
+                  icon={
+                    <IC d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-9L21 3m0 0l-4.5 4.5M21 3H7.5" />
+                  }
+                  label={gender === "female" ? "남성 회원 보기" : "여성 회원 보기"}
+                  href={gender === "female" ? "/male" : "/female"}
+                  onNavigate={onClose}
+                />
+                <div className="border-t border-border my-2" />
+              </>
+            )}
 
             {gender === "female" && (
               <MenuItem
