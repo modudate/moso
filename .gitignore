@@ -37,6 +37,9 @@ yarn-error.log*
 # data
 /data
 
+# db backups (contain real user PII — never commit)
+/backups
+
 # local scripts (may contain DB credentials)
 /scripts
 

@@ -66,6 +66,7 @@ export interface MatchableUser {
   job?: string;
   education?: string;
   mbti?: string;
+  salary?: string;
 }
 
 export function matchInfoFilters<T extends MatchableUser>(u: T, filters: MultiFilters): boolean {

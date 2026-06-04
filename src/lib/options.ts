@@ -197,6 +197,7 @@ export const FILTER_ITEMS: { key: string; label: string; options: string[]; type
   { key: "mbti", label: "MBTI", options: MBTI_TYPES },
   { key: "education", label: "학력", options: EDUCATIONS },
   { key: "workplace", label: "직장", options: WORKPLACES },
+  { key: "salary", label: "연봉", options: SALARIES },
 ];
 
 export function regionLabel(city: string, district: string) {
