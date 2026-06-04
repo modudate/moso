@@ -37,7 +37,13 @@ export default function MalePage() {
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [gridCols, setGridCols] = useState<1 | 2>(2);
   const [menuOpen, setMenuOpen] = useState(false);
+  // 관리자 전용 "여성 전체 보기" (일반 유저에겐 절대 노출 안 됨 — 서버 검증 isAdmin 플래그로만 동작)
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [allFemales, setAllFemales] = useState<User[]>([]);
+  const [adminCatalog, setAdminCatalog] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const inCatalog = isAdmin && adminCatalog;
 
   useEffect(() => { fetchData(); }, []);
 
@@ -45,14 +51,15 @@ export default function MalePage() {
     if (loading) return;
     const el = sentinelRef.current;
     if (!el) return;
+    const total = inCatalog ? allFemales.length : cards.length;
     const io = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
-        setVisible((v) => Math.min(v + PAGE_SIZE, cards.length));
+        setVisible((v) => Math.min(v + PAGE_SIZE, total));
       }
     }, { rootMargin: "400px 0px" });
     io.observe(el);
     return () => io.disconnect();
-  }, [loading, cards.length]);
+  }, [loading, cards.length, inCatalog, allFemales.length]);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SCROLL_KEY);
@@ -70,6 +77,7 @@ export default function MalePage() {
     const meRes = await fetch("/api/me");
     const { user } = await meRes.json();
     const uid = user?.id;
+    setIsAdmin(!!user?.isAdmin);
 
     if (!uid) {
       setCards([]);
@@ -83,6 +91,7 @@ export default function MalePage() {
     ]);
     const { matches, mdRecs }: { matches: MatchRequest[]; mdRecs: MdRecommendation[] } = await matchRes.json();
     const females: User[] = await femalesRes.json();
+    setAllFemales(females);
     const femaleMap = new Map(females.map(f => [f.id, f]));
 
     // 같은 femaleId 에 대해 match + md 가 모두 있을 수 있음.
@@ -186,6 +195,7 @@ export default function MalePage() {
   }
 
   const paged = cards.slice(0, visible);
+  const catalogPaged = allFemales.slice(0, visible);
 
   return (
     <main className="min-h-screen bg-background mx-auto max-w-[430px]">
@@ -206,6 +216,69 @@ export default function MalePage() {
 
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} gender="male" />
 
+      {isAdmin && (
+        <div className="px-4 pt-3">
+          <button
+            onClick={() => { setAdminCatalog((v) => !v); setVisible(PAGE_SIZE); window.scrollTo(0, 0); }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+            style={{ backgroundColor: inCatalog ? "#7c5cfc" : "#9b87f5" }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+            {inCatalog ? "← 관심/추천 보기로 돌아가기" : `여성 전체 보기 (관리자 전용) · ${allFemales.length}명`}
+          </button>
+        </div>
+      )}
+
+      {inCatalog ? (
+        <div className="px-4">
+          <div className="py-3 flex items-center">
+            <span className="text-sm text-muted-fg">전체 여성 {allFemales.length}명</span>
+            <div className="ml-auto">
+              <GridToggle cols={gridCols} onChange={setGridCols} />
+            </div>
+          </div>
+          {allFemales.length === 0 ? (
+            <div className="py-24 text-center text-sm text-muted-fg">활성 여성 회원이 없습니다.</div>
+          ) : (
+            <div className={`grid ${gridCols === 1 ? "grid-cols-1" : "grid-cols-2"} gap-3 pb-6`}>
+              {catalogPaged.map((f) => {
+                const big = gridCols === 1;
+                const chipCls = `${big ? "px-2.5 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]"} bg-white/20 backdrop-blur-sm text-white font-medium rounded-full`;
+                return (
+                  <div
+                    key={f.id}
+                    onClick={() => { sessionStorage.setItem(SCROLL_KEY, String(window.scrollY)); router.push(`/male/${f.id}`); }}
+                    className="group rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer relative"
+                  >
+                    <div className="relative aspect-[9/16] bg-muted overflow-hidden">
+                      {f.photoUrls[0] ? <img src={f.photoUrls[0]} alt={f.nickname} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> :
+                        <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-primary/20">{f.nickname?.[0]}</div>}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                      <div className={`absolute ${big ? "bottom-0 left-0 right-0 p-5 space-y-2.5" : "bottom-0 left-0 right-0 p-3 space-y-1.5"}`}>
+                        <h3 className={`text-white font-bold drop-shadow-lg ${big ? "text-2xl" : "text-base"}`}>{f.nickname}</h3>
+                        <p className={`text-white/90 drop-shadow-md ${big ? "text-base" : "text-xs"}`}>{f.birthYear}년생 · {f.height}cm</p>
+                        <div className={`flex flex-wrap ${big ? "gap-1.5" : "gap-1"}`}>
+                          <span className={chipCls}>{regionLabel(f.city, f.district)}</span>
+                          <span className={chipCls}>{f.workplace}</span>
+                          <span className={chipCls}>{f.mbti}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {visible < allFemales.length && (
+            <>
+              <ProfileCardSkeleton count={4} />
+              <div ref={sentinelRef} className="h-1" />
+            </>
+          )}
+        </div>
+      ) : (
       <div className="px-4">
         {cards.length > 0 && (
           <div className="py-3 flex items-center">
@@ -281,6 +354,7 @@ export default function MalePage() {
           </>
         )}
       </div>
+      )}
     </main>
   );
 }
