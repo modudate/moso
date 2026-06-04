@@ -33,9 +33,9 @@ export async function generateMetadata({
     const age = new Date().getFullYear() - user.birthYear + 1;
     const parts = [user.nickname, `${age}세`, user.mbti].filter(Boolean);
     const title = parts.join(" / ");
-    const image = user.photoUrls?.[0];
     const description = "모두의 소개팅 프로필";
 
+    // OG 이미지는 사이트 기본 이미지(/og.png)로 통일
     return {
       title,
       description,
@@ -44,13 +44,13 @@ export async function generateMetadata({
         title,
         description,
         type: "profile",
-        images: image ? [{ url: image }] : undefined,
+        images: ["/og.png"],
       },
       twitter: {
-        card: image ? "summary_large_image" : "summary",
+        card: "summary_large_image",
         title,
         description,
-        images: image ? [image] : undefined,
+        images: ["/og.png"],
       },
     };
   } catch {
