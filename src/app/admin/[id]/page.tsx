@@ -658,6 +658,18 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
                             <p className="text-base font-semibold truncate">{female ? `${female.realName} (${female.nickname})` : md.femaleProfileId}</p>
                           </div>
                           <p className="text-sm text-muted-fg mt-0.5">{female?.birthYear}년생 · {female ? regionLabel(female.city, female.district) : ""}</p>
+                          {female?.phone && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); copyPhone(female.phone); }}
+                              title="클릭하면 복사됩니다"
+                              className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-white text-sm font-medium text-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
+                              <span className="tabular-nums">{female.phone}</span>
+                              {copiedPhone === female.phone && <span className="text-xs text-success font-semibold">복사됨</span>}
+                            </button>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${md.status === "approved" ? "bg-success/10 text-success" : md.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>

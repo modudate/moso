@@ -344,7 +344,11 @@ export default function MalePage() {
                       <>
                         {/* 상태 뱃지 — 관심도착은 여성이 직접 선택한 경우(hasMatch)에만 표시 */}
                         {c.hasMatch && c.status === "pending" && <span className={`${badgeCls} bg-warning`}>관심도착</span>}
-                        {c.status === "approved" && <span className={`${badgeCls} bg-success`}>매칭 성공</span>}
+                        {c.status === "approved" && (
+                          <span className={`${badgeCls} bg-success`}>
+                            {c.source === "md" ? "수락완료" : "매칭 성공"}
+                          </span>
+                        )}
                         {c.status === "rejected" && <span className={`${badgeCls} bg-muted-fg`}>거절됨</span>}
                       </>
                     )}

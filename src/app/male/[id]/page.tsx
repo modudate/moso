@@ -73,7 +73,7 @@ export default function FemaleDetailPage() {
         ? "거절했던 매칭을 수락으로 번복하시겠습니까?\n\n수락 후에는 다시 거절로 되돌릴 수 없습니다."
         : source === "match"
           ? "여성분의 호감 표시를 수락하시겠습니까?\n\n수락하시면 매칭이 완료됩니다.\n수락 후에는 취소할 수 없습니다."
-          : "매니저가 추천한 여성분을 수락하시겠습니까?\n\n수락하시면 매칭이 완료됩니다.\n수락 후에는 취소할 수 없습니다.";
+          : "매니저가 추천한 여성분을 수락하시겠습니까?\n\n수락 완료 후 여성분께 의사가 전달되며,\n매칭 성공 시 연락드립니다.\n수락 후에는 취소할 수 없습니다.";
       const ok = window.confirm(message);
       if (!ok) return;
     }
@@ -101,7 +101,9 @@ export default function FemaleDetailPage() {
         msg: status === "approved"
           ? (isRevert
               ? "거절을 수락으로 번복했습니다. 매칭이 완료되었습니다!"
-              : "매칭이 성사되었어요! 곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요!")
+              : source === "md"
+                ? "수락 완료! 여성분께 의사 전달 후, 매칭 성공 시 연락드리겠습니다!"
+                : "매칭이 성사되었어요! 곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요!")
           : "거절 처리되었습니다. (7일 내 수락으로 번복할 수 있습니다)",
       });
     } catch (err) {
@@ -286,9 +288,13 @@ export default function FemaleDetailPage() {
           )}
           {matchStatus === "approved" && (
             <div className="py-4 rounded-2xl text-center bg-green-50">
-              <p className="text-green-600 font-bold text-base">매칭 성공! 🎉</p>
+              <p className="text-green-600 font-bold text-base">
+                {source === "md" ? "수락 완료! 🎉" : "매칭 성공! 🎉"}
+              </p>
               <p className="text-green-700/80 text-xs mt-1">
-                곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요.
+                {source === "md"
+                  ? "여성분께 의사 전달 후, 매칭 성공 시 연락드리겠습니다!"
+                  : "곧 운영진을 통해 카카오톡 채팅방에 두분을 초대해드릴게요."}
               </p>
             </div>
           )}
