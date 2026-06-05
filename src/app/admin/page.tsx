@@ -356,10 +356,11 @@ export default function AdminPage() {
       const q = search.trim();
       const qDigits = q.replace(/[^0-9]/g, "");
       const nameMatch = u.realName.includes(q);
+      const nicknameMatch = (u.nickname || "").includes(q);
       const phoneMatch = u.phone.includes(q);
       // 전화번호 검색은 하이픈 없이도 가능하도록 숫자만 추출해서 비교
       const phoneDigitsMatch = qDigits.length >= 2 && u.phone.replace(/[^0-9]/g, "").includes(qDigits);
-      if (!nameMatch && !phoneMatch && !phoneDigitsMatch) return false;
+      if (!nameMatch && !nicknameMatch && !phoneMatch && !phoneDigitsMatch) return false;
     }
     if (search.length === 1) return true;
     if (statusFilter && u.status !== statusFilter) return false;
@@ -437,7 +438,7 @@ export default function AdminPage() {
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="이름/전화번호 (2글자+)"
+              placeholder="이름/닉네임/전화번호 (2글자+)"
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
 
@@ -991,7 +992,7 @@ export default function AdminPage() {
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="이름/전화번호 (2글자+)"
+                  placeholder="이름/닉네임/전화번호 (2글자+)"
                   className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
 
