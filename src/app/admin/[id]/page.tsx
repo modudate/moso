@@ -683,6 +683,63 @@ export default function AdminDetailPage({ params }: { params: Promise<{ id: stri
           </section>
         )}
 
+        {/* 추천받은 남성 (여성만) — MD가 이 여성에게 추천한 남성 명단 */}
+        {user.role === "female" && (
+          <section className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-bold text-lg mb-4">추천받은 남성 ({mdRecs.length}건)</h2>
+            {mdRecs.length === 0 ? (
+              <p className="text-base text-muted-fg">추천받은 남성이 없습니다</p>
+            ) : (
+              <div className="space-y-3">
+                {mdRecs.map(md => {
+                  const male = getUser(md.maleProfileId);
+                  return (
+                    <div key={md.id}
+                      onClick={() => router.push(`/admin/${md.maleProfileId}`)}
+                      title="클릭하면 이 남성 상세페이지로 이동합니다"
+                      className="p-4 bg-accent/5 rounded-xl cursor-pointer hover:ring-2 hover:ring-accent/40 transition-all">
+                      <div className="flex items-center gap-4">
+                        {male?.photoUrls[0] ? (
+                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                            <img src={male.photoUrls[0]} alt={male.nickname} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center text-base font-bold text-accent/30">{male?.nickname?.[0] || "?"}</div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white px-2 py-0.5 rounded" style={{ backgroundColor: "#7c5cfc" }}>MD</span>
+                            <p className="text-base font-semibold truncate">{male ? `${male.realName} (${male.nickname})` : md.maleProfileId}</p>
+                          </div>
+                          <p className="text-sm text-muted-fg mt-0.5">{male?.birthYear}년생 · {male ? regionLabel(male.city, male.district) : ""}</p>
+                          {male?.phone && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); copyPhone(male.phone); }}
+                              title="클릭하면 복사됩니다"
+                              className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-white text-sm font-medium text-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
+                              <span className="tabular-nums">{male.phone}</span>
+                              {copiedPhone === male.phone && <span className="text-xs text-success font-semibold">복사됨</span>}
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${md.status === "approved" ? "bg-success/10 text-success" : md.status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>
+                            {md.status === "approved" ? "수락" : md.status === "pending" ? "대기중" : "거절"}
+                          </span>
+                          <span className="text-xs text-muted-fg">{new Date(md.createdAt).toLocaleDateString("ko-KR")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* 프로필 링크 (남/녀 공통) */}
         <section className="bg-card rounded-2xl border border-border p-6">
           <div className="flex items-center justify-between mb-4">
@@ -1106,11 +1163,24 @@ function InfoDisplay({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EditableField({ label, value, fieldKey, editing, editValue, suffix, maxLength, onDoubleClick, onSave, onChange, onKeyDown, onCancel }: {
+function EditableField({ label, value, fieldKey, editing, editValue, suffix, maxLength, onDoubleClick, onSave, onChange, onCancel }: {
   label: string; value: string; fieldKey: string; editing: string | null; editValue: string; suffix?: string; maxLength?: number;
   onDoubleClick: (key: string, val: string) => void; onSave: (key: string, val: unknown) => void; onChange: (v: string) => void; onKeyDown: (e: React.KeyboardEvent, key: string) => void; onCancel: () => void;
 }) {
   const composingRef = useRef(false);
+  // Esc(취소)로 빠져나갈 때 직후 발생하는 blur 가 저장을 트리거하지 않도록 막는 가드
+  const cancelRef = useRef(false);
+
+  // blur / Enter 시 호출 — 필드별 onSave 를 타므로 키(parseInt) 등 변환도 올바르게 적용됨
+  const commit = () => {
+    if (cancelRef.current) { cancelRef.current = false; return; }
+    onSave(fieldKey, editValue);
+  };
+  const requestCancel = () => {
+    cancelRef.current = true;
+    onCancel();
+  };
+
   if (editing === fieldKey) {
     return (
       <div>
@@ -1127,13 +1197,25 @@ function EditableField({ label, value, fieldKey, editing, editValue, suffix, max
                 const v = e.currentTarget.value;
                 onChange(v.length > maxLength ? v.slice(0, maxLength) : v);
               }}
-              onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
-              onBlur={onCancel} rows={3} maxLength={maxLength}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Escape") { e.preventDefault(); requestCancel(); }
+                // 긴 글은 Cmd/Ctrl+Enter 로 저장 (일반 Enter 는 줄바꿈)
+                else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); e.currentTarget.blur(); }
+              }}
+              onBlur={commit} rows={3} maxLength={maxLength}
               className="w-full px-3 py-2 border border-primary rounded-lg text-base focus:outline-none resize-none" />
-            <span className="text-xs text-muted-fg">{editValue.length}/{maxLength}자</span>
+            <span className="text-xs text-muted-fg">{editValue.length}/{maxLength}자 · 저장: 입력 후 다른 곳 클릭 또는 Ctrl/⌘+Enter · 취소: Esc</span>
           </div>
         ) : (
-          <input autoFocus value={editValue} onChange={(e) => onChange(e.target.value)} onKeyDown={(e) => onKeyDown(e, fieldKey)} onBlur={onCancel}
+          <input autoFocus value={editValue}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+              else if (e.key === "Escape") { e.preventDefault(); requestCancel(); }
+            }}
+            onBlur={commit}
             className="w-full px-3 py-2 border border-primary rounded-lg text-base focus:outline-none" />
         )}
       </div>

@@ -226,6 +226,16 @@ export async function getMdRecsForMale(maleProfileId: string) {
   return (data || []).map(mapMdRec);
 }
 
+export async function getMdRecsForFemale(femaleProfileId: string) {
+  const db = await getDb();
+  const { data } = await db
+    .from("md_recommendations")
+    .select("*")
+    .eq("female_profile_id", femaleProfileId)
+    .order("created_at", { ascending: false });
+  return (data || []).map(mapMdRec);
+}
+
 export async function getAllMdRecommendations() {
   const db = await getDb();
   const { data } = await db

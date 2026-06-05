@@ -8,6 +8,7 @@ import {
   getIdealType,
   getAdminNotes,
   getMdRecsForMale,
+  getMdRecsForFemale,
 } from "@/lib/db";
 import { requireAdmin, requireUser, isAdmin } from "@/lib/auth-guard";
 
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
       if (!user) return NextResponse.json({ error: "유저 없음" }, { status: 404 });
       const idealType = await getIdealType(id);
       const notes = await getAdminNotes(id);
-      const mdRecs = user.role === "male" ? await getMdRecsForMale(id) : [];
+      const mdRecs = user.role === "male" ? await getMdRecsForMale(id) : await getMdRecsForFemale(id);
       return NextResponse.json({ user, idealType, notes, mdRecs });
     }
 
